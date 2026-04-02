@@ -6,7 +6,6 @@ import './style.css';
 import DocsLogo from './DocsLogo.vue';
 import GalleryShowcase from '../../components/GalleryShowcase.vue';
 import HomeHero from '../../components/HomeHero.vue';
-import UsageDemo from '../../components/UsageDemo.vue';
 
 const theme: Theme = {
   ...DefaultTheme,
@@ -17,7 +16,6 @@ const theme: Theme = {
   enhanceApp({ app }) {
     app.component('GalleryShowcase', GalleryShowcase);
     app.component('HomeHero', HomeHero);
-    app.component('UsageDemo', UsageDemo);
   }
 };
 

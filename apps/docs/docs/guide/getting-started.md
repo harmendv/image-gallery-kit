@@ -30,12 +30,6 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - `mainImageIndex`: highlight one image as the lead tile
 - `height`, `width`, `imageRadius`: presentation controls for the outer frame
 
-## Interactive Starter
-
-Use this when you want to feel the package surface before wiring real content.
-
-<UsageDemo />
-
 ## Notes
 
 - Import `image-gallery-kit/style.css` once in your app.
