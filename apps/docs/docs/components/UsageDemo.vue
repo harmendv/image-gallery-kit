@@ -4,7 +4,7 @@ import { demoImages } from './imageFixtures';
 import GalleryShowcase from './GalleryShowcase.vue';
 
 const previewCount = ref(4);
-const aspectRatio = ref('4 / 5');
+const aspectRatio = ref('1 / 1');
 const previewHeight = ref('26rem');
 const imageRadius = ref('1.4rem');
 

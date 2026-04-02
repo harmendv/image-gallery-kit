@@ -26,7 +26,7 @@ interface GalleryImage {
 | --- | --- | --- | --- |
 | `images` | `GalleryImage[]` | required | Source data for preview, dialog, and bento modes. |
 | `previewCount` | `number` | `4` | Normalized to the nearest supported preview layout. |
-| `previewAspectRatio` | `number \| string` | `'4 / 5'` | Accepts numeric ratios or CSS aspect-ratio strings. |
+| `previewAspectRatio` | `number \| string` | `'1 / 1'` | Accepts numeric ratios or CSS aspect-ratio strings. |
 | `mainImageIndex` | `number \| null` | `null` | Turns the preview into a featured layout when valid. |
 | `previewHeight` | `string \| null` | `null` | Locks preview height for more editorial compositions. |
 | `width` | `string \| null` | `'100%'` | Controls the outer gallery width. |

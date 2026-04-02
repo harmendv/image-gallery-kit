@@ -17,7 +17,7 @@ const props = withDefaults(
   {
     images: () => demoImages,
     previewCount: 4,
-    previewAspectRatio: '4 / 5',
+    previewAspectRatio: '1 / 1',
     mainImageIndex: null,
     previewHeight: '26rem',
     width: '100%',

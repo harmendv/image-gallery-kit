@@ -32,7 +32,7 @@
 }
 
 .image-gallery-featured-frame {
-  aspect-ratio: var(--ig-preview-aspect-ratio, 4 / 5);
+  aspect-ratio: var(--ig-preview-aspect-ratio, 1 / 1);
 }
 
 .image-gallery-featured-side {
