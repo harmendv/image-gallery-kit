@@ -1,0 +1,16 @@
+{
+  "name": "image-gallery-kit-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace image-gallery-kit && npm run docs:build",
+    "build:package": "npm run build --workspace image-gallery-kit",
+    "docs:dev": "npm run docs:dev --workspace image-gallery-kit-docs",
+    "docs:build": "npm run docs:build --workspace image-gallery-kit-docs",
+    "docs:preview": "npm run docs:preview --workspace image-gallery-kit-docs",
+    "test": "npm run test --workspace image-gallery-kit"
+  }
+}

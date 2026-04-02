@@ -1,0 +1,58 @@
+import type { GalleryImage } from 'image-gallery-kit';
+
+export const demoImages: GalleryImage[] = [
+  {
+    src: 'https://images.unsplash.com/photo-1511300636408-a63a89df3482?auto=format&fit=crop&w=1400&q=80',
+    alt: 'Guests trading baked treats at a tasting table',
+    width: 1400,
+    height: 1800
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=1800&q=80',
+    alt: 'Baker plating pastries in a warm kitchen',
+    width: 1800,
+    height: 1200
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=1200&q=80',
+    alt: 'Close-up pastry box and donut detail',
+    width: 1200,
+    height: 1600
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1464306076886-da185f6a9d05?auto=format&fit=crop&w=1200&q=80',
+    alt: 'Barista working behind a bright storefront',
+    width: 1200,
+    height: 1700
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1600&q=80',
+    alt: 'Espresso pour in progress',
+    width: 1600,
+    height: 1100
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&w=1400&q=80',
+    alt: 'Chocolate brownies on a white plate',
+    width: 1400,
+    height: 980
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?auto=format&fit=crop&w=1200&q=80',
+    alt: 'Rows of brownies in a baking tray',
+    width: 1200,
+    height: 1800
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1514996937319-344454492b37?auto=format&fit=crop&w=1300&q=80',
+    alt: 'Colorful gummy sweets on a plate',
+    width: 1300,
+    height: 1100
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80',
+    alt: 'Portrait holding a dessert sample',
+    width: 1200,
+    height: 1550
+  }
+];

@@ -1,0 +1,6 @@
+<ImageGallery
+  :images="images"
+  :preview-count="4"
+  preview-aspect-ratio="4 / 5"
+  preview-height="26rem"
+/>
