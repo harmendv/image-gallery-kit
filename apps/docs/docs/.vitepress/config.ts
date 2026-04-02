@@ -8,7 +8,7 @@ const packageStyles = fileURLToPath(new URL('../../../../packages/image-gallery-
 const packageSrcRoot = fileURLToPath(new URL('../../../../packages/image-gallery-kit/src/', import.meta.url));
 
 export default defineConfig({
-  title: 'image-gallery',
+  title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
   srcExclude: ['README.md'],
@@ -62,7 +62,7 @@ export default defineConfig({
       }
     ],
     socialLinks: [
-      { icon: 'npm', link: 'https://www.npmjs.com/package/image-gallery' }
+      { icon: 'npm', link: 'https://www.npmjs.com/package/image-gallery-kit' }
     ],
     outline: 'deep',
     search: {

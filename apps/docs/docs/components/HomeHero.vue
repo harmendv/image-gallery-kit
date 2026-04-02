@@ -2,10 +2,10 @@
   <section class="home-hero">
     <div class="home-hero-copy">
       <p class="home-hero-kicker">image-gallery-kit</p>
-      <div class="home-hero-label">Image Gallery</div>
+      <div class="home-hero-label">Image Gallery Kit</div>
       <h1 class="home-hero-title">Animated gallery layouts for Vue that feel editorial instead of utilitarian.</h1>
       <p class="home-hero-text">
-        A package-first image gallery with featured layouts, overflow handling, bento mode, and SSR-safe rendering.
+        image-gallery-kit is a package-first gallery with featured layouts, overflow handling, bento mode, and SSR-safe rendering.
       </p>
       <div class="home-hero-actions">
         <a class="home-hero-action home-hero-action-brand" href="/guide/getting-started">Get Started</a>
