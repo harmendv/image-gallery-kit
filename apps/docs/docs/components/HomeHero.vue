@@ -23,7 +23,7 @@
     </div>
 
     <div class="home-hero-media home-hero-media-desktop vp-raw">
-      <GalleryShowcase :preview-count="7" :main-image-index="4" height="28rem" preview-aspect-ratio="1" />
+      <GalleryShowcase :preview-count="7" :main-image-index="3" height="28rem" preview-aspect-ratio="1" />
     </div>
   </section>
 </template>
