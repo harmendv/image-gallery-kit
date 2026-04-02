@@ -116,13 +116,13 @@ describe('ImageGallery', () => {
     expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])').length).toBe(5);
   });
 
-  it('keeps an intrinsic aspect ratio for the featured main image when previewHeight is set', () => {
+  it('keeps an intrinsic aspect ratio for the featured main image when height is set', () => {
     const wrapper = mount(ImageGallery, {
       props: {
         images: manyImages,
         previewCount: 5,
         mainImageIndex: 2,
-        previewHeight: '25rem',
+        height: '25rem',
         previewAspectRatio: '4 / 5'
       }
     });

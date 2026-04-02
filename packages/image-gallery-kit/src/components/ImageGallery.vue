@@ -9,7 +9,7 @@ const props = withDefaults(
     previewCount?: number;
     previewAspectRatio?: number | string;
     mainImageIndex?: number | null;
-    previewHeight?: string | null;
+    height?: string | null;
     width?: string | null;
     imageRadius?: string | null;
   }>(),
@@ -17,7 +17,7 @@ const props = withDefaults(
     previewCount: 4,
     previewAspectRatio: '1 / 1',
     mainImageIndex: null,
-    previewHeight: null,
+    height: null,
     width: '100%',
     imageRadius: null
   }
@@ -117,7 +117,7 @@ const previewAspectRatioValue = computed(() => {
   return props.previewAspectRatio;
 });
 
-const previewHeightValue = computed(() => props.previewHeight);
+const heightValue = computed(() => props.height);
 const galleryStyle = computed(() => ({
   width: props.width ?? '100%',
   '--ig-radius': props.imageRadius ?? undefined
@@ -143,12 +143,12 @@ const previewAspectRatioNumber = computed(() => {
 });
 
 const featuredPreviewColumns = computed(() => {
-  if (previewHeightValue.value) {
+  if (heightValue.value) {
     const ratio = previewAspectRatioNumber.value;
     const rows = mainLayoutRowCount.value;
     const cols = mainLayoutColumns.value;
     const gap = '1rem';
-    const tileHeight = `((${previewHeightValue.value}) - (${Math.max(rows - 1, 0)} * ${gap})) / ${rows}`;
+    const tileHeight = `((${heightValue.value}) - (${Math.max(rows - 1, 0)} * ${gap})) / ${rows}`;
     const sideWidth = `${cols} * (${tileHeight}) * ${ratio} + (${Math.max(cols - 1, 0)} * ${gap})`;
 
     return `minmax(0, 1fr) minmax(0, calc(${sideWidth}))`;
@@ -404,10 +404,10 @@ watch(isDialogOpen, async (open) => {
     <div
       v-if="hasMainImage && featuredPreviewEntry"
       class="image-gallery-featured grid gap-3 sm:gap-4"
-      :data-fixed-height="previewHeightValue ? 'true' : 'false'"
+      :data-fixed-height="heightValue ? 'true' : 'false'"
       :style="{
         '--ig-featured-columns': featuredPreviewColumns,
-        '--ig-featured-height': previewHeightValue ?? 'auto',
+        '--ig-featured-height': heightValue ?? 'auto',
         '--ig-preview-aspect-ratio': previewAspectRatioValue
       }"
     >
@@ -439,7 +439,7 @@ watch(isDialogOpen, async (open) => {
         class="image-gallery-featured-side grid items-start gap-3 sm:gap-4"
         :style="{
           gridTemplateColumns: `repeat(${mainLayoutColumns}, minmax(0, 1fr))`,
-          gridTemplateRows: previewHeightValue ? `repeat(${mainLayoutRowCount}, minmax(0, 1fr))` : undefined
+          gridTemplateRows: heightValue ? `repeat(${mainLayoutRowCount}, minmax(0, 1fr))` : undefined
         }"
       >
         <div
@@ -490,8 +490,8 @@ watch(isDialogOpen, async (open) => {
       class="grid gap-3 sm:gap-4"
       :style="{
         gridTemplateColumns: `repeat(${previewGridColumns}, minmax(0, 1fr))`,
-        gridTemplateRows: previewHeightValue ? `repeat(${previewGridRows}, minmax(0, 1fr))` : undefined,
-        height: previewHeightValue ?? undefined
+        gridTemplateRows: heightValue ? `repeat(${previewGridRows}, minmax(0, 1fr))` : undefined,
+        height: heightValue ?? undefined
       }"
     >
         <div
@@ -509,7 +509,7 @@ watch(isDialogOpen, async (open) => {
             :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
             class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
             :style="
-              previewHeightValue
+              heightValue
                 ? undefined
                 : {
                     aspectRatio: previewAspectRatioValue

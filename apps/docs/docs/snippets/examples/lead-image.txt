@@ -2,5 +2,5 @@
   :images="images"
   :preview-count="7"
   :main-image-index="0"
-  preview-height="25rem"
+  height="25rem"
 />

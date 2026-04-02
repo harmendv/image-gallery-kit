@@ -10,7 +10,7 @@ const props = withDefaults(
     previewCount?: number;
     previewAspectRatio?: number | string;
     mainImageIndex?: number | null;
-    previewHeight?: string | null;
+    height?: string | null;
     width?: string | null;
     imageRadius?: string | null;
   }>(),
@@ -19,7 +19,7 @@ const props = withDefaults(
     previewCount: 4,
     previewAspectRatio: '1 / 1',
     mainImageIndex: null,
-    previewHeight: '26rem',
+    height: '26rem',
     width: '100%',
     imageRadius: '1.4rem'
   }
@@ -35,7 +35,7 @@ const visibleImages = computed(() => props.images.slice(0, 9));
       :preview-count="previewCount"
       :preview-aspect-ratio="previewAspectRatio"
       :main-image-index="mainImageIndex"
-      :preview-height="previewHeight"
+      :height="height"
       :width="width"
       :image-radius="imageRadius"
     />

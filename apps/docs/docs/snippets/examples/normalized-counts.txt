@@ -2,5 +2,5 @@
   :images="images"
   :preview-count="6"
   preview-aspect-ratio="1 / 1"
-  preview-height="22rem"
+  height="22rem"
 />

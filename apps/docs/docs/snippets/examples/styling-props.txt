@@ -2,7 +2,7 @@
   :images="images"
   :preview-count="4"
   preview-aspect-ratio="3 / 4"
-  preview-height="18rem"
+  height="18rem"
   width="92%"
   image-radius="2rem"
 />

@@ -28,7 +28,7 @@ interface GalleryImage {
 | `previewCount` | `number` | `4` | Normalized to the nearest supported preview layout. |
 | `previewAspectRatio` | `number \| string` | `'1 / 1'` | Accepts numeric ratios or CSS aspect-ratio strings. |
 | `mainImageIndex` | `number \| null` | `null` | Turns the preview into a featured layout when valid. |
-| `previewHeight` | `string \| null` | `null` | Locks preview height for more editorial compositions. |
+| `height` | `string \| null` | `null` | Sets the gallery container height for fixed-height preview layouts. |
 | `width` | `string \| null` | `'100%'` | Controls the outer gallery width. |
 | `imageRadius` | `string \| null` | `null` | Overrides the package border radius token. |
 

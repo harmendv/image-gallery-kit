@@ -5,7 +5,7 @@ import GalleryShowcase from './GalleryShowcase.vue';
 
 const previewCount = ref(4);
 const aspectRatio = ref('1 / 1');
-const previewHeight = ref('26rem');
+const height = ref('26rem');
 const imageRadius = ref('1.4rem');
 
 const previewCountOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -31,7 +31,7 @@ const aspectOptions = ['1 / 1', '4 / 5', '16 / 9', '3 / 4'];
 
       <label>
         <span>Height</span>
-        <input v-model="previewHeight" type="text" />
+        <input v-model="height" type="text" />
       </label>
 
       <label>
@@ -44,7 +44,7 @@ const aspectOptions = ['1 / 1', '4 / 5', '16 / 9', '3 / 4'];
       :images="demoImages"
       :preview-count="previewCount"
       :preview-aspect-ratio="aspectRatio"
-      :preview-height="previewHeight"
+      :height="height"
       :image-radius="imageRadius"
     />
   </div>

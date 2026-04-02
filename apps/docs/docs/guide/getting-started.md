@@ -28,7 +28,7 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - `previewCount`: how many images appear before overflow opens the full grid
 - `previewAspectRatio`: the visible tile ratio in the preview layout
 - `mainImageIndex`: highlight one image as the lead tile
-- `previewHeight`, `width`, `imageRadius`: presentation controls for the outer frame
+- `height`, `width`, `imageRadius`: presentation controls for the outer frame
 
 ## Interactive Starter
 
