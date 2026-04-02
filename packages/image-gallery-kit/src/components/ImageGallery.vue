@@ -412,7 +412,7 @@ watch(isDialogOpen, async (open) => {
       }"
     >
       <div
-        class="image-gallery-featured-main group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left transition-transform duration-300 hover:-translate-y-1 lg:self-start"
+        class="image-gallery-featured-main group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left lg:self-start"
       >
         <button
           type="button"
@@ -445,7 +445,7 @@ watch(isDialogOpen, async (open) => {
         <div
           v-for="entry in mainLayoutEntries"
           :key="entry.image.src"
-          class="image-gallery-featured-item group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left transition-transform duration-300 hover:-translate-y-1"
+          class="image-gallery-featured-item group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
         >
           <button
             type="button"
@@ -494,11 +494,11 @@ watch(isDialogOpen, async (open) => {
         height: previewHeightValue ?? undefined
       }"
     >
-      <div
-        v-for="entry in previewEntries"
-        :key="entry.image.src"
-        class="group relative min-h-0 h-full overflow-hidden rounded-[var(--ig-radius)] bg-white text-left transition-transform duration-300 hover:-translate-y-1"
-      >
+        <div
+          v-for="entry in previewEntries"
+          :key="entry.image.src"
+          class="group relative min-h-0 h-full overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
+        >
         <button
           type="button"
           class="relative block h-full w-full focus-visible:outline-none"
@@ -606,7 +606,7 @@ watch(isDialogOpen, async (open) => {
             <div class="flex h-full w-full items-center justify-center px-10 py-6 sm:px-20">
               <div
                 ref="carouselFrameRef"
-                class="relative overflow-hidden rounded-[var(--ig-radius)] bg-slate-50"
+                class="relative overflow-hidden rounded-[var(--ig-radius)]"
                 :style="{ aspectRatio: getImageAspectRatio(activeImage), width: 'min(100%, 56rem)', maxHeight: 'calc(100vh - 8rem)' }"
               >
                 <img
@@ -640,7 +640,7 @@ watch(isDialogOpen, async (open) => {
               data-bento-item="true"
               :data-bento-active="index === activeIndex ? 'true' : 'false'"
               :class="[
-                'group relative block w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)] bg-slate-100 text-left hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
+                'group relative block w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
                 isBentoEntering && index !== activeIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
               ]"
               :aria-label="`Open image ${index + 1} from grid`"
