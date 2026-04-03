@@ -67,7 +67,7 @@ Bottom-docked heroes use the same rule and work well for denser previews.
 Use a wide item ratio when the supporting grid should feel more cinematic than card-like.
 
 <div class="vp-raw">
-  <GalleryShowcase :rows="2" :columns="3" item-aspect-ratio="16 / 9" />
+  <GalleryShowcase :rows="2" :columns="3" item-aspect-ratio="16 / 9" :height="null" />
 </div>
 
 <<< ./snippets/examples/wide-preview-tiles.txt{vue}

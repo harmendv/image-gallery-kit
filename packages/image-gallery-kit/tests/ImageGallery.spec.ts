@@ -59,7 +59,7 @@ describe('ImageGallery', () => {
     await wrapper.get('button[aria-label="Open image 2"]').trigger('click');
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
-    expect(wrapper.get('img[alt="Two"]').exists()).toBe(true);
+    expect(wrapper.find('img[alt="Two"]').exists()).toBe(true);
   });
 
   it('opens bento mode from the replace-last-tile overflow trigger', async () => {
@@ -73,7 +73,7 @@ describe('ImageGallery', () => {
 
     await wrapper.get('button[aria-label="Show all 4 images"]').trigger('click');
 
-    expect(wrapper.get('[role="dialog"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
     expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
   });
 
@@ -89,7 +89,7 @@ describe('ImageGallery', () => {
     });
 
     expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(5);
-    expect(wrapper.get('button[aria-label="Show all 9 images"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="Show all 9 images"]').exists()).toBe(true);
   });
 
   it('hides the overflow trigger when grid view is disabled', () => {
@@ -135,7 +135,7 @@ describe('ImageGallery', () => {
 
     const featuredLayout = wrapper.get('.image-gallery-featured');
     expect(featuredLayout.attributes('style')).toContain('grid-template-columns');
-    expect(wrapper.get('button[aria-label="Open image 3"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="Open image 3"]').exists()).toBe(true);
     expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(5);
   });
 
@@ -154,6 +154,24 @@ describe('ImageGallery', () => {
     const featuredLayout = wrapper.get('.image-gallery-featured');
     expect(featuredLayout.attributes('style')).toContain('grid-template-rows');
     expect(featuredLayout.attributes('style')).toContain('14rem');
+  });
+
+  it('gives top-docked fractional main images an intrinsic height when no explicit gallery height is set', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 4,
+        columns: 4,
+        mainImageIndex: 0,
+        mainImagePosition: 'top',
+        mainImageSize: 0.4
+      }
+    });
+
+    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
+    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+    expect(mainItem?.getAttribute('style')).toContain('height: calc(');
+    expect(mainFrame.attributes('style')).toContain('height: calc(');
   });
 
   it('places a right-docked main image in the second column', () => {
@@ -186,6 +204,42 @@ describe('ImageGallery', () => {
 
     const mainImage = wrapper.get('button[aria-label="Open image 5"]').element.parentElement;
     expect(mainImage?.getAttribute('style')).toContain('grid-row: 2');
+  });
+
+  it('does not force the secondary grid to 100% height for bottom-docked layouts without an explicit height', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 4,
+        columns: 4,
+        mainImageIndex: 0,
+        mainImagePosition: 'bottom',
+        mainImageSize: 0.4,
+        width: '800px'
+      }
+    });
+
+    const secondaryGrid = wrapper.get('.image-gallery-secondary');
+    expect(secondaryGrid.attributes('style')).not.toContain('height: 100%');
+    expect(wrapper.find('button[aria-label="Open image 1"]').exists()).toBe(true);
+  });
+
+  it('gives bottom-docked fractional main images an intrinsic height when no explicit gallery height is set', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 4,
+        columns: 4,
+        mainImageIndex: 0,
+        mainImagePosition: 'bottom',
+        mainImageSize: 0.4
+      }
+    });
+
+    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
+    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+    expect(mainItem?.getAttribute('style')).toContain('height: calc(');
+    expect(mainFrame.attributes('style')).toContain('height: calc(');
   });
 
   it('falls back to a plain grid when mainImageIndex is invalid', () => {
@@ -231,7 +285,7 @@ describe('ImageGallery', () => {
     await wrapper.get('button[aria-label="Open image 3 from grid"]').trigger('click');
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('3 of 4');
-    expect(wrapper.get('img[alt="Three"]').exists()).toBe(true);
+    expect(wrapper.find('img[alt="Three"]').exists()).toBe(true);
   });
 
   it('hides single-view header controls in masonry mode', async () => {
@@ -248,7 +302,7 @@ describe('ImageGallery', () => {
 
     expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('1 of 4');
-    expect(wrapper.get('button[aria-label="Open image 2 from grid"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-label="Open image 2 from grid"]').exists()).toBe(true);
   });
 
   it('renders on the server without touching browser globals', async () => {

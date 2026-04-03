@@ -57,7 +57,7 @@ const carouselFrameRef = ref<HTMLDivElement | null>(null);
 const bentoGridRef = ref<HTMLDivElement | null>(null);
 const isBentoEntering = ref(false);
 
-const { animateBetween, animateBentoEntrance } = useSharedImageTransition();
+const { animateBetween, animateBentoEntrance, animateBentoExit } = useSharedImageTransition();
 
 const rowCount = computed(() => Math.max(1, Math.floor(props.rows)));
 const columnCount = computed(() => Math.max(1, Math.floor(props.columns)));
@@ -137,12 +137,17 @@ const normalizedMainImageSize = computed(() => {
 });
 const previewGap = computed(() => props.gap);
 const objectFitValue = computed(() => props.imageFit);
+const transitionRadius = computed(() => props.imageRadius?.trim() || '1.5rem');
 const galleryStyle = computed(() => ({
   width: props.width ?? '100%',
   '--ig-radius': props.imageRadius ?? undefined
 }));
+const masonryTileRadius = computed(() => {
+  const baseRadius = props.imageRadius?.trim() || 'var(--ig-radius, 1.5rem)';
+  return `max(0px, calc(${baseRadius} - 0.4rem))`;
+});
 
-function getSecondaryHeightExpression() {
+function getSecondaryHeightTerm() {
   const ratio = itemAspectRatioNumber.value;
   const columns = columnCount.value;
   const rows = rowCount.value;
@@ -150,7 +155,23 @@ function getSecondaryHeightExpression() {
   const cellWidth = `((100% - (${Math.max(columns - 1, 0)} * ${gap})) / ${columns})`;
   const cellHeight = `(${cellWidth} / ${ratio})`;
 
-  return `calc((${rows} * ${cellHeight}) + (${Math.max(rows - 1, 0)} * ${gap}))`;
+  return `((${rows} * ${cellHeight}) + (${Math.max(rows - 1, 0)} * ${gap}))`;
+}
+
+function getSecondaryHeightExpression() {
+  return `calc(${getSecondaryHeightTerm()})`;
+}
+
+function getMainImageHeightExpression() {
+  const secondaryHeightTerm = getSecondaryHeightTerm();
+  const mainSize = typeof normalizedMainImageSize.value === 'number' ? normalizedMainImageSize.value : null;
+
+  if (mainSize === null) {
+    return null;
+  }
+
+  const mainFactor = mainSize / (1 - mainSize);
+  return `calc((${secondaryHeightTerm}) * ${mainFactor})`;
 }
 
 const featuredLayoutStyle = computed(() => {
@@ -205,9 +226,7 @@ const featuredLayoutStyle = computed(() => {
       secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
       baseStyle.height = heightValue.value;
     } else {
-      const secondaryHeight = getSecondaryHeightExpression();
-      const mainFactor = normalizedMainImageSize.value / (1 - normalizedMainImageSize.value);
-      mainTrack = `minmax(0, calc(${secondaryHeight} * ${mainFactor}))`;
+      mainTrack = `minmax(0, ${getMainImageHeightExpression()})`;
       secondaryTrack = 'auto';
     }
   } else {
@@ -227,14 +246,18 @@ const featuredLayoutStyle = computed(() => {
   return baseStyle;
 });
 
-const secondaryGridStyle = computed(() => ({
-  display: 'grid',
-  gap: previewGap.value,
-  gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
-  gridTemplateRows: heightValue.value ? `repeat(${rowCount.value}, minmax(0, 1fr))` : undefined,
-  height: hasMainImage.value ? '100%' : heightValue.value ?? undefined,
-  alignContent: 'start'
-}));
+const secondaryGridStyle = computed(() => {
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+
+  return {
+    display: 'grid',
+    gap: previewGap.value,
+    gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
+    gridTemplateRows: heightValue.value ? `repeat(${rowCount.value}, minmax(0, 1fr))` : undefined,
+    height: hasMainImage.value && (isHorizontal || !!heightValue.value) ? '100%' : heightValue.value ?? undefined,
+    alignContent: 'start'
+  };
+});
 
 const plainGridStyle = computed(() => ({
   display: 'grid',
@@ -247,9 +270,13 @@ const plainGridStyle = computed(() => ({
 
 const mainImageItemStyle = computed(() => {
   const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  const intrinsicHeight = !isHorizontal && !heightValue.value && typeof normalizedMainImageSize.value === 'number'
+    ? getMainImageHeightExpression() ?? undefined
+    : undefined;
+
   return {
     minHeight: 0,
-    height: isHorizontal ? '100%' : undefined,
+    height: isHorizontal ? '100%' : intrinsicHeight,
     gridColumn: isHorizontal ? (props.mainImagePosition === 'right' ? '2' : '1') : '1',
     gridRow: isHorizontal ? '1' : (props.mainImagePosition === 'bottom' ? '2' : '1')
   };
@@ -283,9 +310,11 @@ const mainImageFrameStyle = computed(() => {
     };
   }
 
+  const mainImageHeight = getMainImageHeightExpression();
+
   return {
     width: '100%',
-    height: '100%',
+    height: mainImageHeight ?? '100%',
     aspectRatio: 'auto'
   };
 });
@@ -424,6 +453,10 @@ async function toggleDialogMode() {
     const fromFrame = bentoFrameRefs.value[activeIndex.value] ?? null;
     const fromRect = getElementRect(fromFrame);
 
+    if (isMounted.value) {
+      void animateBentoExit(() => bentoGridRef.value, { activeIndex: activeIndex.value });
+    }
+
     dialogMode.value = 'single';
 
     if (isMounted.value) {
@@ -439,6 +472,10 @@ async function toggleDialogMode() {
 async function selectBentoImage(index: number) {
   const fromFrame = bentoFrameRefs.value[index] ?? null;
   const fromRect = getElementRect(fromFrame);
+
+  if (isMounted.value) {
+    void animateBentoExit(() => bentoGridRef.value, { activeIndex: index });
+  }
 
   activeIndex.value = index;
   dialogMode.value = 'single';
@@ -515,6 +552,7 @@ watch(isDialogOpen, async (open) => {
           <div
             :ref="(element) => setPreviewFrameRef(mainImageActualIndex, element as HTMLDivElement | null)"
             class="relative overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+            :data-transition-radius="transitionRadius"
             :style="mainImageFrameStyle"
           >
             <img
@@ -543,6 +581,7 @@ watch(isDialogOpen, async (open) => {
             <div
               :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
               class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+              :data-transition-radius="transitionRadius"
               :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
             >
               <img
@@ -589,6 +628,7 @@ watch(isDialogOpen, async (open) => {
           <div
             :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
             class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+            :data-transition-radius="transitionRadius"
             :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
           >
             <img
@@ -683,6 +723,7 @@ watch(isDialogOpen, async (open) => {
               <div
                 ref="carouselFrameRef"
                 class="relative overflow-hidden rounded-[var(--ig-radius)]"
+                :data-transition-radius="transitionRadius"
                 :style="{ aspectRatio: getImageAspectRatio(activeImage), width: 'min(100%, 56rem)', maxHeight: 'calc(100vh - 8rem)' }"
               >
                 <img
@@ -714,18 +755,21 @@ watch(isDialogOpen, async (open) => {
                 :key="`${image.src}-${index}`"
                 type="button"
                 data-bento-item="true"
+                :data-bento-index="index"
                 :data-bento-active="index === activeIndex ? 'true' : 'false'"
                 :class="[
-                  'group relative block w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
+                  'group relative block w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
                   isBentoEntering && index !== activeIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
                 ]"
+                :style="{ borderRadius: masonryTileRadius }"
                 :aria-label="`Open image ${index + 1} from grid`"
                 @click="selectBentoImage(index)"
               >
                 <div
                   :ref="(element) => setBentoFrameRef(index, element as HTMLDivElement | null)"
-                  class="relative w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)]"
-                  :style="{ aspectRatio: getImageAspectRatio(image) }"
+                  class="relative w-full overflow-hidden"
+                  :data-transition-radius="transitionRadius"
+                  :style="{ aspectRatio: getImageAspectRatio(image), borderRadius: masonryTileRadius }"
                 >
                   <img
                     :src="image.src"

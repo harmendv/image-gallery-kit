@@ -8,9 +8,65 @@ interface TransitionOptions {
   fromRect?: DOMRect | null;
 }
 
+interface BentoExitOptions {
+  activeIndex?: number;
+}
+
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
 export function useSharedImageTransition() {
+  function getTransitionRadius(element: HTMLElement) {
+    return element.dataset.transitionRadius || getComputedStyle(element).borderRadius;
+  }
+
+  function copyGalleryCustomProperties(source: HTMLElement, clone: HTMLElement) {
+    const computedStyle = getComputedStyle(source);
+    const galleryRadius = computedStyle.getPropertyValue('--ig-radius').trim();
+    const galleryRing = computedStyle.getPropertyValue('--ig-ring').trim();
+
+    if (galleryRadius) {
+      clone.style.setProperty('--ig-radius', galleryRadius);
+    }
+
+    if (galleryRing) {
+      clone.style.setProperty('--ig-ring', galleryRing);
+    }
+  }
+
+  function createFlyingClone(source: HTMLElement) {
+    const clone = source.cloneNode(true) as HTMLElement;
+    clone.setAttribute('aria-hidden', 'true');
+    clone.style.margin = '0';
+    clone.style.transformOrigin = 'center center';
+    clone.style.overflow = 'hidden';
+    clone.style.pointerEvents = 'none';
+    clone.style.zIndex = '9999';
+
+    copyGalleryCustomProperties(source, clone);
+    clone.style.borderRadius = getTransitionRadius(source);
+
+    const sourceDescendants = source.querySelectorAll<HTMLElement>('*');
+    const cloneDescendants = clone.querySelectorAll<HTMLElement>('*');
+
+    cloneDescendants.forEach((element, index) => {
+      const sourceElement = sourceDescendants[index];
+      if (!sourceElement) {
+        return;
+      }
+
+      const computedStyle = getComputedStyle(sourceElement);
+      element.style.borderRadius = 'inherit';
+      element.style.transition = 'none';
+      element.style.overflow = computedStyle.overflow;
+
+      if (computedStyle.getPropertyValue('--ig-radius').trim()) {
+        element.style.setProperty('--ig-radius', computedStyle.getPropertyValue('--ig-radius').trim());
+      }
+    });
+
+    return clone;
+  }
+
   async function waitForPaint() {
     await nextTick();
 
@@ -48,26 +104,12 @@ export function useSharedImageTransition() {
       return;
     }
 
-    const clone = fromEl.cloneNode(true) as HTMLElement;
-    clone.setAttribute('aria-hidden', 'true');
+    const clone = createFlyingClone(fromEl);
     clone.style.position = 'fixed';
     clone.style.left = `${fromRect.left}px`;
     clone.style.top = `${fromRect.top}px`;
     clone.style.width = `${fromRect.width}px`;
     clone.style.height = `${fromRect.height}px`;
-    clone.style.margin = '0';
-    clone.style.transformOrigin = 'center center';
-    clone.style.overflow = 'hidden';
-    clone.style.borderRadius = getComputedStyle(fromEl).borderRadius;
-    clone.style.zIndex = '9999';
-    clone.style.pointerEvents = 'none';
-
-    const cloneMedia = clone.querySelector('img');
-    if (cloneMedia) {
-      cloneMedia.style.width = '100%';
-      cloneMedia.style.height = '100%';
-      cloneMedia.style.display = 'block';
-    }
 
     const previousFromVisibility = fromEl.style.visibility;
     const previousToVisibility = toEl.style.visibility;
@@ -85,7 +127,7 @@ export function useSharedImageTransition() {
           top: toRect.top,
           width: toRect.width,
           height: toRect.height,
-          borderRadius: getComputedStyle(toEl).borderRadius,
+          borderRadius: getTransitionRadius(toEl),
           duration: options.duration ?? 0.48,
           ease: options.ease ?? 'power3.inOut',
           onComplete: () => resolve()
@@ -141,8 +183,72 @@ export function useSharedImageTransition() {
     }
   }
 
+  async function animateBentoExit(
+    containerGetter: ElementGetter,
+    options: BentoExitOptions = {}
+  ) {
+    if (!isBrowser) {
+      return;
+    }
+
+    const container = containerGetter();
+    if (!container) {
+      return;
+    }
+
+    const items = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-bento-item="true"]')
+    ).filter((item) => item.dataset.bentoIndex !== `${options.activeIndex ?? ''}`);
+
+    if (!items.length) {
+      return;
+    }
+
+    const clones = items
+      .map((item) => {
+        const rect = item.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+          return null;
+        }
+
+        const clone = createFlyingClone(item);
+        clone.style.position = 'fixed';
+        clone.style.left = `${rect.left}px`;
+        clone.style.top = `${rect.top}px`;
+        clone.style.width = `${rect.width}px`;
+        clone.style.height = `${rect.height}px`;
+        clone.style.zIndex = '9998';
+        clone.style.opacity = '1';
+        document.body.appendChild(clone);
+        return clone;
+      })
+      .filter((clone): clone is HTMLElement => clone !== null);
+
+    if (!clones.length) {
+      return;
+    }
+
+    try {
+      const { gsap } = await import('gsap');
+
+      gsap.to(clones, {
+        opacity: 0,
+        y: -8,
+        scale: 0.985,
+        duration: 0.2,
+        ease: 'power2.in',
+        onComplete: () => {
+          clones.forEach((clone) => clone.remove());
+        }
+      });
+    } catch {
+      clones.forEach((clone) => clone.remove());
+    }
+  }
+
   return {
     animateBetween,
-    animateBentoEntrance
+    animateBentoEntrance,
+    animateBentoExit
   };
 }

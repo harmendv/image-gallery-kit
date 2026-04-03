@@ -1,8 +1,199 @@
+@import "tw-animate-css";
+
 :root {
   --vp-c-brand-1: #011a28;
   --vp-c-brand-2: #02283d;
   --vp-c-brand-3: #033551;
   --vp-c-brand-soft: rgba(1, 26, 40, 0.14);
+}
+
+.docs-shadcn {
+  --docs-background: #ffffff;
+  --docs-foreground: #0a0a0a;
+  --docs-card: #ffffff;
+  --docs-card-foreground: #0a0a0a;
+  --docs-popover: #ffffff;
+  --docs-popover-foreground: #0a0a0a;
+  --docs-primary: #171717;
+  --docs-primary-foreground: #fafafa;
+  --docs-secondary: #f5f5f5;
+  --docs-secondary-foreground: #171717;
+  --docs-muted: #f5f5f5;
+  --docs-muted-foreground: #737373;
+  --docs-accent: #f5f5f5;
+  --docs-accent-foreground: #171717;
+  --docs-destructive: #dc2626;
+  --docs-border: #e5e5e5;
+  --docs-input: #e5e5e5;
+  --docs-ring: rgb(10 10 10 / 0.12);
+  color: var(--docs-foreground);
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.docs-shadcn,
+.docs-shadcn * {
+  box-sizing: border-box;
+}
+
+.docs-shadcn :where(h1, h2, h3, h4, p, label) {
+  margin: 0;
+  color: inherit;
+  font: inherit;
+}
+
+
+.docs-shadcn :where(code) {
+  border: 1px solid var(--docs-border);
+  border-radius: 0.4rem;
+  background: var(--docs-muted);
+  padding: 0.12rem 0.38rem;
+  color: var(--docs-foreground);
+  font-size: 0.84em;
+}
+
+.playground-shell {
+  width: 100%;
+}
+
+.playground-divider {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--docs-border);
+}
+
+.playground-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.playground-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.playground-label-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.playground-field-wide {
+  align-content: start;
+}
+
+.playground-main-image-size-group {
+  align-content: start;
+}
+
+.playground-main-image-size-value {
+  align-content: end;
+}
+
+.playground-toggle-row,
+.playground-segmented {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.playground-segmented {
+  flex-wrap: wrap;
+}
+
+.playground-main-image-size-mode {
+  width: 100%;
+}
+
+.playground-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.playground-segmented-controls {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.playground-switch-label {
+  color: var(--docs-muted-foreground);
+  font-size: 0.82rem;
+}
+
+.playground-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.playground-info-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.4rem;
+  width: 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: help;
+  padding: 0;
+  color: var(--docs-muted-foreground);
+}
+
+.playground-info-button:hover {
+  color: var(--docs-foreground);
+}
+
+.playground-tooltip {
+  z-index: 80;
+  max-width: 16rem;
+  border: 1px solid var(--docs-border);
+  border-radius: 0.6rem;
+  background: var(--docs-popover);
+  padding: 0.55rem 0.7rem;
+  color: var(--docs-popover-foreground);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+}
+
+.playground-tooltip-arrow {
+  fill: var(--docs-popover);
+  stroke: var(--docs-border);
+}
+
+.playground-preview {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.playground-code {
+  margin-top: 1.5rem;
+}
+
+.playground-code pre {
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid var(--docs-border);
+  border-radius: 0.9rem;
+  background: #fafafa;
+  padding: 1rem 1.1rem;
+}
+
+.playground-code code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.86rem;
+  line-height: 1.7;
 }
 
 .overview-page .VPDoc .container,
@@ -171,6 +362,21 @@
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .playground-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  .playground-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .playground-field-wide {
+    grid-column: span 2;
+  }
+
 }
 
 @media (max-width: 959px) {
@@ -190,6 +396,12 @@
   .home-hero-media-mobile {
     display: block;
     margin-top: 1.25rem;
+  }
+
+  .playground-toggle-row,
+  .playground-segmented {
+    align-items: start;
+    flex-direction: column;
   }
 }
 
