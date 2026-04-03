@@ -9,15 +9,15 @@ pageClass: overview-page
 
 <div class="home-feature-grid">
   <div class="home-feature">
-    <div class="home-feature-title">Package-first</div>
-    <p>Install <code>image-gallery-kit</code>, import the stylesheet, and drop it into any Vue 3.5 project.</p>
+    <div class="home-feature-title">Fast to add</div>
+    <p>Install <code>image-gallery-kit</code>, import the stylesheet once, and start with a single component.</p>
   </div>
   <div class="home-feature">
-    <div class="home-feature-title">Multiple preview stories</div>
-    <p>Switch between featured layouts, preview grids, and the bento view without changing your data model.</p>
+    <div class="home-feature-title">Flexible layouts</div>
+    <p>Use the same images in different layouts, including featured, grid, and bento views.</p>
   </div>
   <div class="home-feature">
-    <div class="home-feature-title">SSR-safe behavior</div>
-    <p>Server rendering stays clean while browser-only transitions and dialog behavior activate on the client.</p>
+    <div class="home-feature-title">Works with SSR</div>
+    <p>Server rendering stays clean while client-only transitions and dialog behavior turn on in the browser.</p>
   </div>
 </div>
