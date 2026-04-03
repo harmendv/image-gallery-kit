@@ -24,15 +24,18 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 
 ## What To Configure First
 
-- `images`: array of `{ src, alt, width?, height? }`
+- `images`: array of `{ src, alt, id?, thumbnailSrc?, srcset?, sizes?, caption?, width?, height?, loading?, decoding? }`
 - `rows` and `columns`: the maximum size of the secondary preview grid
 - `itemAspectRatio`: the visible tile ratio in the preview layout
 - `mainImageIndex`, `mainImagePosition`, `mainImageSize`: turn one image into the lead tile and dock it around the grid
+- `open` and `index`: optional controlled props for `v-model:open` and `v-model:index`
 - `allowGridView`: enable or disable the all-images grid entrypoint and dialog toggle
 - `height`, `width`, `imageRadius`: presentation controls for the outer frame
+- `dialog-toolbar` and `dialog-caption`: slots for custom dialog controls and captions
 
 ## Notes
 
 - Import `image-gallery-kit/style.css` once in your app.
 - `vue` is a peer dependency.
 - The component is safe to render on the server; dialog and transition behavior activate on the client.
+- The dialog traps focus, restores focus to the trigger, and locks body scroll while open.

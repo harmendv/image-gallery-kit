@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
-import { createSSRApp, h } from 'vue';
+import { afterEach } from 'vitest';
+import { createSSRApp, h, nextTick } from 'vue';
 import { renderToString } from '@vue/server-renderer';
 import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
@@ -17,6 +18,12 @@ const manyImages: GalleryImage[] = Array.from({ length: 9 }, (_, index) => ({
   width: index % 2 === 0 ? 1200 : 900,
   height: index % 2 === 0 ? 900 : 1200
 }));
+
+afterEach(() => {
+  document.body.innerHTML = '';
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+});
 
 describe('ImageGallery', () => {
   it('uses rows and columns as sparse grid capacity', () => {
@@ -320,5 +327,101 @@ describe('ImageGallery', () => {
 
     expect(html).toContain('Open image 1');
     expect(html).not.toContain('role="dialog"');
+  });
+
+  it('supports controlled open and index props', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images,
+        open: true,
+        index: 1,
+        rows: 1,
+        columns: 3
+      }
+    });
+
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
+    expect(wrapper.find('img[alt="Two"]').exists()).toBe(true);
+
+    await wrapper.setProps({ index: 3 });
+
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('4 of 4');
+    expect(wrapper.find('img[alt="Four"]').exists()).toBe(true);
+  });
+
+  it('emits v-model updates for open and index', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images,
+        rows: 1,
+        columns: 3
+      }
+    });
+
+    await wrapper.get('button[aria-label="Open image 2"]').trigger('click');
+    await wrapper.get('button[aria-label="Next image"]').trigger('click');
+    await wrapper.get('button[aria-label="Close dialog"]').trigger('click');
+
+    expect(wrapper.emitted('update:open')).toEqual([[true], [false]]);
+    expect(wrapper.emitted('update:index')).toEqual([[1], [2]]);
+  });
+
+  it('locks body scroll while the dialog is open and restores focus when it closes', async () => {
+    const wrapper = mount(ImageGallery, {
+      attachTo: document.body,
+      props: {
+        images,
+        rows: 1,
+        columns: 3
+      }
+    });
+
+    const trigger = wrapper.get('button[aria-label="Open image 1"]');
+    (trigger.element as HTMLButtonElement).focus();
+
+    await trigger.trigger('click');
+    await nextTick();
+
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Close dialog');
+
+    await wrapper.get('button[aria-label="Close dialog"]').trigger('click');
+    await nextTick();
+
+    expect(document.body.style.overflow).toBe('');
+    expect(document.activeElement).toBe(trigger.element);
+
+    wrapper.unmount();
+  });
+
+  it('uses thumbnail sources in previews and renders custom toolbar and caption slots', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: [
+          {
+            ...images[0],
+            id: 'hero',
+            thumbnailSrc: '/one-thumb.jpg',
+            caption: 'Fresh pastry notes'
+          },
+          images[1]
+        ],
+        rows: 1,
+        columns: 2
+      },
+      slots: {
+        'dialog-toolbar': ({ index }) => h('span', { 'data-test': 'toolbar-slot' }, `Toolbar ${index + 1}`),
+        'dialog-caption': ({ image }) => h('p', { 'data-test': 'caption-slot' }, image.caption)
+      }
+    });
+
+    expect(wrapper.get('button[aria-label="Open image 1"] img').attributes('src')).toBe('/one-thumb.jpg');
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    expect(wrapper.get('[data-test="toolbar-slot"]').text()).toBe('Toolbar 1');
+    expect(wrapper.get('[data-test="caption-slot"]').text()).toBe('Fresh pastry notes');
+    expect(wrapper.find('.image-gallery-secondary img[alt="One"]').attributes('src')).toBe('/one-thumb.jpg');
+    expect(wrapper.find('[role="dialog"] img[alt="One"]').attributes('src')).toBe('/one.jpg');
   });
 });

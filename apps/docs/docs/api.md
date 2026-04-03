@@ -19,10 +19,17 @@ import 'image-gallery-kit/style.css'
 
 ```ts
 interface GalleryImage {
+  id?: string | number
   src: string
+  thumbnailSrc?: string
+  srcset?: string
+  sizes?: string
   alt: string
+  caption?: string
   width?: number
   height?: number
+  loading?: 'eager' | 'lazy'
+  decoding?: 'sync' | 'async' | 'auto'
 }
 ```
 
@@ -39,6 +46,8 @@ type ImageFit = 'cover' | 'contain'
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `images` | `GalleryImage[]` | required | Source data for preview, dialog, and bento modes. |
+| `open` | `boolean \| null` | `null` | Controlled dialog state for `v-model:open`. Leave unset for internal state. |
+| `index` | `number \| null` | `null` | Controlled active image index for `v-model:index`. Leave unset for internal state. |
 | `rows` | `number` | `2` | Maximum number of rows in the secondary preview grid. |
 | `columns` | `number` | `2` | Maximum number of columns in the secondary preview grid. |
 | `itemAspectRatio` | `number \| string` | `'4 / 5'` | Visible tile aspect ratio when the preview height is intrinsic. |
@@ -79,9 +88,19 @@ type ImageFit = 'cover' | 'contain'
 | `open` | `index: number` | Fired when a preview or grid item opens. |
 | `close` | none | Fired when the dialog closes. |
 | `change` | `index: number` | Fired when the active image changes inside the dialog. |
+| `update:open` | `value: boolean` | Emitted for `v-model:open` updates. |
+| `update:index` | `value: number` | Emitted for `v-model:index` updates. |
+
+## Slots
+
+| Slot | Slot Props | Meaning |
+| --- | --- | --- |
+| `dialog-toolbar` | `image`, `index`, `total`, `mode`, `close`, `toggleMode` | Extends the dialog header with custom controls. |
+| `dialog-caption` | `image`, `index`, `total` | Replaces the default caption area under the active dialog image. |
 
 ## Behavior Notes
 
 - The fullscreen dialog still supports both the single-image carousel and the all-images masonry view.
 - The component keeps SSR output free of browser-only dialog behavior until mounted.
+- The dialog traps focus, restores focus to the previously focused trigger, and locks background scrolling while open.
 - `vue` must be installed by the consuming app because it is a peer dependency.

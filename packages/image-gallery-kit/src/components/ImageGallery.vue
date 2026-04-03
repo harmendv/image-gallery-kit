@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import type { GalleryImage, ImageFit, MainImagePosition, MainImageSize } from '@/types';
 
@@ -12,6 +12,8 @@ type PreviewEntry = {
 const props = withDefaults(
   defineProps<{
     images: GalleryImage[];
+    open?: boolean | null;
+    index?: number | null;
     rows?: number;
     columns?: number;
     itemAspectRatio?: number | string;
@@ -26,6 +28,8 @@ const props = withDefaults(
     imageRadius?: string | null;
   }>(),
   {
+    open: null,
+    index: null,
     rows: 2,
     columns: 2,
     itemAspectRatio: '4 / 5',
@@ -45,20 +49,30 @@ const emit = defineEmits<{
   (event: 'open', index: number): void;
   (event: 'close'): void;
   (event: 'change', index: number): void;
+  (event: 'update:open', value: boolean): void;
+  (event: 'update:index', value: number): void;
 }>();
 
+const slots = useSlots();
 const isMounted = ref(false);
-const isDialogOpen = ref(false);
+const internalOpen = ref(props.open ?? false);
+const internalIndex = ref(props.index ?? 0);
 const dialogMode = ref<DialogMode>('single');
-const activeIndex = ref(0);
 const previewFrameRefs = ref<(HTMLDivElement | null)[]>([]);
 const bentoFrameRefs = ref<(HTMLDivElement | null)[]>([]);
 const carouselFrameRef = ref<HTMLDivElement | null>(null);
 const bentoGridRef = ref<HTMLDivElement | null>(null);
+const dialogRef = ref<HTMLDivElement | null>(null);
+const closeButtonRef = ref<HTMLButtonElement | null>(null);
 const isBentoEntering = ref(false);
+const lastFocusedElement = ref<HTMLElement | null>(null);
+const previousBodyOverflow = ref<string | null>(null);
+const previousBodyPaddingRight = ref<string | null>(null);
 
 const { animateBetween, animateBentoEntrance, animateBentoExit } = useSharedImageTransition();
 
+const isOpenControlled = computed(() => props.open !== null);
+const isIndexControlled = computed(() => props.index !== null);
 const rowCount = computed(() => Math.max(1, Math.floor(props.rows)));
 const columnCount = computed(() => Math.max(1, Math.floor(props.columns)));
 const secondaryCapacity = computed(() => rowCount.value * columnCount.value);
@@ -113,20 +127,11 @@ const secondaryEntries = computed<PreviewEntry[]>(() =>
     .map((image, index) => ({ image, actualIndex: index }))
     .filter((entry) => entry.actualIndex !== validMainImageIndex.value)
 );
-
-const visibleSecondaryImageCount = computed(() => secondaryCapacity.value);
-const visibleSecondaryEntries = computed(() => secondaryEntries.value.slice(0, visibleSecondaryImageCount.value));
+const visibleSecondaryEntries = computed(() => secondaryEntries.value.slice(0, secondaryCapacity.value));
 const hiddenSecondaryCount = computed(() => Math.max(0, secondaryEntries.value.length - visibleSecondaryEntries.value.length));
 const hasOverflow = computed(() => props.allowGridView && hiddenSecondaryCount.value > 0);
-const overflowAnchorIndex = computed(() => {
-  return visibleSecondaryEntries.value[visibleSecondaryEntries.value.length - 1]?.actualIndex
-    ?? mainImageEntry.value?.actualIndex
-    ?? 0;
-});
 const plainGridItemCount = computed(() => visibleSecondaryEntries.value.length);
 const plainGridRows = computed(() => Math.max(1, Math.ceil(plainGridItemCount.value / columnCount.value)));
-const secondaryGridItemCount = computed(() => visibleSecondaryEntries.value.length);
-const actualSecondaryRows = computed(() => Math.max(1, Math.ceil(secondaryGridItemCount.value / columnCount.value)));
 
 const normalizedMainImageSize = computed(() => {
   if (typeof props.mainImageSize === 'number') {
@@ -147,6 +152,25 @@ const masonryTileRadius = computed(() => {
   return `max(0px, calc(${baseRadius} - 0.4rem))`;
 });
 
+function clampIndex(index: number) {
+  if (!totalImages.value) {
+    return 0;
+  }
+
+  return Math.min(Math.max(0, Math.floor(index)), totalImages.value - 1);
+}
+
+const currentIndex = computed(() => {
+  const value = isIndexControlled.value ? props.index ?? 0 : internalIndex.value;
+  return clampIndex(value);
+});
+const isDialogOpen = computed(() => (isOpenControlled.value ? !!props.open : internalOpen.value));
+const activeImage = computed(() => props.images[currentIndex.value] ?? null);
+const dialogIsVisible = computed(() => isDialogOpen.value && activeImage.value !== null);
+const counterLabel = computed(() => `${currentIndex.value + 1} of ${totalImages.value}`);
+const hasDialogToolbarSlot = computed(() => Boolean(slots['dialog-toolbar']));
+const hasDialogCaptionSlot = computed(() => Boolean(slots['dialog-caption']));
+
 function getSecondaryHeightTerm() {
   const ratio = itemAspectRatioNumber.value;
   const columns = columnCount.value;
@@ -156,10 +180,6 @@ function getSecondaryHeightTerm() {
   const cellHeight = `(${cellWidth} / ${ratio})`;
 
   return `((${rows} * ${cellHeight}) + (${Math.max(rows - 1, 0)} * ${gap}))`;
-}
-
-function getSecondaryHeightExpression() {
-  return `calc(${getSecondaryHeightTerm()})`;
 }
 
 function getMainImageHeightExpression() {
@@ -319,15 +339,28 @@ const mainImageFrameStyle = computed(() => {
   };
 });
 
-const activeImage = computed(() => props.images[activeIndex.value] ?? null);
-const counterLabel = computed(() => `${activeIndex.value + 1} of ${totalImages.value}`);
-
 function getImageAspectRatio(image: GalleryImage | null) {
   if (!image?.width || !image?.height) {
     return 'auto';
   }
 
   return `${image.width} / ${image.height}`;
+}
+
+function getImageKey(image: GalleryImage, index: number) {
+  return image.id ?? `${image.src}-${index}`;
+}
+
+function getPreviewImageSrc(image: GalleryImage) {
+  return image.thumbnailSrc ?? image.src;
+}
+
+function getPreviewImageLoading(image: GalleryImage) {
+  return image.loading ?? 'lazy';
+}
+
+function getDialogImageLoading(image: GalleryImage) {
+  return image.loading ?? 'eager';
 }
 
 function setPreviewFrameRef(index: number, element: HTMLDivElement | null) {
@@ -347,6 +380,34 @@ function getElementRect(element: HTMLElement | null) {
   return new DOMRect(rect.x, rect.y, rect.width, rect.height);
 }
 
+function setDialogOpen(nextOpen: boolean) {
+  if (!isOpenControlled.value) {
+    internalOpen.value = nextOpen;
+  }
+
+  emit('update:open', nextOpen);
+}
+
+function setCurrentIndex(nextIndex: number, options: { emitChange?: boolean } = {}) {
+  if (!totalImages.value) {
+    return 0;
+  }
+
+  const normalizedIndex = clampIndex(nextIndex);
+
+  if (!isIndexControlled.value) {
+    internalIndex.value = normalizedIndex;
+  }
+
+  emit('update:index', normalizedIndex);
+
+  if (options.emitChange) {
+    emit('change', normalizedIndex);
+  }
+
+  return normalizedIndex;
+}
+
 async function openSingle(index: number) {
   if (!props.images[index]) {
     return;
@@ -355,10 +416,10 @@ async function openSingle(index: number) {
   const fromFrame = previewFrameRefs.value[index] ?? null;
   const fromRect = getElementRect(fromFrame);
 
-  activeIndex.value = index;
+  const nextIndex = setCurrentIndex(index);
   dialogMode.value = 'single';
-  isDialogOpen.value = true;
-  emit('open', index);
+  setDialogOpen(true);
+  emit('open', nextIndex);
 
   if (isMounted.value) {
     await animateBetween(
@@ -374,16 +435,16 @@ async function openBentoFromPreview(index: number) {
   const fromFrame = previewFrameRefs.value[targetIndex] ?? null;
   const fromRect = getElementRect(fromFrame);
 
-  activeIndex.value = Math.max(0, targetIndex);
+  const nextIndex = setCurrentIndex(Math.max(0, targetIndex));
   isBentoEntering.value = true;
   dialogMode.value = 'bento';
-  isDialogOpen.value = true;
-  emit('open', activeIndex.value);
+  setDialogOpen(true);
+  emit('open', nextIndex);
 
   if (isMounted.value) {
     await animateBetween(
       () => fromFrame,
-      () => bentoFrameRefs.value[activeIndex.value] ?? null,
+      () => bentoFrameRefs.value[currentIndex.value] ?? null,
       { fromRect }
     );
     await animateBentoEntrance(() => bentoGridRef.value);
@@ -394,18 +455,9 @@ async function openBentoFromPreview(index: number) {
 }
 
 function closeDialog() {
-  isDialogOpen.value = false;
+  setDialogOpen(false);
   dialogMode.value = 'single';
   emit('close');
-}
-
-function goTo(index: number) {
-  if (!props.images[index]) {
-    return;
-  }
-
-  activeIndex.value = index;
-  emit('change', index);
 }
 
 function goNext() {
@@ -413,8 +465,7 @@ function goNext() {
     return;
   }
 
-  activeIndex.value = (activeIndex.value + 1) % totalImages.value;
-  emit('change', activeIndex.value);
+  setCurrentIndex((currentIndex.value + 1) % totalImages.value, { emitChange: true });
 }
 
 function goPrevious() {
@@ -422,12 +473,11 @@ function goPrevious() {
     return;
   }
 
-  activeIndex.value = (activeIndex.value - 1 + totalImages.value) % totalImages.value;
-  emit('change', activeIndex.value);
+  setCurrentIndex((currentIndex.value - 1 + totalImages.value) % totalImages.value, { emitChange: true });
 }
 
 async function toggleDialogMode() {
-  if (!isDialogOpen.value) {
+  if (!dialogIsVisible.value) {
     return;
   }
 
@@ -441,7 +491,7 @@ async function toggleDialogMode() {
     if (isMounted.value) {
       await animateBetween(
         () => fromFrame,
-        () => bentoFrameRefs.value[activeIndex.value] ?? null,
+        () => bentoFrameRefs.value[currentIndex.value] ?? null,
         { fromRect }
       );
       await animateBentoEntrance(() => bentoGridRef.value);
@@ -450,11 +500,11 @@ async function toggleDialogMode() {
       isBentoEntering.value = false;
     }
   } else {
-    const fromFrame = bentoFrameRefs.value[activeIndex.value] ?? null;
+    const fromFrame = bentoFrameRefs.value[currentIndex.value] ?? null;
     const fromRect = getElementRect(fromFrame);
 
     if (isMounted.value) {
-      void animateBentoExit(() => bentoGridRef.value, { activeIndex: activeIndex.value });
+      void animateBentoExit(() => bentoGridRef.value, { activeIndex: currentIndex.value });
     }
 
     dialogMode.value = 'single';
@@ -477,9 +527,8 @@ async function selectBentoImage(index: number) {
     void animateBentoExit(() => bentoGridRef.value, { activeIndex: index });
   }
 
-  activeIndex.value = index;
+  setCurrentIndex(index, { emitChange: true });
   dialogMode.value = 'single';
-  emit('change', index);
 
   if (isMounted.value) {
     await animateBetween(
@@ -490,20 +539,99 @@ async function selectBentoImage(index: number) {
   }
 }
 
+function getFocusableElements() {
+  if (!dialogRef.value) {
+    return [];
+  }
+
+  return Array.from(
+    dialogRef.value.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
+}
+
+function focusInitialDialogElement() {
+  const focusTarget = closeButtonRef.value ?? getFocusableElements()[0] ?? dialogRef.value;
+  focusTarget?.focus();
+}
+
+function trapFocus(event: KeyboardEvent) {
+  const focusableElements = getFocusableElements();
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    dialogRef.value?.focus();
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const activeElement = document.activeElement as HTMLElement | null;
+
+  if (event.shiftKey && activeElement === firstElement) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (!event.shiftKey && activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+}
+
+function lockBodyScroll() {
+  if (typeof document === 'undefined' || previousBodyOverflow.value !== null) {
+    return;
+  }
+
+  previousBodyOverflow.value = document.body.style.overflow;
+  previousBodyPaddingRight.value = document.body.style.paddingRight;
+  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+  document.body.style.overflow = 'hidden';
+
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+}
+
+function unlockBodyScroll() {
+  if (typeof document === 'undefined' || previousBodyOverflow.value === null) {
+    return;
+  }
+
+  document.body.style.overflow = previousBodyOverflow.value;
+  document.body.style.paddingRight = previousBodyPaddingRight.value ?? '';
+  previousBodyOverflow.value = null;
+  previousBodyPaddingRight.value = null;
+}
+
 function onKeydown(event: KeyboardEvent) {
-  if (!isDialogOpen.value) {
+  if (!dialogIsVisible.value) {
+    return;
+  }
+
+  if (event.key === 'Tab') {
+    trapFocus(event);
     return;
   }
 
   if (event.key === 'Escape') {
+    event.preventDefault();
     closeDialog();
+    return;
   }
 
   if (dialogMode.value === 'single' && event.key === 'ArrowRight') {
+    event.preventDefault();
     goNext();
+    return;
   }
 
   if (dialogMode.value === 'single' && event.key === 'ArrowLeft') {
+    event.preventDefault();
     goPrevious();
   }
 }
@@ -517,21 +645,35 @@ onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', onKeydown);
   }
+
+  unlockBodyScroll();
 });
 
 watch(
   () => props.images,
   () => {
-    if (activeIndex.value > props.images.length - 1) {
-      activeIndex.value = Math.max(0, props.images.length - 1);
+    if (!isIndexControlled.value && internalIndex.value > props.images.length - 1) {
+      internalIndex.value = Math.max(0, props.images.length - 1);
     }
   }
 );
 
-watch(isDialogOpen, async (open) => {
-  if (open) {
-    await nextTick();
+watch(dialogIsVisible, async (open) => {
+  if (typeof document === 'undefined') {
+    return;
   }
+
+  if (open) {
+    lastFocusedElement.value = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    lockBodyScroll();
+    await nextTick();
+    focusInitialDialogElement();
+    return;
+  }
+
+  unlockBodyScroll();
+  lastFocusedElement.value?.focus();
+  lastFocusedElement.value = null;
 });
 </script>
 
@@ -556,11 +698,14 @@ watch(isDialogOpen, async (open) => {
             :style="mainImageFrameStyle"
           >
             <img
-              :src="mainImageEntry.image.src"
+              :src="getPreviewImageSrc(mainImageEntry.image)"
               :alt="mainImageEntry.image.alt"
+              :srcset="mainImageEntry.image.srcset"
+              :sizes="mainImageEntry.image.sizes"
+              :decoding="mainImageEntry.image.decoding"
               class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
               :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
-              loading="lazy"
+              :loading="getPreviewImageLoading(mainImageEntry.image)"
             />
           </div>
         </button>
@@ -569,7 +714,7 @@ watch(isDialogOpen, async (open) => {
       <div class="image-gallery-secondary" :style="[secondaryGridStyle, secondaryWrapperStyle]">
         <div
           v-for="entry in visibleSecondaryEntries"
-          :key="entry.image.src"
+          :key="getImageKey(entry.image, entry.actualIndex)"
           class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
         >
           <button
@@ -585,11 +730,14 @@ watch(isDialogOpen, async (open) => {
               :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
             >
               <img
-                :src="entry.image.src"
+                :src="getPreviewImageSrc(entry.image)"
                 :alt="entry.image.alt"
+                :srcset="entry.image.srcset"
+                :sizes="entry.image.sizes"
+                :decoding="entry.image.decoding"
                 class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
                 :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
-                loading="lazy"
+                :loading="getPreviewImageLoading(entry.image)"
               />
             </div>
           </button>
@@ -609,14 +757,13 @@ watch(isDialogOpen, async (open) => {
             </svg>
           </button>
         </div>
-
       </div>
     </div>
 
     <div v-else class="image-gallery-secondary" :style="plainGridStyle">
       <div
         v-for="entry in visibleSecondaryEntries"
-        :key="entry.image.src"
+        :key="getImageKey(entry.image, entry.actualIndex)"
         class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
       >
         <button
@@ -632,11 +779,14 @@ watch(isDialogOpen, async (open) => {
             :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
           >
             <img
-              :src="entry.image.src"
+              :src="getPreviewImageSrc(entry.image)"
               :alt="entry.image.alt"
+              :srcset="entry.image.srcset"
+              :sizes="entry.image.sizes"
+              :decoding="entry.image.decoding"
               class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
               :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
-              loading="lazy"
+              :loading="getPreviewImageLoading(entry.image)"
             />
           </div>
         </button>
@@ -656,36 +806,47 @@ watch(isDialogOpen, async (open) => {
           </svg>
         </button>
       </div>
-
     </div>
 
     <div
-      v-if="isDialogOpen && activeImage"
+      v-if="dialogIsVisible && activeImage"
+      ref="dialogRef"
       class="fixed inset-0 z-50 bg-[var(--ig-overlay)]"
       role="dialog"
       aria-modal="true"
       :aria-label="`Image dialog. ${counterLabel}`"
+      tabindex="-1"
     >
       <div class="relative z-10 flex h-screen w-screen flex-col overflow-hidden bg-white">
-        <div
-          class="flex items-center gap-4 border-b border-[var(--ig-border)] px-4 py-3 text-[var(--ig-text)] sm:px-6"
-          :class="dialogMode === 'single' ? 'justify-between' : 'justify-end'"
-        >
-          <button
-            v-if="dialogMode === 'single' && props.allowGridView"
-            type="button"
-            aria-label="Toggle image grid"
-            class="inline-flex items-center gap-2 rounded-full bg-[var(--ig-button)] px-3 py-2 text-sm font-medium text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
-            @click="toggleDialogMode"
-          >
-            <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="1.7">
-              <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-              <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-              <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-              <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-            </svg>
-            <span>All images</span>
-          </button>
+        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--ig-border)] px-4 py-3 text-[var(--ig-text)] sm:px-6">
+          <div class="flex min-w-0 items-center gap-3">
+            <button
+              v-if="dialogMode === 'single' && props.allowGridView"
+              type="button"
+              aria-label="Toggle image grid"
+              class="inline-flex items-center gap-2 rounded-full bg-[var(--ig-button)] px-3 py-2 text-sm font-medium text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+              @click="toggleDialogMode"
+            >
+              <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="1.7">
+                <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+                <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+                <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+                <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+              </svg>
+              <span>All images</span>
+            </button>
+
+            <slot
+              v-if="hasDialogToolbarSlot"
+              name="dialog-toolbar"
+              :image="activeImage"
+              :index="currentIndex"
+              :total="totalImages"
+              :mode="dialogMode"
+              :close="closeDialog"
+              :toggleMode="toggleDialogMode"
+            />
+          </div>
 
           <div
             v-if="dialogMode === 'single'"
@@ -693,17 +854,21 @@ watch(isDialogOpen, async (open) => {
           >
             {{ counterLabel }}
           </div>
+          <div v-else />
 
-          <button
-            type="button"
-            class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ig-button)] text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
-            aria-label="Close dialog"
-            @click="closeDialog"
-          >
-            <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current" stroke-width="1.7">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
+          <div class="flex justify-end">
+            <button
+              ref="closeButtonRef"
+              type="button"
+              class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ig-button)] text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+              aria-label="Close dialog"
+              @click="closeDialog"
+            >
+              <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current" stroke-width="1.7">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="relative flex-1 overflow-hidden bg-[var(--ig-panel)]">
@@ -719,7 +884,7 @@ watch(isDialogOpen, async (open) => {
               </svg>
             </button>
 
-            <div class="flex h-full w-full items-center justify-center px-10 py-6 sm:px-20">
+            <div class="flex h-full w-full flex-col items-center justify-center px-10 py-6 sm:px-20">
               <div
                 ref="carouselFrameRef"
                 class="relative overflow-hidden rounded-[var(--ig-radius)]"
@@ -727,12 +892,30 @@ watch(isDialogOpen, async (open) => {
                 :style="{ aspectRatio: getImageAspectRatio(activeImage), width: 'min(100%, 56rem)', maxHeight: 'calc(100vh - 8rem)' }"
               >
                 <img
-                  :key="activeImage.src"
+                  :key="getImageKey(activeImage, currentIndex)"
                   :src="activeImage.src"
                   :alt="activeImage.alt"
+                  :srcset="activeImage.srcset"
+                  :sizes="activeImage.sizes"
+                  :decoding="activeImage.decoding"
+                  :loading="getDialogImageLoading(activeImage)"
                   class="absolute inset-0 block h-full w-full rounded-[var(--ig-radius)]"
                   :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
                 />
+              </div>
+
+              <div
+                v-if="hasDialogCaptionSlot || activeImage.caption"
+                class="mt-4 w-full max-w-3xl text-center text-sm leading-6 text-[var(--ig-muted)]"
+              >
+                <slot
+                  name="dialog-caption"
+                  :image="activeImage"
+                  :index="currentIndex"
+                  :total="totalImages"
+                >
+                  {{ activeImage.caption }}
+                </slot>
               </div>
             </div>
 
@@ -752,14 +935,14 @@ watch(isDialogOpen, async (open) => {
             <div ref="bentoGridRef" class="image-gallery-masonry">
               <button
                 v-for="(image, index) in props.images"
-                :key="`${image.src}-${index}`"
+                :key="getImageKey(image, index)"
                 type="button"
                 data-bento-item="true"
                 :data-bento-index="index"
-                :data-bento-active="index === activeIndex ? 'true' : 'false'"
+                :data-bento-active="index === currentIndex ? 'true' : 'false'"
                 :class="[
                   'group relative block w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
-                  isBentoEntering && index !== activeIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
+                  isBentoEntering && index !== currentIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
                 ]"
                 :style="{ borderRadius: masonryTileRadius }"
                 :aria-label="`Open image ${index + 1} from grid`"
@@ -772,8 +955,12 @@ watch(isDialogOpen, async (open) => {
                   :style="{ aspectRatio: getImageAspectRatio(image), borderRadius: masonryTileRadius }"
                 >
                   <img
-                    :src="image.src"
+                    :src="getPreviewImageSrc(image)"
                     :alt="image.alt"
+                    :srcset="image.srcset"
+                    :sizes="image.sizes"
+                    :decoding="image.decoding"
+                    :loading="getPreviewImageLoading(image)"
                     class="absolute inset-0 block h-full w-full transition duration-300 group-hover:scale-[1.02]"
                     :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
                   />
