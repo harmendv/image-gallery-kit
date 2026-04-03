@@ -1,22 +1,40 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
-import type { GalleryImage } from '@/types';
+import type { GalleryImage, ImageFit, MainImagePosition, MainImageSize } from '@/types';
+
+type DialogMode = 'single' | 'bento';
+type PreviewEntry = {
+  image: GalleryImage;
+  actualIndex: number;
+};
 
 const props = withDefaults(
   defineProps<{
     images: GalleryImage[];
-    previewCount?: number;
-    previewAspectRatio?: number | string;
+    rows?: number;
+    columns?: number;
+    itemAspectRatio?: number | string;
     mainImageIndex?: number | null;
+    mainImagePosition?: MainImagePosition;
+    mainImageSize?: MainImageSize;
+    gap?: string;
+    imageFit?: ImageFit;
+    allowGridView?: boolean;
     height?: string | null;
     width?: string | null;
     imageRadius?: string | null;
   }>(),
   {
-    previewCount: 4,
-    previewAspectRatio: '1 / 1',
+    rows: 2,
+    columns: 2,
+    itemAspectRatio: '4 / 5',
     mainImageIndex: null,
+    mainImagePosition: 'left',
+    mainImageSize: 0.4,
+    gap: '1rem',
+    imageFit: 'cover',
+    allowGridView: true,
     height: null,
     width: '100%',
     imageRadius: null
@@ -28,8 +46,6 @@ const emit = defineEmits<{
   (event: 'close'): void;
   (event: 'change', index: number): void;
 }>();
-
-type DialogMode = 'single' | 'bento';
 
 const isMounted = ref(false);
 const isDialogOpen = ref(false);
@@ -43,92 +59,24 @@ const isBentoEntering = ref(false);
 
 const { animateBetween, animateBentoEntrance } = useSharedImageTransition();
 
-const requestedPreviewCount = computed(() => Math.max(1, Math.min(9, props.previewCount)));
+const rowCount = computed(() => Math.max(1, Math.floor(props.rows)));
+const columnCount = computed(() => Math.max(1, Math.floor(props.columns)));
+const secondaryCapacity = computed(() => rowCount.value * columnCount.value);
 const totalImages = computed(() => props.images.length);
-const requestedMainImage = computed(() => {
-  if (props.mainImageIndex === null || props.mainImageIndex === undefined) {
-    return false;
-  }
-
-  return props.mainImageIndex >= 0 && props.mainImageIndex < props.images.length;
-});
-
-function resolvePreviewCount(rawCount: number, withMainImage: boolean) {
-  const allowed = withMainImage ? [1, 3, 5, 7, 9] : [1, 2, 3, 4, 6, 8, 9];
-
-  for (let index = allowed.length - 1; index >= 0; index -= 1) {
-    if (rawCount >= allowed[index]) {
-      return allowed[index];
-    }
-  }
-
-  return 1;
-}
-
-const safePreviewCount = computed(() => resolvePreviewCount(requestedPreviewCount.value, requestedMainImage.value));
-const hasOverflow = computed(() => totalImages.value > safePreviewCount.value);
-const hasMainImage = computed(() => {
-  if (!requestedMainImage.value) {
-    return false;
-  }
-
-  return safePreviewCount.value > 1;
-});
-
-const previewEntries = computed(() => {
-  if (!hasMainImage.value) {
-    return props.images.slice(0, safePreviewCount.value).map((image, index) => ({
-      image,
-      actualIndex: index,
-      featured: false
-    }));
-  }
-
-  const featuredIndex = props.mainImageIndex as number;
-  const remaining = props.images
-    .map((image, index) => ({ image, index }))
-    .filter((entry) => entry.index !== featuredIndex)
-    .slice(0, safePreviewCount.value - 1);
-
-  return [
-    {
-      image: props.images[featuredIndex],
-      actualIndex: featuredIndex,
-      featured: true
-    },
-    ...remaining.map((entry) => ({
-      image: entry.image,
-      actualIndex: entry.index,
-      featured: false
-    }))
-  ];
-});
-
-const featuredPreviewEntry = computed(() => previewEntries.value.find((entry) => entry.featured) ?? null);
-const featuredPreviewActualIndex = computed(() => featuredPreviewEntry.value?.actualIndex ?? -1);
-const secondaryPreviewEntries = computed(() => previewEntries.value.filter((entry) => !entry.featured));
-const lastPreviewEntry = computed(() => previewEntries.value[previewEntries.value.length - 1] ?? null);
-
-const previewAspectRatioValue = computed(() => {
-  if (typeof props.previewAspectRatio === 'number') {
-    return `${props.previewAspectRatio}`;
-  }
-
-  return props.previewAspectRatio;
-});
-
 const heightValue = computed(() => props.height);
-const galleryStyle = computed(() => ({
-  width: props.width ?? '100%',
-  '--ig-radius': props.imageRadius ?? undefined
-}));
-
-const previewAspectRatioNumber = computed(() => {
-  if (typeof props.previewAspectRatio === 'number') {
-    return props.previewAspectRatio;
+const itemAspectRatioValue = computed(() => {
+  if (typeof props.itemAspectRatio === 'number') {
+    return `${props.itemAspectRatio}`;
   }
 
-  const normalized = props.previewAspectRatio.replace(/\s+/g, '');
+  return props.itemAspectRatio;
+});
+const itemAspectRatioNumber = computed(() => {
+  if (typeof props.itemAspectRatio === 'number') {
+    return props.itemAspectRatio > 0 ? props.itemAspectRatio : 1;
+  }
+
+  const normalized = props.itemAspectRatio.replace(/\s+/g, '');
   if (!normalized.includes('/')) {
     const numeric = Number(normalized);
     return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
@@ -141,56 +89,206 @@ const previewAspectRatioNumber = computed(() => {
 
   return width / height;
 });
-
-const featuredPreviewColumns = computed(() => {
-  if (heightValue.value) {
-    const ratio = previewAspectRatioNumber.value;
-    const rows = mainLayoutRowCount.value;
-    const cols = mainLayoutColumns.value;
-    const gap = '1rem';
-    const tileHeight = `((${heightValue.value}) - (${Math.max(rows - 1, 0)} * ${gap})) / ${rows}`;
-    const sideWidth = `${cols} * (${tileHeight}) * ${ratio} + (${Math.max(cols - 1, 0)} * ${gap})`;
-
-    return `minmax(0, 1fr) minmax(0, calc(${sideWidth}))`;
+const validMainImageIndex = computed(() => {
+  if (props.mainImageIndex === null || props.mainImageIndex === undefined) {
+    return null;
   }
 
-  const ratio = previewAspectRatioNumber.value;
-  const gapRem = 1;
-  const rowCount = Math.max(1, Math.ceil(mainLayoutEntries.value.length / 2));
-  return `minmax(0, calc((100% - (${gapRem}rem * ${(rowCount - 1) * ratio + 1})) / ${rowCount + 2} * ${rowCount} + ${gapRem}rem * ${(rowCount - 1) * ratio})) minmax(0, calc((100% - (${gapRem}rem * ${(rowCount - 1) * ratio + 1})) / ${rowCount + 2} * 2))`;
+  return props.mainImageIndex >= 0 && props.mainImageIndex < props.images.length ? props.mainImageIndex : null;
 });
-
-const mainLayoutEntries = computed(() => secondaryPreviewEntries.value);
-const mainLayoutColumns = computed(() => {
-  if (mainLayoutEntries.value.length <= 2) {
-    return 1;
+const hasMainImage = computed(() => validMainImageIndex.value !== null);
+const mainImageEntry = computed<PreviewEntry | null>(() => {
+  if (validMainImageIndex.value === null) {
+    return null;
   }
 
-  return 2;
+  return {
+    image: props.images[validMainImageIndex.value],
+    actualIndex: validMainImageIndex.value
+  };
 });
-const mainLayoutRowCount = computed(() => Math.max(1, Math.ceil(mainLayoutEntries.value.length / mainLayoutColumns.value)));
-const previewGridColumns = computed(() => {
-  const count = Math.min(previewEntries.value.length, safePreviewCount.value);
+const mainImageActualIndex = computed(() => mainImageEntry.value?.actualIndex ?? -1);
+const secondaryEntries = computed<PreviewEntry[]>(() =>
+  props.images
+    .map((image, index) => ({ image, actualIndex: index }))
+    .filter((entry) => entry.actualIndex !== validMainImageIndex.value)
+);
 
-  if (count === 1) {
-    return 1;
+const visibleSecondaryImageCount = computed(() => secondaryCapacity.value);
+const visibleSecondaryEntries = computed(() => secondaryEntries.value.slice(0, visibleSecondaryImageCount.value));
+const hiddenSecondaryCount = computed(() => Math.max(0, secondaryEntries.value.length - visibleSecondaryEntries.value.length));
+const hasOverflow = computed(() => props.allowGridView && hiddenSecondaryCount.value > 0);
+const overflowAnchorIndex = computed(() => {
+  return visibleSecondaryEntries.value[visibleSecondaryEntries.value.length - 1]?.actualIndex
+    ?? mainImageEntry.value?.actualIndex
+    ?? 0;
+});
+const plainGridItemCount = computed(() => visibleSecondaryEntries.value.length);
+const plainGridRows = computed(() => Math.max(1, Math.ceil(plainGridItemCount.value / columnCount.value)));
+const secondaryGridItemCount = computed(() => visibleSecondaryEntries.value.length);
+const actualSecondaryRows = computed(() => Math.max(1, Math.ceil(secondaryGridItemCount.value / columnCount.value)));
+
+const normalizedMainImageSize = computed(() => {
+  if (typeof props.mainImageSize === 'number') {
+    return Math.min(0.95, Math.max(0.05, props.mainImageSize));
   }
 
-  if (count === 2 || count === 3) {
-    return count;
+  return props.mainImageSize.trim();
+});
+const previewGap = computed(() => props.gap);
+const objectFitValue = computed(() => props.imageFit);
+const galleryStyle = computed(() => ({
+  width: props.width ?? '100%',
+  '--ig-radius': props.imageRadius ?? undefined
+}));
+
+function getSecondaryHeightExpression() {
+  const ratio = itemAspectRatioNumber.value;
+  const columns = columnCount.value;
+  const rows = rowCount.value;
+  const gap = previewGap.value;
+  const cellWidth = `((100% - (${Math.max(columns - 1, 0)} * ${gap})) / ${columns})`;
+  const cellHeight = `(${cellWidth} / ${ratio})`;
+
+  return `calc((${rows} * ${cellHeight}) + (${Math.max(rows - 1, 0)} * ${gap}))`;
+}
+
+const featuredLayoutStyle = computed(() => {
+  if (!hasMainImage.value) {
+    return null;
   }
 
-  if (count === 4 || count === 6 || count === 8) {
-    if (count === 8) {
-      return 4;
+  const gap = previewGap.value;
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  const baseStyle: Record<string, string> = {
+    display: 'grid',
+    gap
+  };
+
+  if (isHorizontal) {
+    let mainTrack = '';
+    let secondaryTrack = '';
+
+    if (typeof normalizedMainImageSize.value === 'number') {
+      const mainFraction = normalizedMainImageSize.value;
+      const secondaryFraction = 1 - mainFraction;
+      mainTrack = `minmax(0, calc((100% - ${gap}) * ${mainFraction}))`;
+      secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
+    } else {
+      mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
+      secondaryTrack = 'minmax(0, 1fr)';
     }
 
-    return 2;
+    baseStyle.gridTemplateColumns =
+      props.mainImagePosition === 'left'
+        ? `${mainTrack} ${secondaryTrack}`
+        : `${secondaryTrack} ${mainTrack}`;
+
+    if (heightValue.value) {
+      baseStyle.height = heightValue.value;
+      baseStyle.alignItems = 'stretch';
+    } else {
+      baseStyle.alignItems = 'start';
+    }
+
+    return baseStyle;
   }
 
-  return 3;
+  let mainTrack = '';
+  let secondaryTrack = '';
+
+  if (typeof normalizedMainImageSize.value === 'number') {
+    if (heightValue.value) {
+      const mainFraction = normalizedMainImageSize.value;
+      const secondaryFraction = 1 - mainFraction;
+      mainTrack = `minmax(0, calc((100% - ${gap}) * ${mainFraction}))`;
+      secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
+      baseStyle.height = heightValue.value;
+    } else {
+      const secondaryHeight = getSecondaryHeightExpression();
+      const mainFactor = normalizedMainImageSize.value / (1 - normalizedMainImageSize.value);
+      mainTrack = `minmax(0, calc(${secondaryHeight} * ${mainFactor}))`;
+      secondaryTrack = 'auto';
+    }
+  } else {
+    mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
+    secondaryTrack = heightValue.value ? 'minmax(0, 1fr)' : 'auto';
+
+    if (heightValue.value) {
+      baseStyle.height = heightValue.value;
+    }
+  }
+
+  baseStyle.gridTemplateRows =
+    props.mainImagePosition === 'top'
+      ? `${mainTrack} ${secondaryTrack}`
+      : `${secondaryTrack} ${mainTrack}`;
+
+  return baseStyle;
 });
-const previewGridRows = computed(() => Math.max(1, Math.ceil(previewEntries.value.length / previewGridColumns.value)));
+
+const secondaryGridStyle = computed(() => ({
+  display: 'grid',
+  gap: previewGap.value,
+  gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
+  gridTemplateRows: heightValue.value ? `repeat(${rowCount.value}, minmax(0, 1fr))` : undefined,
+  height: hasMainImage.value ? '100%' : heightValue.value ?? undefined,
+  alignContent: 'start'
+}));
+
+const plainGridStyle = computed(() => ({
+  display: 'grid',
+  gap: previewGap.value,
+  gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
+  gridTemplateRows: heightValue.value ? `repeat(${plainGridRows.value}, minmax(0, 1fr))` : undefined,
+  height: heightValue.value ?? undefined,
+  alignContent: 'start'
+}));
+
+const mainImageItemStyle = computed(() => {
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  return {
+    minHeight: 0,
+    height: isHorizontal ? '100%' : undefined,
+    gridColumn: isHorizontal ? (props.mainImagePosition === 'right' ? '2' : '1') : '1',
+    gridRow: isHorizontal ? '1' : (props.mainImagePosition === 'bottom' ? '2' : '1')
+  };
+});
+
+const secondaryWrapperStyle = computed(() => {
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+
+  return {
+    gridColumn: isHorizontal ? (props.mainImagePosition === 'right' ? '1' : '2') : '1',
+    gridRow: isHorizontal ? '1' : (props.mainImagePosition === 'bottom' ? '1' : '2')
+  };
+});
+
+const mainImageFrameStyle = computed(() => {
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+
+  if (isHorizontal || heightValue.value) {
+    return {
+      width: '100%',
+      height: '100%',
+      aspectRatio: 'auto'
+    };
+  }
+
+  if (typeof normalizedMainImageSize.value === 'string') {
+    return {
+      width: '100%',
+      height: normalizedMainImageSize.value,
+      aspectRatio: 'auto'
+    };
+  }
+
+  return {
+    width: '100%',
+    height: '100%',
+    aspectRatio: 'auto'
+  };
+});
 
 const activeImage = computed(() => props.images[activeIndex.value] ?? null);
 const counterLabel = computed(() => `${activeIndex.value + 1} of ${totalImages.value}`);
@@ -243,10 +341,11 @@ async function openSingle(index: number) {
 }
 
 async function openBentoFromPreview(index: number) {
-  const fromFrame = previewFrameRefs.value[index] ?? null;
+  const targetIndex = Math.min(index, totalImages.value - 1);
+  const fromFrame = previewFrameRefs.value[targetIndex] ?? null;
   const fromRect = getElementRect(fromFrame);
 
-  activeIndex.value = Math.min(index, totalImages.value - 1);
+  activeIndex.value = Math.max(0, targetIndex);
   isBentoEntering.value = true;
   dialogMode.value = 'bento';
   isDialogOpen.value = true;
@@ -402,73 +501,62 @@ watch(isDialogOpen, async (open) => {
 <template>
   <section class="image-gallery-theme w-full" :style="galleryStyle">
     <div
-      v-if="hasMainImage && featuredPreviewEntry"
-      class="image-gallery-featured grid gap-3 sm:gap-4"
-      :data-fixed-height="heightValue ? 'true' : 'false'"
-      :style="{
-        '--ig-featured-columns': featuredPreviewColumns,
-        '--ig-featured-height': heightValue ?? 'auto',
-        '--ig-preview-aspect-ratio': previewAspectRatioValue
-      }"
+      v-if="hasMainImage && mainImageEntry && featuredLayoutStyle"
+      class="image-gallery-featured"
+      :style="featuredLayoutStyle"
     >
-      <div
-        class="image-gallery-featured-main group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left lg:self-start"
-      >
+      <div class="group relative overflow-hidden rounded-[var(--ig-radius)] bg-white text-left" :style="mainImageItemStyle">
         <button
           type="button"
-          class="image-gallery-featured-trigger relative block w-full focus-visible:outline-none"
-          :aria-label="`Open image ${featuredPreviewActualIndex + 1}`"
-          @click="openSingle(featuredPreviewActualIndex)"
+          class="relative block h-full w-full focus-visible:outline-none"
+          :aria-label="`Open image ${mainImageActualIndex + 1}`"
+          @click="openSingle(mainImageActualIndex)"
         >
           <div
-            :ref="(element) => setPreviewFrameRef(featuredPreviewActualIndex, element as HTMLDivElement | null)"
-            class="image-gallery-featured-frame relative w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+            :ref="(element) => setPreviewFrameRef(mainImageActualIndex, element as HTMLDivElement | null)"
+            class="relative overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+            :style="mainImageFrameStyle"
           >
             <img
-              :src="featuredPreviewEntry.image.src"
-              :alt="featuredPreviewEntry.image.alt"
-              class="absolute inset-0 block h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-              :style="{ width: '100%', height: '100%', objectFit: 'cover' }"
+              :src="mainImageEntry.image.src"
+              :alt="mainImageEntry.image.alt"
+              class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
+              :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
               loading="lazy"
             />
           </div>
         </button>
       </div>
 
-      <div
-        class="image-gallery-featured-side grid items-start gap-3 sm:gap-4"
-        :style="{
-          gridTemplateColumns: `repeat(${mainLayoutColumns}, minmax(0, 1fr))`,
-          gridTemplateRows: heightValue ? `repeat(${mainLayoutRowCount}, minmax(0, 1fr))` : undefined
-        }"
-      >
+      <div class="image-gallery-secondary" :style="[secondaryGridStyle, secondaryWrapperStyle]">
         <div
-          v-for="entry in mainLayoutEntries"
+          v-for="entry in visibleSecondaryEntries"
           :key="entry.image.src"
-          class="image-gallery-featured-item group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
+          class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
         >
           <button
             type="button"
-            class="image-gallery-featured-trigger relative block w-full focus-visible:outline-none"
+            class="relative block h-full w-full focus-visible:outline-none"
             :aria-label="`Open image ${entry.actualIndex + 1}`"
             @click="openSingle(entry.actualIndex)"
           >
             <div
               :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
-              class="image-gallery-featured-frame relative w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+              class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
+              :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
             >
               <img
                 :src="entry.image.src"
                 :alt="entry.image.alt"
-                class="absolute inset-0 block h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                :style="{ width: '100%', height: '100%', objectFit: 'cover' }"
+                class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
+                :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
                 loading="lazy"
               />
             </div>
           </button>
 
           <button
-            v-if="hasOverflow && lastPreviewEntry && entry.actualIndex === lastPreviewEntry.actualIndex"
+            v-if="hasOverflow && entry.actualIndex === visibleSecondaryEntries[visibleSecondaryEntries.length - 1]?.actualIndex"
             type="button"
             class="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-white/88 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
             :aria-label="`Show all ${totalImages} images`"
@@ -482,23 +570,16 @@ watch(isDialogOpen, async (open) => {
             </svg>
           </button>
         </div>
+
       </div>
     </div>
 
-    <div
-      v-else
-      class="grid gap-3 sm:gap-4"
-      :style="{
-        gridTemplateColumns: `repeat(${previewGridColumns}, minmax(0, 1fr))`,
-        gridTemplateRows: heightValue ? `repeat(${previewGridRows}, minmax(0, 1fr))` : undefined,
-        height: heightValue ?? undefined
-      }"
-    >
-        <div
-          v-for="entry in previewEntries"
-          :key="entry.image.src"
-          class="group relative min-h-0 h-full overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
-        >
+    <div v-else class="image-gallery-secondary" :style="plainGridStyle">
+      <div
+        v-for="entry in visibleSecondaryEntries"
+        :key="entry.image.src"
+        class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] bg-white text-left"
+      >
         <button
           type="button"
           class="relative block h-full w-full focus-visible:outline-none"
@@ -508,26 +589,20 @@ watch(isDialogOpen, async (open) => {
           <div
             :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
             class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
-            :style="
-              heightValue
-                ? undefined
-                : {
-                    aspectRatio: previewAspectRatioValue
-                  }
-            "
+            :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
           >
             <img
               :src="entry.image.src"
               :alt="entry.image.alt"
-              class="absolute inset-0 block h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-              :style="{ width: '100%', height: '100%', objectFit: 'cover' }"
+              class="absolute inset-0 block h-full w-full transition duration-500 group-hover:scale-[1.03]"
+              :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
               loading="lazy"
             />
           </div>
         </button>
 
         <button
-          v-if="hasOverflow && lastPreviewEntry && entry.actualIndex === lastPreviewEntry.actualIndex"
+          v-if="hasOverflow && entry.actualIndex === visibleSecondaryEntries[visibleSecondaryEntries.length - 1]?.actualIndex"
           type="button"
           class="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-white/88 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
           :aria-label="`Show all ${totalImages} images`"
@@ -541,6 +616,7 @@ watch(isDialogOpen, async (open) => {
           </svg>
         </button>
       </div>
+
     </div>
 
     <div
@@ -556,7 +632,7 @@ watch(isDialogOpen, async (open) => {
           :class="dialogMode === 'single' ? 'justify-between' : 'justify-end'"
         >
           <button
-            v-if="dialogMode === 'single'"
+            v-if="dialogMode === 'single' && props.allowGridView"
             type="button"
             aria-label="Toggle image grid"
             class="inline-flex items-center gap-2 rounded-full bg-[var(--ig-button)] px-3 py-2 text-sm font-medium text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
@@ -613,8 +689,8 @@ watch(isDialogOpen, async (open) => {
                   :key="activeImage.src"
                   :src="activeImage.src"
                   :alt="activeImage.alt"
-                  class="absolute inset-0 block h-full w-full rounded-[var(--ig-radius)] object-cover"
-                  :style="{ width: '100%', height: '100%', objectFit: 'cover' }"
+                  class="absolute inset-0 block h-full w-full rounded-[var(--ig-radius)]"
+                  :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
                 />
               </div>
             </div>
@@ -633,32 +709,32 @@ watch(isDialogOpen, async (open) => {
 
           <div v-else class="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
             <div ref="bentoGridRef" class="image-gallery-masonry">
-            <button
-              v-for="(image, index) in props.images"
-              :key="`${image.src}-${index}`"
-              type="button"
-              data-bento-item="true"
-              :data-bento-active="index === activeIndex ? 'true' : 'false'"
-              :class="[
-                'group relative block w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
-                isBentoEntering && index !== activeIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
-              ]"
-              :aria-label="`Open image ${index + 1} from grid`"
-              @click="selectBentoImage(index)"
-            >
-              <div
-                :ref="(element) => setBentoFrameRef(index, element as HTMLDivElement | null)"
-                class="relative w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)]"
-                :style="{ aspectRatio: getImageAspectRatio(image) }"
+              <button
+                v-for="(image, index) in props.images"
+                :key="`${image.src}-${index}`"
+                type="button"
+                data-bento-item="true"
+                :data-bento-active="index === activeIndex ? 'true' : 'false'"
+                :class="[
+                  'group relative block w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
+                  isBentoEntering && index !== activeIndex ? 'opacity-0 translate-y-5 scale-[0.98]' : ''
+                ]"
+                :aria-label="`Open image ${index + 1} from grid`"
+                @click="selectBentoImage(index)"
               >
-                <img
-                  :src="image.src"
-                  :alt="image.alt"
-                  class="absolute inset-0 block h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-                  :style="{ width: '100%', height: '100%', objectFit: 'cover' }"
-                />
-              </div>
-            </button>
+                <div
+                  :ref="(element) => setBentoFrameRef(index, element as HTMLDivElement | null)"
+                  class="relative w-full overflow-hidden rounded-[calc(var(--ig-radius)-0.4rem)]"
+                  :style="{ aspectRatio: getImageAspectRatio(image) }"
+                >
+                  <img
+                    :src="image.src"
+                    :alt="image.alt"
+                    class="absolute inset-0 block h-full w-full transition duration-300 group-hover:scale-[1.02]"
+                    :style="{ width: '100%', height: '100%', objectFit: objectFitValue }"
+                  />
+                </div>
+              </button>
             </div>
           </div>
         </div>

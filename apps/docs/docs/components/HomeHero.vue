@@ -15,15 +15,26 @@
       <div class="home-hero-media home-hero-media-mobile vp-raw">
         <div class="home-hero-mobile-gallery-shell">
           <GalleryShowcase
-            :preview-count="5"
+            :rows="2"
+            :columns="2"
             :main-image-index="4"
+            main-image-position="top"
+            main-image-size="12rem"
           />
         </div>
       </div>
     </div>
 
     <div class="home-hero-media home-hero-media-desktop vp-raw">
-      <GalleryShowcase :preview-count="7" :main-image-index="3" height="28rem" preview-aspect-ratio="1" />
+      <GalleryShowcase
+        :rows="2"
+        :columns="2"
+        :main-image-index="4"
+        main-image-position="left"
+        :main-image-size="0.42"
+        height="28rem"
+        item-aspect-ratio="1"
+      />
     </div>
   </section>
 </template>

@@ -2,4 +2,5 @@
   :images="images"
   :rows="2"
   :columns="3"
+  item-aspect-ratio="16 / 9"
 />

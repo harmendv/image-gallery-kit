@@ -5,6 +5,4 @@
   :main-image-index="4"
   main-image-position="bottom"
   main-image-size="12rem"
-  item-aspect-ratio="1 / 1"
-  height="22rem"
 />

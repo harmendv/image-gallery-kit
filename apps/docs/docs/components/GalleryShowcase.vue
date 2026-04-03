@@ -7,34 +7,57 @@ import { demoImages } from './imageFixtures';
 const props = withDefaults(
   defineProps<{
     images?: GalleryImage[];
-    previewCount?: number;
-    previewAspectRatio?: number | string;
+    imageCount?: number | null;
+    rows?: number;
+    columns?: number;
+    itemAspectRatio?: number | string;
     mainImageIndex?: number | null;
+    mainImagePosition?: 'top' | 'right' | 'bottom' | 'left';
+    mainImageSize?: number | string;
+    gap?: string;
+    imageFit?: 'cover' | 'contain';
+    allowGridView?: boolean;
     height?: string | null;
     width?: string | null;
     imageRadius?: string | null;
   }>(),
   {
     images: () => demoImages,
-    previewCount: 4,
-    previewAspectRatio: '1 / 1',
+    imageCount: 9,
+    rows: 2,
+    columns: 2,
+    itemAspectRatio: '4 / 5',
     mainImageIndex: null,
+    mainImagePosition: 'left',
+    mainImageSize: 0.4,
+    gap: '1rem',
+    imageFit: 'cover',
+    allowGridView: true,
     height: '26rem',
     width: '100%',
     imageRadius: '1.4rem'
   }
 );
 
-const visibleImages = computed(() => props.images.slice(0, 9));
+const visibleImages = computed(() => {
+  const maxCount = props.imageCount === null ? 9 : Math.max(1, Math.floor(props.imageCount));
+  return props.images.slice(0, maxCount);
+});
 </script>
 
 <template>
   <div class="gallery-shell vp-raw">
     <ImageGallery
       :images="visibleImages"
-      :preview-count="previewCount"
-      :preview-aspect-ratio="previewAspectRatio"
+      :rows="rows"
+      :columns="columns"
+      :item-aspect-ratio="itemAspectRatio"
       :main-image-index="mainImageIndex"
+      :main-image-position="mainImagePosition"
+      :main-image-size="mainImageSize"
+      :gap="gap"
+      :image-fit="imageFit"
+      :allow-grid-view="allowGridView"
       :height="height"
       :width="width"
       :image-radius="imageRadius"

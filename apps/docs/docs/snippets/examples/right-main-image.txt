@@ -1,0 +1,9 @@
+<ImageGallery
+  :images="images"
+  :rows="2"
+  :columns="2"
+  :main-image-index="2"
+  main-image-position="right"
+  :main-image-size="0.42"
+  height="24rem"
+/>
