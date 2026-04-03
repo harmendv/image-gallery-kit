@@ -17,7 +17,7 @@
           <GalleryShowcase
             :rows="2"
             :columns="2"
-            :main-image-index="4"
+            :main-image-index="3"
             main-image-position="top"
             main-image-size="12rem"
           />
@@ -29,7 +29,7 @@
       <GalleryShowcase
         :rows="2"
         :columns="2"
-        :main-image-index="4"
+        :main-image-index="3"
         main-image-position="left"
         :main-image-size="0.42"
         height="28rem"
