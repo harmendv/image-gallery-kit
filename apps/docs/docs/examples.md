@@ -81,13 +81,3 @@ When `height` is set, rows divide the preview height evenly and the layout becom
 </div>
 
 <<< ./snippets/examples/fixed-height-grid.txt{vue}
-
-## Layout Styling Controls
-
-Use gap, width, height, radius, and image fit to match the surrounding UI.
-
-<div class="vp-raw">
-  <GalleryShowcase :rows="2" :columns="2" item-aspect-ratio="3 / 4" height="18rem" width="92%" image-radius="2rem" gap="1.25rem" image-fit="contain" />
-</div>
-
-<<< ./snippets/examples/styling-props.txt{vue}
