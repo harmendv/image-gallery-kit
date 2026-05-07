@@ -42,12 +42,12 @@ Swap the hero to the opposite side without changing the supporting grid.
 
 <<< ./snippets/examples/right-main-image.txt{vue}
 
-## Top Banner Image
+## Top Banner Image (Fixed Aspect Ratio)
 
-When the hero sits above the grid, it always spans the grid width while `mainImageSize` controls its height.
+When the hero sits above the grid, set `mainImageAspectRatio` and unset `mainImageSize` to lock a fixed ratio.
 
 <div class="vp-raw">
-  <GalleryShowcase :rows="2" :columns="3" :main-image-index="1" main-image-position="top" main-image-size="14rem" />
+  <GalleryShowcase :rows="2" :columns="3" :main-image-index="1" main-image-position="top" :main-image-size="null" :height="null" main-image-aspect-ratio="1 / 1" />
 </div>
 
 <<< ./snippets/examples/top-main-image.txt{vue}
@@ -67,7 +67,7 @@ Bottom-docked heroes use the same rule and work well for denser previews.
 Use a wide item ratio when the supporting grid should feel more cinematic than card-like.
 
 <div class="vp-raw">
-  <GalleryShowcase :rows="2" :columns="3" item-aspect-ratio="16 / 9" :height="null" />
+  <GalleryShowcase :rows="2" :columns="3" image-aspect-ratio="16 / 9" :height="null" />
 </div>
 
 <<< ./snippets/examples/wide-preview-tiles.txt{vue}
@@ -77,7 +77,7 @@ Use a wide item ratio when the supporting grid should feel more cinematic than c
 When `height` is set, rows divide the preview height evenly and the layout becomes more poster-like.
 
 <div class="vp-raw">
-  <GalleryShowcase :rows="2" :columns="3" height="22rem" item-aspect-ratio="1 / 1" />
+  <GalleryShowcase :rows="2" :columns="3" height="22rem" image-aspect-ratio="1 / 1" />
 </div>
 
 <<< ./snippets/examples/fixed-height-grid.txt{vue}

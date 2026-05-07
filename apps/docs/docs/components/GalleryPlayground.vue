@@ -14,7 +14,9 @@ type PlaygroundState = {
   imageCount: number;
   rows: number;
   columns: number;
-  itemAspectRatio: string;
+  imageAspectRatio: string;
+  useMainImageAspectRatio: boolean;
+  mainImageAspectRatio: string;
   hasMainImage: boolean;
   mainImageIndex: number;
   mainImagePosition: MainImagePosition;
@@ -36,7 +38,9 @@ const defaults: PlaygroundState = {
   imageCount: 12,
   rows: 2,
   columns: 3,
-  itemAspectRatio: '4 / 5',
+  imageAspectRatio: '4 / 5',
+  useMainImageAspectRatio: false,
+  mainImageAspectRatio: '4 / 5',
   hasMainImage: true,
   mainImageIndex: 0,
   mainImagePosition: 'left',
@@ -79,7 +83,8 @@ const galleryProps = computed(() => ({
   images: visibleImages.value,
   rows: Math.max(1, Math.floor(state.rows || 1)),
   columns: Math.max(1, Math.floor(state.columns || 1)),
-  itemAspectRatio: state.itemAspectRatio.trim() || '4 / 5',
+  imageAspectRatio: state.imageAspectRatio.trim() || '4 / 5',
+  mainImageAspectRatio: state.useMainImageAspectRatio ? (state.mainImageAspectRatio.trim() || '4 / 5') : null,
   mainImageIndex: state.hasMainImage ? state.mainImageIndex : null,
   mainImagePosition: state.mainImagePosition,
   mainImageSize: state.mainImageSizeMode === 'fraction'
@@ -96,10 +101,14 @@ const galleryProps = computed(() => ({
 const galleryCode = computed(() => {
   const lines = ['<ImageGallery', `  :images="images.slice(0, ${visibleImages.value.length})"`];
 
+  lines.push('');
+  lines.push('  <!-- Layout -->');
   lines.push(`  :rows="${galleryProps.value.rows}"`);
   lines.push(`  :columns="${galleryProps.value.columns}"`);
-  lines.push(`  item-aspect-ratio="${galleryProps.value.itemAspectRatio}"`);
+  lines.push(`  image-aspect-ratio="${galleryProps.value.imageAspectRatio}"`);
 
+  lines.push('');
+  lines.push('  <!-- Main image -->');
   if (galleryProps.value.mainImageIndex === null) {
     lines.push('  :main-image-index="null"');
   } else {
@@ -107,6 +116,11 @@ const galleryCode = computed(() => {
   }
 
   lines.push(`  main-image-position="${galleryProps.value.mainImagePosition}"`);
+  if (galleryProps.value.mainImageAspectRatio === null) {
+    lines.push('  :main-image-aspect-ratio="null"');
+  } else {
+    lines.push(`  main-image-aspect-ratio="${galleryProps.value.mainImageAspectRatio}"`);
+  }
 
   if (typeof galleryProps.value.mainImageSize === 'number') {
     lines.push(`  :main-image-size="${galleryProps.value.mainImageSize}"`);
@@ -114,6 +128,8 @@ const galleryCode = computed(() => {
     lines.push(`  main-image-size="${galleryProps.value.mainImageSize}"`);
   }
 
+  lines.push('');
+  lines.push('  <!-- Display -->');
   lines.push(`  gap="${galleryProps.value.gap}"`);
   lines.push(`  image-fit="${galleryProps.value.imageFit}"`);
   lines.push(`  :allow-grid-view="${galleryProps.value.allowGridView}"`);
@@ -212,10 +228,10 @@ watch(
 
           <div class="playground-field">
             <div class="playground-label-row">
-              <Label for="itemAspectRatio">itemAspectRatio</Label>
+              <Label for="imageAspectRatio">imageAspectRatio</Label>
               <FieldHint text="Accepts a ratio string like 16 / 9 or a numeric value like 1.25." />
             </div>
-            <Input id="itemAspectRatio" v-model="state.itemAspectRatio" type="text" placeholder="4 / 5" />
+            <Input id="imageAspectRatio" v-model="state.imageAspectRatio" type="text" placeholder="4 / 5" />
           </div>
 
           <div class="playground-field">
@@ -278,6 +294,26 @@ watch(
               v-model="state.mainImageSizeCss"
               type="text"
               placeholder="18rem"
+            />
+          </div>
+
+          <div class="playground-field">
+            <div class="playground-toggle-row">
+              <div class="playground-label-row">
+                <Label for="useMainImageAspectRatio">mainImageAspectRatio</Label>
+                <FieldHint text="Optional ratio for the featured image in top and bottom layouts when height is intrinsic. When set, it takes precedence over numeric mainImageSize." />
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="playground-switch-label">{{ state.useMainImageAspectRatio ? 'Custom' : 'null' }}</span>
+                <Switch id="useMainImageAspectRatio" v-model="state.useMainImageAspectRatio" />
+              </div>
+            </div>
+            <Input
+              id="mainImageAspectRatio"
+              v-model="state.mainImageAspectRatio"
+              type="text"
+              placeholder="4 / 5"
+              :disabled="!state.useMainImageAspectRatio"
             />
           </div>
 

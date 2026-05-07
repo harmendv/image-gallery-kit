@@ -249,6 +249,44 @@ describe('ImageGallery', () => {
     expect(mainFrame.attributes('style')).toContain('height: calc(');
   });
 
+  it('uses mainImageAspectRatio for intrinsic top and bottom featured layouts', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 3,
+        columns: 3,
+        mainImageIndex: 0,
+        mainImagePosition: 'top',
+        mainImageSize: 0.4,
+        mainImageAspectRatio: '16 / 9'
+      }
+    });
+
+    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+    expect(mainFrame.attributes('style')).toContain('aspect-ratio: 16 / 9');
+    expect(mainFrame.attributes('style')).toContain('height: auto');
+  });
+
+  it('prioritizes mainImageAspectRatio over numeric mainImageSize in intrinsic top and bottom layouts', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 3,
+        columns: 3,
+        mainImageIndex: 0,
+        mainImagePosition: 'top',
+        mainImageSize: 0.4,
+        mainImageAspectRatio: '3 / 2'
+      }
+    });
+
+    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
+    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+    expect(mainItem?.getAttribute('style')).not.toContain('height: calc(');
+    expect(mainFrame.attributes('style')).toContain('aspect-ratio: 3 / 2');
+    expect(mainFrame.attributes('style')).toContain('height: auto');
+  });
+
   it('falls back to a plain grid when mainImageIndex is invalid', () => {
     const wrapper = mount(ImageGallery, {
       props: {
@@ -319,7 +357,7 @@ describe('ImageGallery', () => {
           images,
           rows: 1,
           columns: 3,
-          itemAspectRatio: '4 / 5'
+          imageAspectRatio: '4 / 5'
         })
     });
 

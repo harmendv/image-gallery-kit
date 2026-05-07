@@ -26,7 +26,7 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 
 - `images`: array of `{ src, alt, id?, thumbnailSrc?, srcset?, sizes?, caption?, width?, height?, loading?, decoding? }`
 - `rows` and `columns`: the maximum size of the secondary preview grid
-- `itemAspectRatio`: the visible tile ratio in the preview layout
+- `imageAspectRatio`: the visible tile ratio in the preview layout
 - `mainImageIndex`, `mainImagePosition`, `mainImageSize`: turn one image into the lead tile and dock it around the grid
 - `open` and `index`: optional controlled props for `v-model:open` and `v-model:index`
 - `allowGridView`: enable or disable the all-images grid entrypoint and dialog toggle

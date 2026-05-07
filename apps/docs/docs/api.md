@@ -43,17 +43,35 @@ type ImageFit = 'cover' | 'contain'
 
 ## Props
 
+### Data and Control
+
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `images` | `GalleryImage[]` | required | Source data for preview, dialog, and bento modes. |
 | `open` | `boolean \| null` | `null` | Controlled dialog state for `v-model:open`. Leave unset for internal state. |
 | `index` | `number \| null` | `null` | Controlled active image index for `v-model:index`. Leave unset for internal state. |
+
+### Grid Layout
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
 | `rows` | `number` | `2` | Maximum number of rows in the secondary preview grid. |
 | `columns` | `number` | `2` | Maximum number of columns in the secondary preview grid. |
-| `itemAspectRatio` | `number \| string` | `'4 / 5'` | Visible tile aspect ratio when the preview height is intrinsic. |
+| `imageAspectRatio` | `number \| string` | `'4 / 5'` | Visible tile aspect ratio when the preview height is intrinsic. |
+
+### Main Image
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
 | `mainImageIndex` | `number \| null` | `null` | Selects the featured image. Invalid values fall back to a plain grid. |
 | `mainImagePosition` | `MainImagePosition` | `'left'` | Docks the featured image to one side of the secondary grid. |
 | `mainImageSize` | `MainImageSize` | `0.4` | Controls the main image width on `left/right` and height on `top/bottom`. |
+| `mainImageAspectRatio` | `number \| string \| null` | `null` | Optional featured-image ratio for intrinsic `top/bottom` layouts. |
+
+### Styling and Behavior
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
 | `gap` | `string` | `'1rem'` | Spacing between preview tiles. |
 | `imageFit` | `ImageFit` | `'cover'` | Object-fit mode for preview tiles and the dialog image. |
 | `allowGridView` | `boolean` | `true` | Enables the all-images grid entrypoint and the dialog grid toggle. |
@@ -72,6 +90,8 @@ type ImageFit = 'cover' | 'contain'
 
 - `left` and `right`: the main image always matches the full height of the secondary grid, and `mainImageSize` controls its width.
 - `top` and `bottom`: the main image always matches the full width of the secondary grid, and `mainImageSize` controls its height.
+- `mainImageAspectRatio`: when set and `height` is intrinsic, `top/bottom` layouts render the featured image using this ratio.
+- Precedence rule: in intrinsic `top/bottom` layouts, `mainImageAspectRatio` takes precedence over numeric `mainImageSize`.
 - If `mainImageSize` is a `number`, it is treated as a layout fraction.
 - If `mainImageSize` is a `string`, it is used as a raw CSS size such as `18rem`, `35%`, or `min(28rem, 40vw)`.
 

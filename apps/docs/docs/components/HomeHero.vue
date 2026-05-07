@@ -33,7 +33,7 @@
         main-image-position="left"
         :main-image-size="0.42"
         height="28rem"
-        item-aspect-ratio="1"
+        image-aspect-ratio="1"
       />
     </div>
   </section>

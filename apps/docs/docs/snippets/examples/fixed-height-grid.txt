@@ -3,5 +3,5 @@
   :rows="2"
   :columns="3"
   height="22rem"
-  item-aspect-ratio="1 / 1"
+  image-aspect-ratio="1 / 1"
 />

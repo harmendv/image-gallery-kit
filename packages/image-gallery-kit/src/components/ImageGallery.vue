@@ -16,10 +16,11 @@ const props = withDefaults(
     index?: number | null;
     rows?: number;
     columns?: number;
-    itemAspectRatio?: number | string;
+    imageAspectRatio?: number | string;
+    mainImageAspectRatio?: number | string | null;
     mainImageIndex?: number | null;
     mainImagePosition?: MainImagePosition;
-    mainImageSize?: MainImageSize;
+    mainImageSize?: MainImageSize | null;
     gap?: string;
     imageFit?: ImageFit;
     allowGridView?: boolean;
@@ -32,7 +33,8 @@ const props = withDefaults(
     index: null,
     rows: 2,
     columns: 2,
-    itemAspectRatio: '4 / 5',
+    imageAspectRatio: '4 / 5',
+    mainImageAspectRatio: null,
     mainImageIndex: null,
     mainImagePosition: 'left',
     mainImageSize: 0.4,
@@ -78,19 +80,19 @@ const columnCount = computed(() => Math.max(1, Math.floor(props.columns)));
 const secondaryCapacity = computed(() => rowCount.value * columnCount.value);
 const totalImages = computed(() => props.images.length);
 const heightValue = computed(() => props.height);
-const itemAspectRatioValue = computed(() => {
-  if (typeof props.itemAspectRatio === 'number') {
-    return `${props.itemAspectRatio}`;
+const imageAspectRatioValue = computed(() => {
+  if (typeof props.imageAspectRatio === 'number') {
+    return `${props.imageAspectRatio}`;
   }
 
-  return props.itemAspectRatio;
+  return props.imageAspectRatio;
 });
-const itemAspectRatioNumber = computed(() => {
-  if (typeof props.itemAspectRatio === 'number') {
-    return props.itemAspectRatio > 0 ? props.itemAspectRatio : 1;
+const imageAspectRatioNumber = computed(() => {
+  if (typeof props.imageAspectRatio === 'number') {
+    return props.imageAspectRatio > 0 ? props.imageAspectRatio : 1;
   }
 
-  const normalized = props.itemAspectRatio.replace(/\s+/g, '');
+  const normalized = props.imageAspectRatio.replace(/\s+/g, '');
   if (!normalized.includes('/')) {
     const numeric = Number(normalized);
     return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
@@ -102,6 +104,22 @@ const itemAspectRatioNumber = computed(() => {
   }
 
   return width / height;
+});
+const mainImageAspectRatioValue = computed(() => {
+  if (props.mainImageAspectRatio === null || props.mainImageAspectRatio === undefined) {
+    return null;
+  }
+
+  if (typeof props.mainImageAspectRatio === 'number') {
+    return props.mainImageAspectRatio > 0 ? `${props.mainImageAspectRatio}` : null;
+  }
+
+  const value = props.mainImageAspectRatio.trim();
+  return value.length ? value : null;
+});
+const useCustomMainImageAspectRatio = computed(() => {
+  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  return !isHorizontal && !heightValue.value && !!mainImageAspectRatioValue.value;
 });
 const validMainImageIndex = computed(() => {
   if (props.mainImageIndex === null || props.mainImageIndex === undefined) {
@@ -134,6 +152,10 @@ const plainGridItemCount = computed(() => visibleSecondaryEntries.value.length);
 const plainGridRows = computed(() => Math.max(1, Math.ceil(plainGridItemCount.value / columnCount.value)));
 
 const normalizedMainImageSize = computed(() => {
+  if (props.mainImageSize === null || props.mainImageSize === undefined) {
+    return null;
+  }
+
   if (typeof props.mainImageSize === 'number') {
     return Math.min(0.95, Math.max(0.05, props.mainImageSize));
   }
@@ -172,7 +194,7 @@ const hasDialogToolbarSlot = computed(() => Boolean(slots['dialog-toolbar']));
 const hasDialogCaptionSlot = computed(() => Boolean(slots['dialog-caption']));
 
 function getSecondaryHeightTerm() {
-  const ratio = itemAspectRatioNumber.value;
+  const ratio = imageAspectRatioNumber.value;
   const columns = columnCount.value;
   const rows = rowCount.value;
   const gap = previewGap.value;
@@ -215,8 +237,11 @@ const featuredLayoutStyle = computed(() => {
       const secondaryFraction = 1 - mainFraction;
       mainTrack = `minmax(0, calc((100% - ${gap}) * ${mainFraction}))`;
       secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
-    } else {
+    } else if (typeof normalizedMainImageSize.value === 'string') {
       mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
+      secondaryTrack = 'minmax(0, 1fr)';
+    } else {
+      mainTrack = 'minmax(0, auto)';
       secondaryTrack = 'minmax(0, 1fr)';
     }
 
@@ -237,8 +262,12 @@ const featuredLayoutStyle = computed(() => {
 
   let mainTrack = '';
   let secondaryTrack = '';
+  const shouldUseCustomMainAspectRatio = useCustomMainImageAspectRatio.value;
 
-  if (typeof normalizedMainImageSize.value === 'number') {
+  if (shouldUseCustomMainAspectRatio) {
+    mainTrack = 'auto';
+    secondaryTrack = 'auto';
+  } else if (typeof normalizedMainImageSize.value === 'number') {
     if (heightValue.value) {
       const mainFraction = normalizedMainImageSize.value;
       const secondaryFraction = 1 - mainFraction;
@@ -249,13 +278,16 @@ const featuredLayoutStyle = computed(() => {
       mainTrack = `minmax(0, ${getMainImageHeightExpression()})`;
       secondaryTrack = 'auto';
     }
-  } else {
+  } else if (typeof normalizedMainImageSize.value === 'string') {
     mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
     secondaryTrack = heightValue.value ? 'minmax(0, 1fr)' : 'auto';
 
     if (heightValue.value) {
       baseStyle.height = heightValue.value;
     }
+  } else {
+    mainTrack = 'auto';
+    secondaryTrack = 'auto';
   }
 
   baseStyle.gridTemplateRows =
@@ -290,8 +322,9 @@ const plainGridStyle = computed(() => ({
 
 const mainImageItemStyle = computed(() => {
   const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  const hasCustomMainAspectRatio = useCustomMainImageAspectRatio.value;
   const intrinsicHeight = !isHorizontal && !heightValue.value && typeof normalizedMainImageSize.value === 'number'
-    ? getMainImageHeightExpression() ?? undefined
+    ? (hasCustomMainAspectRatio ? undefined : getMainImageHeightExpression() ?? undefined)
     : undefined;
 
   return {
@@ -313,6 +346,8 @@ const secondaryWrapperStyle = computed(() => {
 
 const mainImageFrameStyle = computed(() => {
   const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
+  const hasCustomMainAspectRatio = useCustomMainImageAspectRatio.value;
+  const shouldUseSizeForHeight = !hasCustomMainAspectRatio;
 
   if (isHorizontal || heightValue.value) {
     return {
@@ -323,6 +358,14 @@ const mainImageFrameStyle = computed(() => {
   }
 
   if (typeof normalizedMainImageSize.value === 'string') {
+    if (hasCustomMainAspectRatio) {
+      return {
+        width: '100%',
+        height: 'auto',
+        aspectRatio: mainImageAspectRatioValue.value
+      };
+    }
+
     return {
       width: '100%',
       height: normalizedMainImageSize.value,
@@ -330,7 +373,15 @@ const mainImageFrameStyle = computed(() => {
     };
   }
 
-  const mainImageHeight = getMainImageHeightExpression();
+  if (hasCustomMainAspectRatio) {
+    return {
+      width: '100%',
+      height: 'auto',
+      aspectRatio: mainImageAspectRatioValue.value
+    };
+  }
+
+  const mainImageHeight = shouldUseSizeForHeight ? getMainImageHeightExpression() : null;
 
   return {
     width: '100%',
@@ -727,7 +778,7 @@ watch(dialogIsVisible, async (open) => {
               :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
               class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
               :data-transition-radius="transitionRadius"
-              :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
+              :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
             >
               <img
                 :src="getPreviewImageSrc(entry.image)"
@@ -776,7 +827,7 @@ watch(dialogIsVisible, async (open) => {
             :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
             class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-slate-100"
             :data-transition-radius="transitionRadius"
-            :style="heightValue ? undefined : { aspectRatio: itemAspectRatioValue }"
+            :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
           >
             <img
               :src="getPreviewImageSrc(entry.image)"

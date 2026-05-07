@@ -10,7 +10,8 @@ const props = withDefaults(
     imageCount?: number | null;
     rows?: number;
     columns?: number;
-    itemAspectRatio?: number | string;
+    imageAspectRatio?: number | string;
+    mainImageAspectRatio?: number | string | null;
     mainImageIndex?: number | null;
     mainImagePosition?: 'top' | 'right' | 'bottom' | 'left';
     mainImageSize?: number | string;
@@ -26,7 +27,8 @@ const props = withDefaults(
     imageCount: 9,
     rows: 2,
     columns: 2,
-    itemAspectRatio: '4 / 5',
+    imageAspectRatio: '4 / 5',
+    mainImageAspectRatio: null,
     mainImageIndex: null,
     mainImagePosition: 'left',
     mainImageSize: 0.4,
@@ -51,7 +53,8 @@ const visibleImages = computed(() => {
       :images="visibleImages"
       :rows="rows"
       :columns="columns"
-      :item-aspect-ratio="itemAspectRatio"
+      :image-aspect-ratio="imageAspectRatio"
+      :main-image-aspect-ratio="mainImageAspectRatio"
       :main-image-index="mainImageIndex"
       :main-image-position="mainImagePosition"
       :main-image-size="mainImageSize"

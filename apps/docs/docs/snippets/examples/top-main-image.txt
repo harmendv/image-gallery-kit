@@ -4,5 +4,7 @@
   :columns="3"
   :main-image-index="1"
   main-image-position="top"
-  main-image-size="14rem"
+  :main-image-size="null"
+  :height="null"
+  main-image-aspect-ratio="1 / 1"
 />

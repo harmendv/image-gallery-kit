@@ -19,5 +19,5 @@ const images = [
 </script>
 
 <template>
-  <ImageGallery :images="images" :rows="1" :columns="2" item-aspect-ratio="4 / 5" />
+  <ImageGallery :images="images" :rows="1" :columns="2" image-aspect-ratio="4 / 5" />
 </template>
