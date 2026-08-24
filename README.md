@@ -1,24 +1,46 @@
 <div align="center">
 
-# image-gallery-kit
+<img src="assets/logo.svg" alt="" width="88" height="88">
 
-SSR-safe Vue 3 image gallery with an animated preview grid, a fullscreen dialog carousel, and an all-images grid view.
+<h1>image-gallery-kit</h1>
 
-[![npm](https://img.shields.io/npm/v/image-gallery-kit.svg)](https://www.npmjs.com/package/image-gallery-kit)
-[![license](https://img.shields.io/npm/l/image-gallery-kit.svg)](LICENSE)
+<p><strong>SSR-safe Vue 3 image gallery</strong> — an animated preview grid, a fullscreen dialog carousel,<br>and an all-images grid, with tiles that fly between views.</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Vue-3.5%2B-42b883?logo=vue.js&logoColor=white&style=flat-square" alt="Vue 3.5+">
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white&style=flat-square" alt="TypeScript">
+  <img src="https://img.shields.io/badge/SSR-safe-0ea5e9?style=flat-square" alt="SSR safe">
+  <img src="https://img.shields.io/badge/gsap-optional%20peer-88ce02?style=flat-square" alt="gsap optional peer">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6?style=flat-square" alt="MIT license"></a>
+</p>
+<!-- Once published, add:
+  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/v/image-gallery-kit?style=flat-square" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/dm/image-gallery-kit?style=flat-square" alt="downloads"></a>
+-->
+
+<p>
+  <a href="apps/docs/docs/guide/getting-started.md">Getting started</a> ·
+  <a href="apps/docs/docs/examples.md">Examples</a> ·
+  <a href="apps/docs/docs/theming.md">Theming</a> ·
+  <a href="apps/docs/docs/api.md">API</a>
+</p>
 
 </div>
 
-## Features
+---
 
-- **Preview grid** — configurable `rows`/`columns` with an optional featured image docked to any side
-- **Dialog carousel** — keyboard navigation, focus trap, focus restore, and body-scroll locking
-- **All-images grid** — reached from an overflow trigger, with shared-element transitions between views
-- **SSR-safe** — no browser globals are touched before mount
-- **Themeable** — every surface is a CSS custom property, with a dark palette and reduced-motion support
-- **Fully labelled** — all visible strings and `aria-label`s are overridable, with no i18n dependency
-- **No global CSS reset** — the stylesheet only styles the gallery
-- **Optional animation** — `gsap` is an optional peer; without it every view still works, just without transitions
+## Why this one
+
+|  | |
+| --- | --- |
+| **One component, every layout** | Featured, plain grid, or bento — same images, different props. |
+| **A dialog that's actually finished** | Keyboard navigation, focus trap, focus restore, and body-scroll locking. |
+| **Tiles fly into the dialog** | The real tile animates into place instead of cross-fading a copy. |
+| **Renders on the server** | No browser globals touched before mount, no hydration mismatch, no empty-grid flash. |
+| **Themed with tokens** | Every surface reads a CSS custom property. Reskin it without touching a class. |
+| **Every string is yours** | All visible text and `aria-label`s come from one object. No i18n dependency. |
+| **Stays in its lane** | No global CSS reset — the stylesheet only styles the gallery. |
+| **Degrades cleanly** | `gsap` is an optional peer; without it every view works, just without transitions. |
 
 ## Install
 
@@ -26,13 +48,13 @@ SSR-safe Vue 3 image gallery with an animated preview grid, a fullscreen dialog 
 npm install image-gallery-kit
 ```
 
-`vue` (`^3.5`) is a required peer dependency. `gsap` (`^3`) is optional and enables the shared-element transitions:
+`vue` (`^3.5`) is a required peer. `gsap` (`^3`) is optional and enables the shared-element transitions:
 
 ```bash
 npm install gsap
 ```
 
-## Usage
+## Quick start
 
 ```vue
 <script setup lang="ts">
@@ -50,7 +72,8 @@ const images: GalleryImage[] = [
 </template>
 ```
 
-Or register it globally as a plugin:
+<details>
+<summary>Register it globally instead</summary>
 
 ```ts
 import ImageGalleryKit from 'image-gallery-kit'
@@ -59,15 +82,39 @@ import 'image-gallery-kit/style.css'
 app.use(ImageGalleryKit)
 ```
 
-The dialog manages its own state by default. Pass `open` and/or `index` to control it:
+</details>
+
+<details>
+<summary>Control the dialog yourself</summary>
+
+The dialog manages its own state by default. Pass `open` and/or `index` to take over:
 
 ```vue
 <ImageGallery v-model:open="isOpen" v-model:index="activeIndex" :images="images" />
 ```
 
+</details>
+
+## Layouts
+
+```vue
+<!-- Featured image docked to a side, rest in a secondary grid -->
+<ImageGallery :images="images" :rows="2" :columns="3" :main-image-index="0" main-image-position="left" />
+
+<!-- Plain grid, no featured tile -->
+<ImageGallery :images="images" :rows="2" :columns="4" />
+
+<!-- Featured tile on top, half the height -->
+<ImageGallery :images="images" :rows="1" :columns="3" :main-image-index="0" main-image-position="top" :main-image-size="0.5" />
+```
+
+`rows * columns` is the capacity of the *secondary* grid only — a featured image adds one tile on top of that.
+A numeric `mainImageSize` is a layout fraction; a string is a raw CSS size such as `18rem`.
+
 ## API at a glance
 
-### Props
+<details open>
+<summary><strong>Props</strong></summary>
 
 | Prop | Type | Default |
 | --- | --- | --- |
@@ -81,17 +128,17 @@ The dialog manages its own state by default. Pass `open` and/or `index` to contr
 | `mainImagePosition` | `'top' \| 'right' \| 'bottom' \| 'left'` | `'left'` |
 | `mainImageSize` | `number \| string \| null` | `0.4` |
 | `mainImageAspectRatio` | `number \| string \| null` | `null` |
-| `gap` | `string \| null` | `null` |
-| `imageFit` | `'cover' \| 'contain' \| null` | `null` |
 | `allowGridView` | `boolean` | `true` |
 | `height` | `string \| null` | `null` |
 | `width` | `string \| null` | `'100%'` |
-| `imageRadius` | `string \| null` | `null` |
 | `labels` | `Partial<GalleryLabels>` | `undefined` |
 
-`rows * columns` is the capacity of the *secondary* grid only — a featured image adds one tile on top of that. A numeric `mainImageSize` is a layout fraction; a string is a raw CSS size such as `18rem`.
+Pure presentation — gaps, radii, `object-fit`, hover scale, transition duration — lives in [CSS tokens](#theming), not props.
 
-### Events
+</details>
+
+<details>
+<summary><strong>Events</strong></summary>
 
 | Event | Payload |
 | --- | --- |
@@ -101,7 +148,10 @@ The dialog manages its own state by default. Pass `open` and/or `index` to contr
 | `update:open` | `value: boolean` |
 | `update:index` | `value: number` |
 
-### Slots
+</details>
+
+<details>
+<summary><strong>Slots</strong></summary>
 
 | Slot | Slot props |
 | --- | --- |
@@ -109,19 +159,24 @@ The dialog manages its own state by default. Pass `open` and/or `index` to contr
 | `dialog-caption` | `image`, `index`, `total` |
 | `empty` | — |
 
+</details>
+
 Full prop, event, slot, and token reference: [`apps/docs/docs/api.md`](apps/docs/docs/api.md), or run the docs site locally.
 
 ## Theming
 
-Every surface is driven by CSS custom properties. A dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`.
+Every surface is driven by a CSS custom property. A dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`. Transitions respect `prefers-reduced-motion`.
 
 ```css
 :root {
-  --ig-radius: 0.75rem;
+  --ig-radius: 1.5rem;
   --ig-gap: 1rem;
   --ig-surface: #ffffff;
-  --ig-text: #111111;
+  --ig-text: rgba(15, 23, 42, 0.96);
   --ig-tile-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --ig-image-fit: cover;
+  --ig-hover-scale: 1.03;
+  --ig-transition-duration: 500ms;
 }
 ```
 
@@ -129,7 +184,7 @@ See [`apps/docs/docs/theming.md`](apps/docs/docs/theming.md) for the complete to
 
 ## Repository layout
 
-This is an npm-workspaces monorepo.
+An npm-workspaces monorepo.
 
 ```
 packages/image-gallery-kit   the published package (Vue component, styles, types)
@@ -140,7 +195,10 @@ apps/docs                    VitePress documentation site with live examples
 
 ```bash
 npm install
+npm run dev
 ```
+
+The docs site aliases `image-gallery-kit` to the package source, so component changes show up without a rebuild.
 
 | Command | What it does |
 | --- | --- |
@@ -155,8 +213,6 @@ npm install
 | `npm run format` | Format with oxfmt (`format:check` to verify only) |
 | `npm run check` | Everything above, in the order CI should run it |
 | `npm run clean` | Remove build output and caches |
-
-The docs site aliases `image-gallery-kit` to the package source, so component changes show up without a rebuild.
 
 ## License
 
