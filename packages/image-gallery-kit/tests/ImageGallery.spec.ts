@@ -36,7 +36,9 @@ describe('ImageGallery', () => {
       }
     });
 
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(3);
+    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
+      3
+    );
     expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
   });
 
@@ -51,7 +53,9 @@ describe('ImageGallery', () => {
 
     const grid = wrapper.get('.image-gallery-secondary');
     expect(grid.attributes('style')).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(1);
+    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
+      1
+    );
   });
 
   it('opens the clicked image in single-image mode', async () => {
@@ -95,7 +99,9 @@ describe('ImageGallery', () => {
       }
     });
 
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(5);
+    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
+      5
+    );
     expect(wrapper.find('button[aria-label="Show all 9 images"]').exists()).toBe(true);
   });
 
@@ -143,7 +149,9 @@ describe('ImageGallery', () => {
     const featuredLayout = wrapper.get('.image-gallery-featured');
     expect(featuredLayout.attributes('style')).toContain('grid-template-columns');
     expect(wrapper.find('button[aria-label="Open image 3"]').exists()).toBe(true);
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(5);
+    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
+      5
+    );
   });
 
   it('supports top-docked main image sizing via a CSS length', () => {
@@ -298,7 +306,9 @@ describe('ImageGallery', () => {
     });
 
     expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(4);
+    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
+      4
+    );
   });
 
   it('divides fixed-height grids into explicit rows', () => {
@@ -493,7 +503,7 @@ describe('ImageGallery', () => {
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     expect(wrapper.emitted('close')).toBeTruthy();
-    expect(wrapper.get('.image-gallery-empty').exists()).toBe(true);
+    expect(wrapper.find('.image-gallery-empty').exists()).toBe(true);
 
     wrapper.unmount();
   });

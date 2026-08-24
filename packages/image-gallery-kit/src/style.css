@@ -5,8 +5,8 @@
  * those normalisations, so they are re-declared below scoped to its root class.
  */
 @layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @source "./**/*.{vue,ts}";
 
 @layer base {
@@ -193,30 +193,76 @@
 }
 
 /*
+ * Every image sits absolutely inside an aspect-ratio frame, so it has to fill
+ * that frame. The template also carries the matching utilities, but those live
+ * in a cascade layer and any unlayered `img { height: auto }` reset in the host
+ * app (VitePress ships one) beats them -- the image then falls back to its
+ * intrinsic ratio and the tile letterboxes, which reads as a broken grid. These
+ * declarations ship with the package so the layout never depends on the
+ * consumer having Tailwind, or on winning that cascade fight.
+ */
+.image-gallery-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: var(--ig-image-fit, cover);
+}
+
+/*
  * The all-images overlay keeps its own spacing and density tokens rather than
  * sharing --ig-gap. The overlay renders inside the gallery root, so pointing it
  * at --ig-gap would make the `gap` prop silently start driving overlay layout
  * it has never touched. Each breakpoint reads its own token so a theme can
  * retune the density without giving up the responsive steps.
  */
+/*
+ * --ig-grid-columns-current is the resolved count, and exists so the component
+ * can read one number instead of re-deriving which breakpoint won. Themes still
+ * override the three density tokens; only the plumbing changed. It is declared
+ * on the grid rather than :root so the media queries below can reassign it
+ * without a theme's own :root overrides taking precedence.
+ */
 .image-gallery-masonry {
-  column-gap: var(--ig-grid-gap, 1rem);
-  column-count: var(--ig-grid-columns, 2);
+  --ig-grid-columns-current: var(--ig-grid-columns, 2);
+
+  display: grid;
+  grid-template-columns: repeat(var(--ig-grid-columns-current), minmax(0, 1fr));
+  gap: var(--ig-grid-gap, 1rem);
+  align-items: start;
 }
 
-.image-gallery-masonry > * {
-  break-inside: avoid;
-  margin-bottom: var(--ig-grid-gap, 1rem);
+.image-gallery-masonry-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ig-grid-gap, 1rem);
+}
+
+/*
+ * Off-screen tiles keep their box but skip layout and paint of their contents,
+ * which is what lets a collection of thousands stay in the DOM without paying
+ * for it on every scroll and resize. It relies on each tile carrying its own
+ * aspect-ratio: that gives a definite height from the column width alone, so a
+ * skipped tile still reserves the right space and nothing jumps when it comes
+ * into range. This is also why the columns above are explicit elements --
+ * multi-column layout has to lay out all content to balance its columns, which
+ * defeats the containment entirely.
+ */
+.image-gallery-masonry-tile {
+  content-visibility: auto;
 }
 
 @media (min-width: 768px) {
   .image-gallery-masonry {
-    column-count: var(--ig-grid-columns-md, 4);
+    --ig-grid-columns-current: var(--ig-grid-columns-md, 4);
   }
 }
 
 @media (min-width: 1280px) {
   .image-gallery-masonry {
-    column-count: var(--ig-grid-columns-lg, 5);
+    --ig-grid-columns-current: var(--ig-grid-columns-lg, 5);
   }
 }

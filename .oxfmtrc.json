@@ -1,0 +1,13 @@
+{
+  "singleQuote": true,
+  "trailingComma": "none",
+  "printWidth": 110,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.vitepress/cache/**",
+    "**/*.md",
+    "**/*.json",
+    "**/*.jsonc",
+    "apps/docs/docs/components/ui/**"
+  ]
+}

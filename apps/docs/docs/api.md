@@ -147,6 +147,17 @@ Every visible string and `aria-label` comes from `labels`, merged over English d
 - The dialog also shows the “All images” toggle so users can switch from the carousel to the masonry grid.
 - When `allowGridView` is `false`, the preview never shows the trigger and the dialog stays carousel-only.
 
+### Large Collections
+
+The grid renders every image and stays responsive into the thousands:
+
+- Tiles are packed into explicit columns, shortest-column first, so the sequence reads across the grid. CSS multi-column balancing would instead put the first fifth of a collection in the first column.
+- Off-screen tiles keep their reserved space but skip layout and paint, via `content-visibility`. Each tile carries its own aspect ratio so nothing shifts as it scrolls into range.
+- The open and close transitions animate only the tiles in the scrollport, and the entrance cascade is spread across a fixed budget rather than a fixed per-tile delay.
+- Opening the grid on an image below the fold scrolls it into view before the shared-image transition measures it.
+
+Supplying `width` and `height` on each image gives true mixed-height masonry. Without them every tile falls back to `imageAspectRatio`, which is uniform and still packs correctly.
+
 ## Theming
 
 Every visual surface is driven by CSS custom properties, with a dark palette and reduced-motion handling included. See [Theming](./theming) for the full token table.

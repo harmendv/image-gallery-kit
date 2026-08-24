@@ -4,7 +4,9 @@ import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
 
 // gsap is an optional peer: simulate a consumer who has not installed it.
-vi.mock('gsap', () => { throw new Error('Cannot find module gsap'); });
+vi.mock('gsap', () => {
+  throw new Error('Cannot find module gsap');
+});
 
 const images: GalleryImage[] = [
   { src: '/one.jpg', alt: 'One', width: 800, height: 1200 },

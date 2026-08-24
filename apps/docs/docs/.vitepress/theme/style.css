@@ -3,8 +3,8 @@
  * deliberately ships without Preflight, and these components were previously
  * free-riding on the utilities it happened to emit.
  */
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 @source "../../components/**/*.{vue,ts}";
 @source "../../*.md";
 
@@ -26,11 +26,6 @@
   --vp-c-brand-2: #67e8f9;
   --vp-c-brand-3: #06b6d4;
   --vp-c-brand-soft: rgba(34, 211, 238, 0.16);
-}
-
-/* Solid brand buttons flip to dark text once the brand colour is light. */
-.dark .home-hero-action-brand {
-  color: #042f2e !important;
 }
 
 :root,
@@ -84,7 +79,9 @@
 
 .docs-shadcn {
   color: var(--docs-foreground);
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
 }
 
 .docs-shadcn,
@@ -105,167 +102,6 @@
   padding: 0.12rem 0.38rem;
   color: var(--docs-foreground);
   font-size: 0.84em;
-}
-
-.playground-shell {
-  width: 100%;
-}
-
-.playground-divider {
-  margin: 1.25rem 0 !important;
-  border: 0;
-  border-top: 1px solid var(--docs-border);
-}
-
-.playground-panel {
-  border: 1px solid var(--docs-border);
-  border-radius: 0.9rem;
-  background: var(--docs-card);
-  padding: 0.9rem 1rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.dark .playground-panel {
-  box-shadow: none;
-}
-
-.playground-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.6rem 0.8rem;
-}
-
-.playground-field {
-  display: grid;
-  gap: 0.25rem;
-  align-content: start;
-  min-width: 0;
-}
-
-.playground-field-wide {
-  grid-column: span 2;
-}
-
-.playground-label-row {
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-  min-height: 1.25rem;
-  min-width: 0;
-}
-
-.playground-label-row label {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--docs-muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-
-.playground-label-row .playground-info-button {
-  flex: none;
-}
-
-.playground-panel select,
-.playground-panel input {
-  height: 2rem !important;
-  font-size: 0.8rem !important;
-  border-radius: 0.5rem !important;
-}
-
-.playground-panel select {
-  padding-right: 1.75rem !important;
-}
-
-.playground-switch-input {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-
-.playground-switch-input > input {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.playground-switch-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2rem;
-}
-
-.playground-switch-label {
-  color: var(--docs-muted-foreground);
-  font-size: 0.78rem;
-}
-
-.playground-info-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 1.1rem;
-  width: 1.1rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: help;
-  padding: 0;
-  color: var(--docs-muted-foreground);
-}
-
-.playground-info-button:hover {
-  color: var(--docs-foreground);
-}
-
-.playground-tooltip {
-  z-index: 80;
-  max-width: 16rem;
-  border: 1px solid var(--docs-border);
-  border-radius: 0.6rem;
-  background: var(--docs-popover);
-  padding: 0.55rem 0.7rem;
-  color: var(--docs-popover-foreground);
-  font-size: 0.76rem;
-  line-height: 1.5;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
-}
-
-.playground-tooltip-arrow {
-  fill: var(--docs-popover);
-  stroke: var(--docs-border);
-}
-
-.playground-preview {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.playground-code {
-  margin-top: 1rem;
-}
-
-.playground-code pre {
-  margin: 0;
-  overflow-x: auto;
-  border: 1px solid var(--docs-border);
-  border-radius: 0.9rem;
-  background: var(--docs-muted);
-  padding: 1rem 1.1rem;
-}
-
-.playground-code code {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: 0.86rem;
-  line-height: 1.7;
 }
 
 .overview-page .VPDoc .container,
@@ -358,7 +194,9 @@
   border-radius: 999px;
   color: var(--vp-c-text-1);
   text-decoration: none !important;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .home-hero-action:hover {
@@ -375,6 +213,19 @@
 .home-hero-action-brand:visited,
 .home-hero-action-brand:active {
   color: #fff !important;
+}
+
+/*
+ * Dark mode swaps the brand to a light teal, so white-on-brand collapses to
+ * ~1.7:1. Flip the label to the deep teal instead. This has to restate every
+ * link state: the :visited/:active rules above carry the same specificity, so
+ * a bare `.dark .home-hero-action-brand` loses to them on source order alone.
+ */
+.dark .home-hero-action-brand,
+.dark .home-hero-action-brand:hover,
+.dark .home-hero-action-brand:visited,
+.dark .home-hero-action-brand:active {
+  color: #042f2e !important;
 }
 
 .home-hero-media {
@@ -417,15 +268,33 @@
   border: 1px solid var(--vp-c-divider);
   border-radius: 12px;
   background: var(--vp-c-bg);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
   color: inherit !important;
   text-decoration: none !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/*
+ * The cards are anchors inside .vp-doc, so the default theme's `.vp-doc a`
+ * rule (transition: color, opacity) outweighs a bare `.home-feature` and
+ * drops every property we animate — the hover lift then snaps. Out-specify it
+ * and keep background-color in the list, since dark mode swaps the surface on
+ * hover too.
+ */
+.home-feature-grid a.home-feature {
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .home-feature:hover {
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05), 0 14px 32px rgba(15, 23, 42, 0.1);
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.05),
+    0 14px 32px rgba(15, 23, 42, 0.1);
   transform: translateY(-2px);
 }
 
@@ -476,7 +345,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-feature {
+  /* Matches the specificity of the transition rule above, or it loses to it. */
+  .home-feature-grid a.home-feature {
     transition: none;
   }
 

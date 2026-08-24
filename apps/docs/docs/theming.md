@@ -37,6 +37,7 @@ import 'image-gallery-kit/style.css'
 | `--ig-gap` | `1rem` | Spacing between preview tiles. |
 | `--ig-grid-gap` | `1rem` | Spacing between tiles in the all-images overlay. Independent of `--ig-gap`, so the two grids can breathe differently. |
 | `--ig-grid-columns` / `--ig-grid-columns-md` / `--ig-grid-columns-lg` | `2` / `4` / `5` | Column count of the all-images overlay below 768px, from 768px, and from 1280px. |
+| `--ig-grid-columns-current` | derived | Read-only. The resolved count for the active breakpoint, which the component reads back to pack the columns. Override the three tokens above instead. |
 | `--ig-radius` | `1.5rem` | Corner radius for tiles and the dialog image. |
 | `--ig-tile-radius` | `max(0px, calc(var(--ig-radius) - 0.4rem))` | Corner radius for the all-images grid tiles. Custom properties inherit already-substituted, so this tracks whichever `--ig-radius` was in scope where it was declared — set it alongside `--ig-radius` whenever you override that. |
 | `--ig-transition-duration` | `500ms` | Preview tile hover transition. |

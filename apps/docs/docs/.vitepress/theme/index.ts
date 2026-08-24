@@ -5,7 +5,6 @@ import 'image-gallery-kit/style.css';
 import './style.css';
 import DocsLogo from './DocsLogo.vue';
 import GalleryShowcase from '../../components/GalleryShowcase.vue';
-import GalleryPlayground from '../../components/GalleryPlayground.vue';
 import HomeHero from '../../components/HomeHero.vue';
 
 const theme: Theme = {
@@ -16,7 +15,6 @@ const theme: Theme = {
     }),
   enhanceApp({ app }) {
     app.component('GalleryShowcase', GalleryShowcase);
-    app.component('GalleryPlayground', GalleryPlayground);
     app.component('HomeHero', HomeHero);
   }
 };

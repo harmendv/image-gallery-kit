@@ -12,7 +12,17 @@ describe('gsap transition path', () => {
     // jsdom reports zero-size rects, so give the frames real geometry.
     const origRect = Element.prototype.getBoundingClientRect;
     Element.prototype.getBoundingClientRect = function () {
-      return { x: 0, y: 0, width: 100, height: 100, top: 0, left: 0, right: 100, bottom: 100, toJSON: () => ({}) } as DOMRect;
+      return {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+        top: 0,
+        left: 0,
+        right: 100,
+        bottom: 100,
+        toJSON: () => ({})
+      } as DOMRect;
     };
 
     const wrapper = mount(ImageGallery, { props: { images, rows: 1, columns: 2 }, attachTo: document.body });

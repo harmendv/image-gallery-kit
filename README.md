@@ -133,7 +133,7 @@ This is an npm-workspaces monorepo.
 
 ```
 packages/image-gallery-kit   the published package (Vue component, styles, types)
-apps/docs                    VitePress documentation site and live playground
+apps/docs                    VitePress documentation site with live examples
 ```
 
 ## Development
@@ -144,12 +144,17 @@ npm install
 
 | Command | What it does |
 | --- | --- |
-| `npm run docs:dev` | Run the docs site against the package source |
-| `npm run docs:build` | Build the docs site |
-| `npm run docs:preview` | Preview the built docs site |
-| `npm run build:package` | Build the package to `packages/image-gallery-kit/dist` |
+| `npm run dev` | Run the docs site against the package source |
 | `npm run build` | Build the package, then the docs |
+| `npm run build:package` | Build the package to `packages/image-gallery-kit/dist` |
+| `npm run build:docs` | Build the docs site |
+| `npm run preview:docs` | Preview the built docs site |
 | `npm test` | Run the package test suite (Vitest) |
+| `npm run typecheck` | Typecheck the package, templates included (`vue-tsc`) |
+| `npm run lint` | Lint with oxlint (`lint:fix` to autofix) |
+| `npm run format` | Format with oxfmt (`format:check` to verify only) |
+| `npm run check` | Everything above, in the order CI should run it |
+| `npm run clean` | Remove build output and caches |
 
 The docs site aliases `image-gallery-kit` to the package source, so component changes show up without a rebuild.
 
