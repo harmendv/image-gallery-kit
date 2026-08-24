@@ -64,8 +64,13 @@ stylesheet and follows `prefers-color-scheme`, a `.dark` class, or
 
 ## Documentation
 
-Full prop, event, slot, and token reference: see the `apps/docs` site in this
-repository (`npm run docs:dev`).
+Full prop, event, slot, and token reference:
+[harmendv.github.io/image-gallery-kit](https://harmendv.github.io/image-gallery-kit/).
+
+- [Getting started](https://harmendv.github.io/image-gallery-kit/guide/getting-started)
+- [Examples](https://harmendv.github.io/image-gallery-kit/examples)
+- [Theming](https://harmendv.github.io/image-gallery-kit/theming)
+- [API](https://harmendv.github.io/image-gallery-kit/api)
 
 ## License
 

@@ -12,11 +12,18 @@ const packageStyles = fileURLToPath(
 );
 const packageSrcRoot = fileURLToPath(new URL('../../../../packages/image-gallery-kit/src/', import.meta.url));
 
+// Project pages are served from https://harmendv.github.io/image-gallery-kit/,
+// so every generated URL needs that prefix. Absolute paths written by hand —
+// raw HTML `href`/`src` and anything in `head` — are not rewritten by VitePress
+// and must go through `withBase()` or this constant.
+const base = '/image-gallery-kit/';
+
 export default defineConfig({
+  base,
   title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }]],
   srcExclude: ['README.md'],
   vite: {
     // Tailwind runs as a Vite plugin rather than a PostCSS plugin. Both
