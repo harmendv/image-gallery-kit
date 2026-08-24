@@ -13,16 +13,18 @@
   <img src="https://img.shields.io/badge/gsap-optional%20peer-88ce02?style=flat-square" alt="gsap optional peer">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6?style=flat-square" alt="MIT license"></a>
 </p>
-<!-- Once published, add:
-  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/v/image-gallery-kit?style=flat-square" alt="npm"></a>
-  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/dm/image-gallery-kit?style=flat-square" alt="downloads"></a>
--->
 
 <p>
-  <a href="apps/docs/docs/guide/getting-started.md">Getting started</a> ·
-  <a href="apps/docs/docs/examples.md">Examples</a> ·
-  <a href="apps/docs/docs/theming.md">Theming</a> ·
-  <a href="apps/docs/docs/api.md">API</a>
+  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/v/image-gallery-kit?style=flat-square" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/image-gallery-kit"><img src="https://img.shields.io/npm/dm/image-gallery-kit?style=flat-square" alt="downloads"></a>
+</p>
+
+<p>
+  <a href="https://harmendv.github.io/image-gallery-kit/">Documentation</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/guide/getting-started">Getting started</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/examples">Examples</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/theming">Theming</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/api">API</a>
 </p>
 
 </div>
@@ -161,7 +163,7 @@ Pure presentation — gaps, radii, `object-fit`, hover scale, transition duratio
 
 </details>
 
-Full prop, event, slot, and token reference: [`apps/docs/docs/api.md`](apps/docs/docs/api.md), or run the docs site locally.
+Full prop, event, slot, and token reference: [the API docs](https://harmendv.github.io/image-gallery-kit/api).
 
 ## Theming
 
@@ -180,7 +182,7 @@ Every surface is driven by a CSS custom property. A dark palette ships with the 
 }
 ```
 
-See [`apps/docs/docs/theming.md`](apps/docs/docs/theming.md) for the complete token table.
+See [Theming](https://harmendv.github.io/image-gallery-kit/theming) for the complete token table.
 
 ## Repository layout
 
