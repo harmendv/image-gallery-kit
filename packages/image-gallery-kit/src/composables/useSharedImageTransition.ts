@@ -14,6 +14,34 @@ interface BentoExitOptions {
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
+/*
+ * requestAnimationFrame is paused while a tab is backgrounded, so a GSAP tween
+ * started just before a tab switch never ticks and its onComplete never fires.
+ * Racing every tween against a deadline guarantees the cleanup that restores
+ * element visibility and removes flying clones still runs.
+ */
+function withDeadline(run: (done: () => void) => void, maxMs: number) {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearTimeout(timer);
+      resolve();
+    };
+
+    const timer = window.setTimeout(done, maxMs);
+    run(done);
+  });
+}
+
+function prefersReducedMotion() {
+  return isBrowser && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
 export function useSharedImageTransition() {
   function getTransitionRadius(element: HTMLElement) {
     return element.dataset.transitionRadius || getComputedStyle(element).borderRadius;
@@ -74,9 +102,12 @@ export function useSharedImageTransition() {
       return;
     }
 
-    await new Promise<void>((resolve) => {
-      window.requestAnimationFrame(() => resolve());
-    });
+    // Same deadline treatment as the tweens: rAF is paused in a backgrounded
+    // tab, so a bare requestAnimationFrame promise never settles and would
+    // strand the caller before it even reaches the animation.
+    await withDeadline((done) => {
+      window.requestAnimationFrame(() => done());
+    }, 250);
   }
 
   async function animateBetween(
@@ -84,7 +115,7 @@ export function useSharedImageTransition() {
     toGetter: ElementGetter,
     options: TransitionOptions = {}
   ) {
-    if (!isBrowser) {
+    if (!isBrowser || prefersReducedMotion()) {
       return;
     }
 
@@ -121,18 +152,20 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      await new Promise<void>((resolve) => {
+      const duration = options.duration ?? 0.48;
+
+      await withDeadline((done) => {
         gsap.to(clone, {
           left: toRect.left,
           top: toRect.top,
           width: toRect.width,
           height: toRect.height,
           borderRadius: getTransitionRadius(toEl),
-          duration: options.duration ?? 0.48,
+          duration,
           ease: options.ease ?? 'power3.inOut',
-          onComplete: () => resolve()
+          onComplete: done
         });
-      });
+      }, duration * 1000 + 400);
     } catch {
       // If GSAP is unavailable, the state change still succeeds without animation.
     } finally {
@@ -144,6 +177,12 @@ export function useSharedImageTransition() {
 
   async function animateBentoEntrance(containerGetter: ElementGetter) {
     if (!isBrowser) {
+      return;
+    }
+
+    // The hidden state is class-driven by isBentoEntering, which the caller
+    // clears straight after this resolves, so returning early reveals the tiles.
+    if (prefersReducedMotion()) {
       return;
     }
 
@@ -164,7 +203,7 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      await new Promise<void>((resolve) => {
+      await withDeadline((done) => {
         gsap.to(
           items,
           {
@@ -174,10 +213,10 @@ export function useSharedImageTransition() {
             duration: 0.34,
             ease: 'power2.out',
             stagger: 0.04,
-            onComplete: () => resolve()
+            onComplete: done
           }
         );
-      });
+      }, 340 + items.length * 40 + 400);
     } catch {
       // No-op fallback when GSAP is unavailable.
     }
@@ -187,7 +226,7 @@ export function useSharedImageTransition() {
     containerGetter: ElementGetter,
     options: BentoExitOptions = {}
   ) {
-    if (!isBrowser) {
+    if (!isBrowser || prefersReducedMotion()) {
       return;
     }
 
@@ -231,15 +270,17 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      gsap.to(clones, {
-        opacity: 0,
-        y: -8,
-        scale: 0.985,
-        duration: 0.2,
-        ease: 'power2.in',
-        onComplete: () => {
-          clones.forEach((clone) => clone.remove());
-        }
+      void withDeadline((done) => {
+        gsap.to(clones, {
+          opacity: 0,
+          y: -8,
+          scale: 0.985,
+          duration: 0.2,
+          ease: 'power2.in',
+          onComplete: done
+        });
+      }, 600).then(() => {
+        clones.forEach((clone) => clone.remove());
       });
     } catch {
       clones.forEach((clone) => clone.remove());

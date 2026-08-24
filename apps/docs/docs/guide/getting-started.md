@@ -31,7 +31,8 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - `open` and `index`: optional controlled props for `v-model:open` and `v-model:index`
 - `allowGridView`: enable or disable the all-images grid entrypoint and dialog toggle
 - `height`, `width`, `imageRadius`: presentation controls for the outer frame
-- `dialog-toolbar` and `dialog-caption`: slots for custom dialog controls and captions
+- `labels`: overrides for the built-in English strings and `aria-label`s
+- `dialog-toolbar`, `dialog-caption`, and `empty`: slots for custom dialog controls, captions, and the no-images placeholder
 
 ## Notes
 

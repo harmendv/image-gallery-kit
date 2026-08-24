@@ -3,7 +3,27 @@
   "version": "0.1.0",
   "type": "module",
   "description": "SSR-safe Vue image gallery package with animated grid, dialog carousel, and bento view.",
-  "license": "ISC",
+  "license": "MIT",
+  "author": "Harmen de Vries",
+  "keywords": [
+    "vue",
+    "vue3",
+    "image-gallery",
+    "lightbox",
+    "carousel",
+    "masonry",
+    "gallery",
+    "ssr",
+    "component"
+  ],
+  "homepage": "https://github.com/harmendv/image-gallery-kit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harmendv/image-gallery-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/harmendv/image-gallery-kit/issues"
+  },
   "sideEffects": [
     "*.css"
   ],
@@ -20,13 +40,21 @@
     "./style.css": "./dist/style.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
-  "peerDependencies": {
-    "vue": "^3.5.0"
+  "publishConfig": {
+    "access": "public"
   },
-  "dependencies": {
-    "gsap": "^3.13.0"
+  "peerDependencies": {
+    "vue": "^3.5.0",
+    "gsap": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "gsap": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.4",
@@ -35,6 +63,7 @@
     "@vue/server-renderer": "^3.5.13",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.21",
+    "gsap": "^3.13.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.4",

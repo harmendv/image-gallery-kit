@@ -1,8 +1,51 @@
-@import "tailwindcss";
+/*
+ * Tailwind's Preflight is deliberately NOT imported. It is a global reset, and
+ * a component library has no business stripping browser defaults from a host
+ * page just because its stylesheet was imported. The gallery needs a handful of
+ * those normalisations, so they are re-declared below scoped to its root class.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 @source "./**/*.{vue,ts}";
 
+@layer base {
+  /* In @layer base so utility classes still win over these defaults. */
+  .image-gallery-theme,
+  .image-gallery-theme *,
+  .image-gallery-theme *::before,
+  .image-gallery-theme *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: currentColor;
+  }
+
+  .image-gallery-theme button {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    background-image: none;
+    font: inherit;
+    color: inherit;
+  }
+
+  .image-gallery-theme img,
+  .image-gallery-theme svg {
+    display: block;
+    vertical-align: middle;
+  }
+
+  .image-gallery-theme img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 :root {
+  /* Dialog chrome */
   --ig-overlay: rgba(255, 255, 255, 0.98);
+  --ig-surface: #ffffff;
   --ig-panel: rgba(255, 255, 255, 0.92);
   --ig-border: rgba(15, 23, 42, 0.08);
   --ig-text: rgba(15, 23, 42, 0.96);
@@ -10,7 +53,123 @@
   --ig-button: rgba(255, 255, 255, 0.9);
   --ig-button-hover: rgba(248, 250, 252, 1);
   --ig-ring: rgba(15, 23, 42, 0.2);
+
+  /* Preview surface */
+  --ig-tile-bg: #ffffff;
+  --ig-tile-shadow: none;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
+  --ig-trigger-bg-hover: #ffffff;
+  --ig-trigger-border: rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: #334155;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Shape */
   --ig-radius: 1.5rem;
+  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
+
+  /* Motion */
+  --ig-transition-duration: 500ms;
+  --ig-hover-scale: 1.03;
+}
+
+/*
+ * Theming contract
+ * ----------------
+ * Tokens are declared on ancestors only, never on .image-gallery-theme itself.
+ * An element's own declaration beats an inherited one, so re-declaring the
+ * light values on the gallery would block any dark palette from reaching it.
+ *
+ * Dark applies when the OS asks for it, or when the gallery or any ancestor
+ * carries the conventional dark switches: a `dark` class (Tailwind's class
+ * strategy, shadcn/ui, next-themes, VitePress) or [data-theme="dark"]
+ * (DaisyUI, next-themes attribute mode). The matching light switches force
+ * light back on even under an OS dark preference.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not([data-theme='light']) {
+    --ig-overlay: rgba(2, 6, 23, 0.98);
+    --ig-surface: #0f172a;
+    --ig-panel: rgba(15, 23, 42, 0.92);
+    --ig-border: rgba(226, 232, 240, 0.12);
+    --ig-text: rgba(241, 245, 249, 0.96);
+    --ig-muted: rgba(148, 163, 184, 0.78);
+    --ig-button: rgba(30, 41, 59, 0.9);
+    --ig-button-hover: rgba(51, 65, 85, 1);
+    --ig-ring: rgba(226, 232, 240, 0.28);
+
+    --ig-tile-bg: #0f172a;
+    --ig-tile-shadow: none;
+
+    --ig-trigger-bg: rgba(15, 23, 42, 0.88);
+    --ig-trigger-bg-hover: #0f172a;
+    --ig-trigger-border: rgba(226, 232, 240, 0.12);
+    --ig-trigger-text: #e2e8f0;
+    --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.dark,
+[data-theme='dark'] {
+  --ig-overlay: rgba(2, 6, 23, 0.98);
+  --ig-surface: #0f172a;
+  --ig-panel: rgba(15, 23, 42, 0.92);
+  --ig-border: rgba(226, 232, 240, 0.12);
+  --ig-text: rgba(241, 245, 249, 0.96);
+  --ig-muted: rgba(148, 163, 184, 0.78);
+  --ig-button: rgba(30, 41, 59, 0.9);
+  --ig-button-hover: rgba(51, 65, 85, 1);
+  --ig-ring: rgba(226, 232, 240, 0.28);
+
+  --ig-tile-bg: #0f172a;
+  --ig-tile-shadow: none;
+
+  --ig-trigger-bg: rgba(15, 23, 42, 0.88);
+  --ig-trigger-bg-hover: #0f172a;
+  --ig-trigger-border: rgba(226, 232, 240, 0.12);
+  --ig-trigger-text: #e2e8f0;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+}
+
+.light,
+[data-theme='light'] {
+  /* Dialog chrome */
+  --ig-overlay: rgba(255, 255, 255, 0.98);
+  --ig-surface: #ffffff;
+  --ig-panel: rgba(255, 255, 255, 0.92);
+  --ig-border: rgba(15, 23, 42, 0.08);
+  --ig-text: rgba(15, 23, 42, 0.96);
+  --ig-muted: rgba(71, 85, 105, 0.72);
+  --ig-button: rgba(255, 255, 255, 0.9);
+  --ig-button-hover: rgba(248, 250, 252, 1);
+  --ig-ring: rgba(15, 23, 42, 0.2);
+
+  /* Preview surface */
+  --ig-tile-bg: #ffffff;
+  --ig-tile-shadow: none;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
+  --ig-trigger-bg-hover: #ffffff;
+  --ig-trigger-border: rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: #334155;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Shape */
+  --ig-radius: 1.5rem;
+  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
+
+  /* Motion */
+  --ig-transition-duration: 500ms;
+  --ig-hover-scale: 1.03;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ig-transition-duration: 0ms;
+    --ig-hover-scale: 1;
+  }
 }
 
 .image-gallery-theme {

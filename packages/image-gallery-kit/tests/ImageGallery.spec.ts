@@ -249,7 +249,7 @@ describe('ImageGallery', () => {
     expect(mainFrame.attributes('style')).toContain('height: calc(');
   });
 
-  it('uses mainImageAspectRatio for intrinsic top and bottom featured layouts', () => {
+  it('uses mainImageAspectRatio for intrinsic featured layouts', () => {
     const wrapper = mount(ImageGallery, {
       props: {
         images: manyImages,
@@ -267,7 +267,7 @@ describe('ImageGallery', () => {
     expect(mainFrame.attributes('style')).toContain('height: auto');
   });
 
-  it('prioritizes mainImageAspectRatio over numeric mainImageSize in intrinsic top and bottom layouts', () => {
+  it('prioritizes mainImageAspectRatio over numeric mainImageSize in intrinsic layouts', () => {
     const wrapper = mount(ImageGallery, {
       props: {
         images: manyImages,
@@ -461,5 +461,142 @@ describe('ImageGallery', () => {
     expect(wrapper.get('[data-test="caption-slot"]').text()).toBe('Fresh pastry notes');
     expect(wrapper.find('.image-gallery-secondary img[alt="One"]').attributes('src')).toBe('/one-thumb.jpg');
     expect(wrapper.find('[role="dialog"] img[alt="One"]').attributes('src')).toBe('/one.jpg');
+  });
+  it('renders the empty state and no grid when there are no images', () => {
+    const wrapper = mount(ImageGallery, { props: { images: [] } });
+
+    expect(wrapper.get('.image-gallery-empty').text()).toBe('No images available');
+    expect(wrapper.find('.image-gallery-secondary').exists()).toBe(false);
+    expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
+  });
+
+  it('accepts a custom empty slot', () => {
+    const wrapper = mount(ImageGallery, {
+      props: { images: [] },
+      slots: { empty: () => h('span', { 'data-test': 'empty-slot' }, 'Nog geen fotos') }
+    });
+
+    expect(wrapper.get('[data-test="empty-slot"]').text()).toBe('Nog geen fotos');
+  });
+
+  it('clears frame refs and closes an open dialog when images are emptied', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: { images, rows: 1, columns: 3 },
+      attachTo: document.body
+    });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+
+    await wrapper.setProps({ images: [] });
+    await nextTick();
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(wrapper.emitted('close')).toBeTruthy();
+    expect(wrapper.get('.image-gallery-empty').exists()).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it('falls back to imageAspectRatio for images without intrinsic dimensions', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: [
+          { src: '/a.jpg', alt: 'A' },
+          { src: '/b.jpg', alt: 'B' },
+          { src: '/c.jpg', alt: 'C' }
+        ],
+        rows: 1,
+        columns: 3,
+        imageAspectRatio: '3 / 2'
+      }
+    });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    const carouselFrame = wrapper.get('[role="dialog"] img[alt="A"]').element.parentElement;
+    expect(carouselFrame?.getAttribute('style')).toContain('aspect-ratio: 4 / 5');
+
+    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+
+    const bentoFrame = wrapper.get('button[aria-label="Open image 1 from grid"] > div');
+    expect(bentoFrame.attributes('style')).toContain('aspect-ratio: 3 / 2');
+  });
+
+  it('hides the grid toggle when there is only one image', async () => {
+    const wrapper = mount(ImageGallery, { props: { images: [images[0]] } });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+  });
+
+  it('applies mainImageAspectRatio to left and right docked layouts', () => {
+    for (const mainImagePosition of ['left', 'right'] as const) {
+      const wrapper = mount(ImageGallery, {
+        props: {
+          images: manyImages,
+          rows: 2,
+          columns: 2,
+          mainImageIndex: 0,
+          mainImagePosition,
+          mainImageAspectRatio: '16 / 9'
+        }
+      });
+
+      const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+      expect(mainFrame.attributes('style')).toContain('aspect-ratio: 16 / 9');
+
+      const secondaryGrid = wrapper.get('.image-gallery-secondary');
+      expect(secondaryGrid.attributes('style')).not.toContain('height: 100%');
+    }
+  });
+
+  it('lets an explicit height override mainImageAspectRatio', () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images: manyImages,
+        rows: 2,
+        columns: 2,
+        mainImageIndex: 0,
+        mainImagePosition: 'left',
+        mainImageAspectRatio: '16 / 9',
+        height: '32rem'
+      }
+    });
+
+    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
+    expect(mainFrame.attributes('style')).toContain('aspect-ratio: auto');
+    expect(wrapper.get('.image-gallery-secondary').attributes('style')).toContain('height: 100%');
+  });
+  it('applies a partial labels override and keeps English defaults elsewhere', async () => {
+    const wrapper = mount(ImageGallery, {
+      props: {
+        images,
+        rows: 2,
+        columns: 2,
+        labels: {
+          openImage: (index: number) => `Foto ${index} openen`,
+          counter: (current: number, total: number) => `${current} van ${total}`,
+          allImages: 'Alle fotos'
+        }
+      }
+    });
+
+    expect(wrapper.find('button[aria-label="Foto 1 openen"]').exists()).toBe(true);
+
+    await wrapper.get('button[aria-label="Foto 1 openen"]').trigger('click');
+
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Image dialog. 1 van 4');
+    expect(wrapper.get('button[aria-label="Toggle image grid"]').text()).toBe('Alle fotos');
+    expect(wrapper.find('button[aria-label="Close dialog"]').exists()).toBe(true);
+  });
+
+  it('ignores explicitly undefined label overrides', () => {
+    const wrapper = mount(ImageGallery, {
+      props: { images: [], labels: { empty: undefined } }
+    });
+
+    expect(wrapper.get('.image-gallery-empty').text()).toBe('No images available');
   });
 });

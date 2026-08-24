@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
-import { ImageGallery, type GalleryImage, type ImageFit, type MainImagePosition } from 'image-gallery-kit';
+import { ImageGallery, type GalleryImage, type MainImagePosition } from 'image-gallery-kit';
 import { demoImages } from './imageFixtures';
 import FieldHint from './FieldHint.vue';
 import { Input } from '@docs/components/ui/input';
@@ -24,14 +24,9 @@ type PlaygroundState = {
   mainImageSizeFraction: number;
   mainImageSizeCss: string;
   gap: string;
-  imageFit: ImageFit;
   allowGridView: boolean;
   useHeight: boolean;
   height: string;
-  useWidth: boolean;
-  width: string;
-  useImageRadius: boolean;
-  imageRadius: string;
 };
 
 const defaults: PlaygroundState = {
@@ -48,23 +43,19 @@ const defaults: PlaygroundState = {
   mainImageSizeFraction: 0.4,
   mainImageSizeCss: '18rem',
   gap: '1rem',
-  imageFit: 'cover',
   allowGridView: true,
   useHeight: false,
-  height: '24rem',
-  useWidth: false,
-  width: '100%',
-  useImageRadius: false,
-  imageRadius: '1.4rem'
+  height: '24rem'
 };
 
 const state = reactive<PlaygroundState>({ ...defaults });
 
-const visibleImages = computed<GalleryImage[]>(() => demoImages.slice(0, Math.max(1, Math.min(state.imageCount, demoImages.length))));
+const visibleImages = computed<GalleryImage[]>(() => demoImages.slice(0, Math.max(0, Math.min(state.imageCount, demoImages.length))));
 const maxMainImageIndex = computed(() => Math.max(0, visibleImages.value.length - 1));
-const imageCountOptions = computed(() => Array.from({ length: demoImages.length }, (_, index) => `${index + 1}`));
-const gridSizeOptions = ['1', '2', '3', '4', '5', '6'];
 const mainImageIndexOptions = computed(() => ['none', ...visibleImages.value.map((_, index) => `${index}`)]);
+const imageCountOptions = computed(() => ['0', ...Array.from({ length: demoImages.length }, (_, index) => `${index + 1}`)]);
+const gridSizeOptions = ['1', '2', '3', '4', '5', '6', '7', '8'];
+
 const supportsFractionalVerticalSize = computed(() => {
   return (state.mainImagePosition === 'left' || state.mainImagePosition === 'right') || state.useHeight;
 });
@@ -91,11 +82,8 @@ const galleryProps = computed(() => ({
     ? Math.min(0.95, Math.max(0.05, state.mainImageSizeFraction || 0.4))
     : (state.mainImageSizeCss.trim() || '18rem'),
   gap: state.gap.trim() || '1rem',
-  imageFit: state.imageFit,
   allowGridView: state.allowGridView,
-  height: state.useHeight ? (state.height.trim() || '24rem') : null,
-  width: state.useWidth ? (state.width.trim() || '100%') : null,
-  imageRadius: state.useImageRadius ? (state.imageRadius.trim() || '1.4rem') : null
+  height: state.useHeight ? (state.height.trim() || '24rem') : null
 }));
 
 const galleryCode = computed(() => {
@@ -106,6 +94,7 @@ const galleryCode = computed(() => {
   lines.push(`  :rows="${galleryProps.value.rows}"`);
   lines.push(`  :columns="${galleryProps.value.columns}"`);
   lines.push(`  image-aspect-ratio="${galleryProps.value.imageAspectRatio}"`);
+  lines.push(`  gap="${galleryProps.value.gap}"`);
 
   lines.push('');
   lines.push('  <!-- Main image -->');
@@ -130,26 +119,12 @@ const galleryCode = computed(() => {
 
   lines.push('');
   lines.push('  <!-- Display -->');
-  lines.push(`  gap="${galleryProps.value.gap}"`);
-  lines.push(`  image-fit="${galleryProps.value.imageFit}"`);
   lines.push(`  :allow-grid-view="${galleryProps.value.allowGridView}"`);
 
   if (galleryProps.value.height === null) {
     lines.push('  :height="null"');
   } else {
     lines.push(`  height="${galleryProps.value.height}"`);
-  }
-
-  if (galleryProps.value.width === null) {
-    lines.push('  :width="null"');
-  } else {
-    lines.push(`  width="${galleryProps.value.width}"`);
-  }
-
-  if (galleryProps.value.imageRadius === null) {
-    lines.push('  :image-radius="null"');
-  } else {
-    lines.push(`  image-radius="${galleryProps.value.imageRadius}"`);
   }
 
   lines.push('/>');
@@ -174,6 +149,23 @@ function updateMainImageSelection(value: string) {
   state.mainImageIndex = value === 'none' ? 0 : Number(value);
 }
 
+
+watch(
+  () => visibleImages.value.length,
+  (count) => {
+    if (!count) {
+      state.hasMainImage = false;
+      state.mainImageIndex = 0;
+      return;
+    }
+
+    if (state.mainImageIndex > maxMainImageIndex.value) {
+      state.mainImageIndex = maxMainImageIndex.value;
+    }
+  },
+  { immediate: true }
+);
+
 watch(
   () => [state.mainImagePosition, state.useHeight] as const,
   () => {
@@ -189,86 +181,92 @@ watch(
   <section class="docs-shadcn playground-shell">
     <hr class="playground-divider">
 
-    <div class="playground-grid">
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="imageCount">images</Label>
-              <FieldHint text="Uses the shared fixture set and trims it to the selected number of active images." />
-            </div>
-            <NativeSelect id="imageCount" :model-value="String(state.imageCount)" @update:model-value="updateImageCount">
-              <NativeSelectOption v-for="option in imageCountOptions" :key="option" :value="option">
-                {{ option }}
-              </NativeSelectOption>
-            </NativeSelect>
+    <div class="playground-panel">
+      <div class="playground-grid">
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="imageCount">images</Label>
+            <FieldHint text="Uses the shared fixture set and trims it to the selected number of active images. Pick 0 to see the empty state." />
           </div>
+          <NativeSelect id="imageCount" :model-value="String(state.imageCount)" @update:model-value="updateImageCount">
+            <NativeSelectOption v-for="option in imageCountOptions" :key="option" :value="option">
+              {{ option }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </div>
 
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="rows">rows</Label>
-              <FieldHint text="Bounded to a sensible docs range so the preview stays readable and nobody can type absurd values." />
-            </div>
-            <NativeSelect id="rows" :model-value="String(state.rows)" @update:model-value="updateRows">
-              <NativeSelectOption v-for="option in gridSizeOptions" :key="option" :value="option">
-                {{ option }}
-              </NativeSelectOption>
-            </NativeSelect>
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="rows">rows</Label>
+            <FieldHint text="Maximum rows in the secondary preview grid. Together with columns this sets the grid capacity, which excludes the featured image." />
           </div>
+          <NativeSelect id="rows" :model-value="String(state.rows)" @update:model-value="updateRows">
+            <NativeSelectOption v-for="option in gridSizeOptions" :key="option" :value="option">
+              {{ option }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </div>
 
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="columns">columns</Label>
-              <FieldHint text="Uses the same bounded range as rows so the playground demonstrates realistic layouts." />
-            </div>
-            <NativeSelect id="columns" :model-value="String(state.columns)" @update:model-value="updateColumns">
-              <NativeSelectOption v-for="option in gridSizeOptions" :key="option" :value="option">
-                {{ option }}
-              </NativeSelectOption>
-            </NativeSelect>
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="columns">columns</Label>
+            <FieldHint text="Maximum columns in the secondary preview grid. The grid is sparse, so fewer images than slots simply render fewer tiles." />
           </div>
+          <NativeSelect id="columns" :model-value="String(state.columns)" @update:model-value="updateColumns">
+            <NativeSelectOption v-for="option in gridSizeOptions" :key="option" :value="option">
+              {{ option }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </div>
 
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="imageAspectRatio">imageAspectRatio</Label>
-              <FieldHint text="Accepts a ratio string like 16 / 9 or a numeric value like 1.25." />
-            </div>
-            <Input id="imageAspectRatio" v-model="state.imageAspectRatio" type="text" placeholder="4 / 5" />
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="imageAspectRatio">imageAspectRatio</Label>
+            <FieldHint text="Accepts a ratio string like 16 / 9 or a numeric value like 1.25." />
           </div>
+          <Input id="imageAspectRatio" v-model="state.imageAspectRatio" type="text" placeholder="4 / 5" />
+        </div>
 
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="mainImageIndex">mainImageIndex</Label>
-                <FieldHint text="Choose a valid featured image or none to fall back to the plain preview grid." />
-              </div>
-            </div>
-            <NativeSelect id="mainImageIndex" :model-value="state.hasMainImage ? String(state.mainImageIndex) : 'none'" @update:model-value="updateMainImageSelection">
-              <NativeSelectOption v-for="option in mainImageIndexOptions" :key="option" :value="option">
-                {{ option }}
-              </NativeSelectOption>
-            </NativeSelect>
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="gap">gap</Label>
+            <FieldHint text="Any CSS length used as the spacing between preview tiles." />
           </div>
+          <Input id="gap" v-model="state.gap" type="text" placeholder="1rem" />
+        </div>
 
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="mainImagePosition">mainImagePosition</Label>
-                <FieldHint text="Places the featured image on one side of the supporting grid." />
-              </div>
-            </div>
-            <NativeSelect id="mainImagePosition" v-model="state.mainImagePosition">
-              <NativeSelectOption value="left">left</NativeSelectOption>
-              <NativeSelectOption value="right">right</NativeSelectOption>
-              <NativeSelectOption value="top">top</NativeSelectOption>
-              <NativeSelectOption value="bottom">bottom</NativeSelectOption>
-            </NativeSelect>
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="mainImageIndex">mainImageIndex</Label>
+            <FieldHint text="Choose a valid featured image or none to fall back to the plain preview grid." />
           </div>
+          <NativeSelect id="mainImageIndex" :model-value="state.hasMainImage ? String(state.mainImageIndex) : 'none'" @update:model-value="updateMainImageSelection">
+            <NativeSelectOption v-for="option in mainImageIndexOptions" :key="option" :value="option">
+              {{ option }}
+            </NativeSelectOption>
+          </NativeSelect>
+        </div>
 
-          <div class="playground-field playground-main-image-size-group">
-            <div class="playground-label-row">
-              <Label>mainImageSize</Label>
-              <FieldHint text="Fraction mode is available for left and right layouts, or for top and bottom when an explicit height is enabled. Otherwise use a CSS size like 14rem." />
-            </div>
-            <NativeSelect v-model="state.mainImageSizeMode" class="playground-main-image-size-mode">
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="mainImagePosition">mainImagePosition</Label>
+            <FieldHint text="Places the featured image on one side of the supporting grid." />
+          </div>
+          <NativeSelect id="mainImagePosition" v-model="state.mainImagePosition">
+            <NativeSelectOption value="left">left</NativeSelectOption>
+            <NativeSelectOption value="right">right</NativeSelectOption>
+            <NativeSelectOption value="top">top</NativeSelectOption>
+            <NativeSelectOption value="bottom">bottom</NativeSelectOption>
+          </NativeSelect>
+        </div>
+
+        <div class="playground-field playground-field-wide">
+          <div class="playground-label-row">
+            <Label>mainImageSize</Label>
+            <FieldHint text="Fraction mode is available for left and right layouts, or for top and bottom when an explicit height is enabled. Otherwise use a CSS size like 14rem." />
+          </div>
+          <div class="playground-split">
+            <NativeSelect v-model="state.mainImageSizeMode">
               <NativeSelectOption
                 v-for="option in mainImageSizeModeOptions"
                 :key="option.value"
@@ -277,10 +275,6 @@ watch(
                 {{ option.label }}
               </NativeSelectOption>
             </NativeSelect>
-          </div>
-
-          <div class="playground-field playground-main-image-size-value">
-            <Label class="playground-sr-only">mainImageSize value</Label>
             <Input
               v-if="state.mainImageSizeMode === 'fraction'"
               v-model.number="state.mainImageSizeFraction"
@@ -288,107 +282,58 @@ watch(
               min="0.05"
               max="0.95"
               step="0.05"
+              aria-label="mainImageSize value"
             />
             <Input
               v-else
               v-model="state.mainImageSizeCss"
               type="text"
               placeholder="18rem"
+              aria-label="mainImageSize value"
             />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="useMainImageAspectRatio">mainImageAspectRatio</Label>
-                <FieldHint text="Optional ratio for the featured image in top and bottom layouts when height is intrinsic. When set, it takes precedence over numeric mainImageSize." />
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="playground-switch-label">{{ state.useMainImageAspectRatio ? 'Custom' : 'null' }}</span>
-                <Switch id="useMainImageAspectRatio" v-model="state.useMainImageAspectRatio" />
-              </div>
-            </div>
-            <Input
-              id="mainImageAspectRatio"
-              v-model="state.mainImageAspectRatio"
-              type="text"
-              placeholder="4 / 5"
-              :disabled="!state.useMainImageAspectRatio"
-            />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="gap">gap</Label>
-              <FieldHint text="CSS spacing between preview items, such as 1rem or 12px." />
-            </div>
-            <Input id="gap" v-model="state.gap" type="text" placeholder="1rem" />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="imageFit">imageFit</Label>
-              <FieldHint text="Switches image rendering between cover and contain." />
-            </div>
-            <NativeSelect id="imageFit" v-model="state.imageFit">
-              <NativeSelectOption value="cover">cover</NativeSelectOption>
-              <NativeSelectOption value="contain">contain</NativeSelectOption>
-            </NativeSelect>
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="useHeight">height</Label>
-                <FieldHint text="When enabled, the gallery divides a fixed preview height evenly across the configured rows." />
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="playground-switch-label">{{ state.useHeight ? 'Custom' : 'null' }}</span>
-                <Switch id="useHeight" v-model="state.useHeight" />
-              </div>
-            </div>
-            <Input id="height" v-model="state.height" type="text" placeholder="24rem" :disabled="!state.useHeight" />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="useWidth">width</Label>
-                <FieldHint text="Controls the outer gallery width. Disable it to pass null." />
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="playground-switch-label">{{ state.useWidth ? 'Custom' : 'null' }}</span>
-                <Switch id="useWidth" v-model="state.useWidth" />
-              </div>
-            </div>
-            <Input id="width" v-model="state.width" type="text" placeholder="100%" :disabled="!state.useWidth" />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-toggle-row">
-              <div class="playground-label-row">
-                <Label for="useImageRadius">imageRadius</Label>
-                <FieldHint text="Overrides the gallery radius token with any CSS border-radius value." />
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="playground-switch-label">{{ state.useImageRadius ? 'Custom' : 'null' }}</span>
-                <Switch id="useImageRadius" v-model="state.useImageRadius" />
-              </div>
-            </div>
-            <Input id="imageRadius" v-model="state.imageRadius" type="text" placeholder="1.4rem" :disabled="!state.useImageRadius" />
-          </div>
-
-          <div class="playground-field">
-            <div class="playground-label-row">
-              <Label for="allowGridView">allowGridView</Label>
-              <FieldHint text="Toggles the show-all preview affordance and the dialog grid switch." />
-            </div>
-            <div class="playground-switch-row">
-              <Switch id="allowGridView" v-model="state.allowGridView" />
-              <span class="playground-switch-label">Gridview {{ state.allowGridView ? 'Enabled' : 'Disabled' }}</span>
-            </div>
           </div>
         </div>
+
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="mainImageAspectRatio">mainImageAspectRatio</Label>
+            <FieldHint text="Optional ratio for the featured image whenever height is intrinsic, in all four positions. When set, it takes precedence over numeric mainImageSize." />
+          </div>
+          <div class="playground-switch-input">
+            <Switch id="useMainImageAspectRatio" v-model="state.useMainImageAspectRatio" />
+            <Input
+              v-model="state.mainImageAspectRatio"
+              type="text"
+              placeholder="null"
+              :disabled="!state.useMainImageAspectRatio"
+              aria-label="mainImageAspectRatio value"
+            />
+          </div>
+        </div>
+
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="height">height</Label>
+            <FieldHint text="When enabled, the gallery divides a fixed preview height evenly across the derived rows." />
+          </div>
+          <div class="playground-switch-input">
+            <Switch id="useHeight" v-model="state.useHeight" />
+            <Input id="height" v-model="state.height" type="text" placeholder="null" :disabled="!state.useHeight" />
+          </div>
+        </div>
+
+        <div class="playground-field">
+          <div class="playground-label-row">
+            <Label for="allowGridView">allowGridView</Label>
+            <FieldHint text="Toggles the show-all preview affordance and the dialog grid switch." />
+          </div>
+          <div class="playground-switch-row">
+            <Switch id="allowGridView" v-model="state.allowGridView" />
+            <span class="playground-switch-label">{{ state.allowGridView ? 'on' : 'off' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="playground-preview">
       <ImageGallery v-bind="galleryProps" />

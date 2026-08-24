@@ -27,11 +27,14 @@ export default defineConfig({
       formats: ['es', 'umd']
     },
     rollupOptions: {
-      external: ['vue'],
+      // gsap is an optional peer: the composable imports it dynamically and
+      // degrades gracefully, so it must not be inlined into the bundle.
+      external: ['vue', 'gsap'],
       output: {
         exports: 'named',
         globals: {
-          vue: 'Vue'
+          vue: 'Vue',
+          gsap: 'gsap'
         }
       }
     }
