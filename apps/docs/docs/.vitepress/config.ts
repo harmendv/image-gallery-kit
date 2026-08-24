@@ -11,6 +11,7 @@ export default defineConfig({
   title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
   srcExclude: ['README.md'],
   vite: {
     // gsap is an optional peer of the package now, so nothing in the docs

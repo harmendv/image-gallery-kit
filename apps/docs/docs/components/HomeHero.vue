@@ -1,8 +1,17 @@
 <template>
   <section class="home-hero">
     <div class="home-hero-copy">
-      <p class="home-hero-kicker">image-gallery-kit</p>
-      <div class="home-hero-label">Image Gallery Kit</div>
+      <div class="home-hero-lockup">
+        <img
+          class="home-hero-mark"
+          src="/logo.svg"
+          alt=""
+          width="48"
+          height="48"
+          aria-hidden="true"
+        />
+        <div class="home-hero-label">Image Gallery Kit</div>
+      </div>
       <h1 class="home-hero-title">Simple image gallery layouts for Vue.</h1>
       <p class="home-hero-text">
         Build image galleries with one component, a small set of layout props, and SSR-safe rendering that works cleanly in real apps.

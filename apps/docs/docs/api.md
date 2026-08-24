@@ -85,14 +85,13 @@ interface GalleryLabels {
 
 ### Styling and Behavior
 
+Spacing, object-fit and corner radius are not props. They are pure presentation with nothing in the component reading them back, so they live entirely in CSS as `--ig-gap`, `--ig-image-fit` and `--ig-radius`. See [Theming](./theming).
+
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `gap` | `string` | `'1rem'` | Spacing between preview tiles. |
-| `imageFit` | `ImageFit` | `'cover'` | Object-fit mode for preview tiles and the dialog image. |
 | `allowGridView` | `boolean` | `true` | Enables the all-images grid entrypoint and the dialog grid toggle. |
 | `height` | `string \| null` | `null` | Fixes the preview height and divides the secondary grid rows evenly. |
 | `width` | `string \| null` | `'100%'` | Controls the outer gallery width. |
-| `imageRadius` | `string \| null` | `null` | Overrides the package border radius token. |
 | `labels` | `Partial<GalleryLabels>` | `undefined` | Overrides the built-in English UI strings. Partial objects are merged over the defaults. |
 
 ## Preview Layout Rules

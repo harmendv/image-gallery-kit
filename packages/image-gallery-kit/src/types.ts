@@ -28,4 +28,3 @@ export interface GalleryLabels {
 
 export type MainImagePosition = 'top' | 'right' | 'bottom' | 'left';
 export type MainImageSize = number | string;
-export type ImageFit = 'cover' | 'contain';

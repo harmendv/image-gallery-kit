@@ -57,6 +57,7 @@
   /* Preview surface */
   --ig-tile-bg: #ffffff;
   --ig-tile-shadow: none;
+  --ig-image-fit: cover;
 
   /* Overflow trigger */
   --ig-trigger-bg: rgba(255, 255, 255, 0.88);
@@ -64,6 +65,13 @@
   --ig-trigger-border: rgba(0, 0, 0, 0.08);
   --ig-trigger-text: #334155;
   --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  --ig-gap: 1rem;
+  --ig-grid-gap: 1rem;
+  --ig-grid-columns: 2;
+  --ig-grid-columns-md: 4;
+  --ig-grid-columns-lg: 5;
 
   /* Shape */
   --ig-radius: 1.5rem;
@@ -148,6 +156,7 @@
   /* Preview surface */
   --ig-tile-bg: #ffffff;
   --ig-tile-shadow: none;
+  --ig-image-fit: cover;
 
   /* Overflow trigger */
   --ig-trigger-bg: rgba(255, 255, 255, 0.88);
@@ -155,6 +164,13 @@
   --ig-trigger-border: rgba(0, 0, 0, 0.08);
   --ig-trigger-text: #334155;
   --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  --ig-gap: 1rem;
+  --ig-grid-gap: 1rem;
+  --ig-grid-columns: 2;
+  --ig-grid-columns-md: 4;
+  --ig-grid-columns-lg: 5;
 
   /* Shape */
   --ig-radius: 1.5rem;
@@ -176,24 +192,31 @@
   color: var(--ig-text);
 }
 
+/*
+ * The all-images overlay keeps its own spacing and density tokens rather than
+ * sharing --ig-gap. The overlay renders inside the gallery root, so pointing it
+ * at --ig-gap would make the `gap` prop silently start driving overlay layout
+ * it has never touched. Each breakpoint reads its own token so a theme can
+ * retune the density without giving up the responsive steps.
+ */
 .image-gallery-masonry {
-  column-gap: 1rem;
-  column-count: 2;
+  column-gap: var(--ig-grid-gap, 1rem);
+  column-count: var(--ig-grid-columns, 2);
 }
 
 .image-gallery-masonry > * {
   break-inside: avoid;
-  margin-bottom: 1rem;
+  margin-bottom: var(--ig-grid-gap, 1rem);
 }
 
 @media (min-width: 768px) {
   .image-gallery-masonry {
-    column-count: 4;
+    column-count: var(--ig-grid-columns-md, 4);
   }
 }
 
 @media (min-width: 1280px) {
   .image-gallery-masonry {
-    column-count: 5;
+    column-count: var(--ig-grid-columns-lg, 5);
   }
 }

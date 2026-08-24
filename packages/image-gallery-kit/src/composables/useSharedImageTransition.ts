@@ -43,22 +43,34 @@ function prefersReducedMotion() {
 }
 
 export function useSharedImageTransition() {
+  /*
+   * Read the radius the element actually has rather than any value the caller
+   * thinks it should have. A theme can move --ig-radius through raw CSS, which
+   * no prop-derived constant would know about, and the two surfaces differ
+   * anyway: preview tiles round to --ig-radius, all-images grid tiles to
+   * --ig-tile-radius. Computed style resolves both, and in px, which is what
+   * gsap needs to tween the corner between them instead of snapping.
+   */
   function getTransitionRadius(element: HTMLElement) {
-    return element.dataset.transitionRadius || getComputedStyle(element).borderRadius;
+    return getComputedStyle(element).borderRadius;
   }
+
+  // The clone flies outside the gallery root, so anything it reads through a
+  // token has to travel with it. --ig-image-fit is load-bearing here: the tile
+  // it was cloned from resolves object-fit through the token, and losing it
+  // mid-flight would re-crop the image in the middle of the transition.
+  const TRAVELLING_TOKENS = ['--ig-radius', '--ig-ring', '--ig-image-fit'];
 
   function copyGalleryCustomProperties(source: HTMLElement, clone: HTMLElement) {
     const computedStyle = getComputedStyle(source);
-    const galleryRadius = computedStyle.getPropertyValue('--ig-radius').trim();
-    const galleryRing = computedStyle.getPropertyValue('--ig-ring').trim();
 
-    if (galleryRadius) {
-      clone.style.setProperty('--ig-radius', galleryRadius);
-    }
+    TRAVELLING_TOKENS.forEach((token) => {
+      const value = computedStyle.getPropertyValue(token).trim();
 
-    if (galleryRing) {
-      clone.style.setProperty('--ig-ring', galleryRing);
-    }
+      if (value) {
+        clone.style.setProperty(token, value);
+      }
+    });
   }
 
   function createFlyingClone(source: HTMLElement) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
-import type { GalleryImage, GalleryLabels, ImageFit, MainImagePosition, MainImageSize } from '@/types';
+import type { GalleryImage, GalleryLabels, MainImagePosition, MainImageSize } from '@/types';
 
 type DialogMode = 'single' | 'bento';
 type PreviewEntry = {
@@ -21,12 +21,9 @@ const props = withDefaults(
     mainImageIndex?: number | null;
     mainImagePosition?: MainImagePosition;
     mainImageSize?: MainImageSize | null;
-    gap?: string;
-    imageFit?: ImageFit;
     allowGridView?: boolean;
     height?: string | null;
     width?: string | null;
-    imageRadius?: string | null;
     labels?: Partial<GalleryLabels>;
   }>(),
   {
@@ -39,12 +36,9 @@ const props = withDefaults(
     mainImageIndex: null,
     mainImagePosition: 'left',
     mainImageSize: 0.4,
-    gap: '1rem',
-    imageFit: 'cover',
     allowGridView: true,
     height: null,
     width: '100%',
-    imageRadius: null,
     labels: undefined
   }
 );
@@ -185,17 +179,19 @@ const normalizedMainImageSize = computed(() => {
 
   return props.mainImageSize.trim();
 });
-const previewGap = computed(() => props.gap);
-const objectFitValue = computed(() => props.imageFit);
-const transitionRadius = computed(() => props.imageRadius?.trim() || '1.5rem');
+/*
+ * Pure presentation reads straight from the tokens. The literal fallbacks are
+ * belt-and-braces for a host that forgot the stylesheet; the gap needs one most
+ * because it is interpolated into the grid's calc() track math, where an
+ * unresolved var() invalidates the whole expression instead of dropping a
+ * single visual flourish.
+ */
+const previewGap = 'var(--ig-gap, 1rem)';
+const objectFitValue = 'var(--ig-image-fit, cover)';
+const masonryTileRadius = 'var(--ig-tile-radius)';
 const galleryStyle = computed(() => ({
-  width: props.width ?? '100%',
-  '--ig-radius': props.imageRadius ?? undefined
+  width: props.width ?? '100%'
 }));
-const masonryTileRadius = computed(() => {
-  const baseRadius = props.imageRadius?.trim();
-  return baseRadius ? `max(0px, calc(${baseRadius} - 0.4rem))` : 'var(--ig-tile-radius)';
-});
 
 function clampIndex(index: number) {
   if (!totalImages.value) {
@@ -220,7 +216,7 @@ function getSecondaryHeightTerm() {
   const ratio = imageAspectRatioNumber.value;
   const columns = columnCount.value;
   const rows = rowCount.value;
-  const gap = previewGap.value;
+  const gap = previewGap;
   const cellWidth = `((100% - (${Math.max(columns - 1, 0)} * ${gap})) / ${columns})`;
   const cellHeight = `(${cellWidth} / ${ratio})`;
 
@@ -244,7 +240,7 @@ const featuredLayoutStyle = computed(() => {
     return null;
   }
 
-  const gap = previewGap.value;
+  const gap = previewGap;
   const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
   const baseStyle: Record<string, string> = {
     display: 'grid',
@@ -329,7 +325,7 @@ const secondaryGridStyle = computed(() => {
 
   return {
     display: 'grid',
-    gap: previewGap.value,
+    gap: previewGap,
     gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
     gridTemplateRows: heightValue.value ? `repeat(${rowCount.value}, minmax(0, 1fr))` : undefined,
     height: syncHeightWithMainImage ? '100%' : heightValue.value ?? undefined,
@@ -339,7 +335,7 @@ const secondaryGridStyle = computed(() => {
 
 const plainGridStyle = computed(() => ({
   display: 'grid',
-  gap: previewGap.value,
+  gap: previewGap,
   gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
   gridTemplateRows: heightValue.value ? `repeat(${plainGridRows.value}, minmax(0, 1fr))` : undefined,
   height: heightValue.value ?? undefined,
@@ -790,7 +786,6 @@ watch(dialogIsVisible, async (open) => {
           <div
             :ref="(element) => setPreviewFrameRef(mainImageActualIndex, element as HTMLDivElement | null)"
             class="relative overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-            :data-transition-radius="transitionRadius"
             :style="mainImageFrameStyle"
           >
             <img
@@ -822,7 +817,6 @@ watch(dialogIsVisible, async (open) => {
             <div
               :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
               class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-              :data-transition-radius="transitionRadius"
               :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
             >
               <img
@@ -871,7 +865,6 @@ watch(dialogIsVisible, async (open) => {
           <div
             :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
             class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-            :data-transition-radius="transitionRadius"
             :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
           >
             <img
@@ -984,7 +977,6 @@ watch(dialogIsVisible, async (open) => {
               <div
                 ref="carouselFrameRef"
                 class="relative overflow-hidden rounded-[var(--ig-radius)]"
-                :data-transition-radius="transitionRadius"
                 :style="{ aspectRatio: getImageAspectRatio(activeImage, '4 / 5'), width: 'min(100%, 56rem)', maxHeight: 'calc(100vh - 8rem)' }"
               >
                 <img
@@ -1047,7 +1039,6 @@ watch(dialogIsVisible, async (open) => {
                 <div
                   :ref="(element) => setBentoFrameRef(index, element as HTMLDivElement | null)"
                   class="relative w-full overflow-hidden"
-                  :data-transition-radius="transitionRadius"
                   :style="{ aspectRatio: getImageAspectRatio(image), borderRadius: masonryTileRadius }"
                 >
                   <img

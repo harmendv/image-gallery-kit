@@ -4,8 +4,10 @@ import { ImageGallery, type GalleryImage, type MainImagePosition } from 'image-g
 import { demoImages } from './imageFixtures';
 import FieldHint from './FieldHint.vue';
 import { Input } from '@docs/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@docs/components/ui/input-group';
 import { Label } from '@docs/components/ui/label';
 import { NativeSelect, NativeSelectOption } from '@docs/components/ui/native-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@docs/components/ui/select';
 import { Switch } from '@docs/components/ui/switch';
 
 type MainImageSizeMode = 'fraction' | 'css';
@@ -23,7 +25,6 @@ type PlaygroundState = {
   mainImageSizeMode: MainImageSizeMode;
   mainImageSizeFraction: number;
   mainImageSizeCss: string;
-  gap: string;
   allowGridView: boolean;
   useHeight: boolean;
   height: string;
@@ -42,7 +43,6 @@ const defaults: PlaygroundState = {
   mainImageSizeMode: 'fraction',
   mainImageSizeFraction: 0.4,
   mainImageSizeCss: '18rem',
-  gap: '1rem',
   allowGridView: true,
   useHeight: false,
   height: '24rem'
@@ -81,7 +81,6 @@ const galleryProps = computed(() => ({
   mainImageSize: state.mainImageSizeMode === 'fraction'
     ? Math.min(0.95, Math.max(0.05, state.mainImageSizeFraction || 0.4))
     : (state.mainImageSizeCss.trim() || '18rem'),
-  gap: state.gap.trim() || '1rem',
   allowGridView: state.allowGridView,
   height: state.useHeight ? (state.height.trim() || '24rem') : null
 }));
@@ -94,7 +93,6 @@ const galleryCode = computed(() => {
   lines.push(`  :rows="${galleryProps.value.rows}"`);
   lines.push(`  :columns="${galleryProps.value.columns}"`);
   lines.push(`  image-aspect-ratio="${galleryProps.value.imageAspectRatio}"`);
-  lines.push(`  gap="${galleryProps.value.gap}"`);
 
   lines.push('');
   lines.push('  <!-- Main image -->');
@@ -134,6 +132,10 @@ const galleryCode = computed(() => {
 
 function updateImageCount(value: string) {
   state.imageCount = Number(value);
+}
+
+function updateMainImageSizeMode(value: string) {
+  state.mainImageSizeMode = value as MainImageSizeMode;
 }
 
 function updateRows(value: string) {
@@ -229,14 +231,6 @@ watch(
 
         <div class="playground-field">
           <div class="playground-label-row">
-            <Label for="gap">gap</Label>
-            <FieldHint text="Any CSS length used as the spacing between preview tiles." />
-          </div>
-          <Input id="gap" v-model="state.gap" type="text" placeholder="1rem" />
-        </div>
-
-        <div class="playground-field">
-          <div class="playground-label-row">
             <Label for="mainImageIndex">mainImageIndex</Label>
             <FieldHint text="Choose a valid featured image or none to fall back to the plain preview grid." />
           </div>
@@ -265,17 +259,8 @@ watch(
             <Label>mainImageSize</Label>
             <FieldHint text="Fraction mode is available for left and right layouts, or for top and bottom when an explicit height is enabled. Otherwise use a CSS size like 14rem." />
           </div>
-          <div class="playground-split">
-            <NativeSelect v-model="state.mainImageSizeMode">
-              <NativeSelectOption
-                v-for="option in mainImageSizeModeOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </NativeSelectOption>
-            </NativeSelect>
-            <Input
+          <InputGroup>
+            <InputGroupInput
               v-if="state.mainImageSizeMode === 'fraction'"
               v-model.number="state.mainImageSizeFraction"
               type="number"
@@ -284,14 +269,36 @@ watch(
               step="0.05"
               aria-label="mainImageSize value"
             />
-            <Input
+            <InputGroupInput
               v-else
               v-model="state.mainImageSizeCss"
               type="text"
               placeholder="18rem"
               aria-label="mainImageSize value"
             />
-          </div>
+            <InputGroupAddon align="inline-end">
+              <Select
+                :model-value="state.mainImageSizeMode"
+                @update:model-value="updateMainImageSizeMode"
+              >
+                <SelectTrigger
+                  aria-label="mainImageSize mode"
+                  class="h-7 w-auto gap-1 rounded-sm border-0 px-2 text-xs shadow-none hover:bg-[var(--docs-accent)] focus-visible:ring-0"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem
+                    v-for="option in mainImageSizeModeOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </InputGroupAddon>
+          </InputGroup>
         </div>
 
         <div class="playground-field">

@@ -30,9 +30,25 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - `mainImageIndex`, `mainImagePosition`, `mainImageSize`: turn one image into the lead tile and dock it around the grid
 - `open` and `index`: optional controlled props for `v-model:open` and `v-model:index`
 - `allowGridView`: enable or disable the all-images grid entrypoint and dialog toggle
-- `height`, `width`, `imageRadius`: presentation controls for the outer frame
+- `height` and `width`: outer frame sizing. Spacing, object-fit and corner radius are CSS tokens rather than props — see below
 - `labels`: overrides for the built-in English strings and `aria-label`s
 - `dialog-toolbar`, `dialog-caption`, and `empty`: slots for custom dialog controls, captions, and the no-images placeholder
+
+## Theming
+
+The stylesheet paints every surface from CSS custom properties, so restyling the gallery is a matter of redeclaring tokens — no class-name targeting, no `!important`, no fork.
+
+```css
+:root {
+  --ig-radius: 0.5rem;
+  --ig-tile-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: #0f766e;
+}
+```
+
+Declare them on `:root` for the whole site, or on any wrapper element to theme a single gallery — that wrapper is also how you give one gallery different spacing or corners, since presentation lives in CSS rather than in props. A dark palette ships with the stylesheet and switches itself on under `prefers-color-scheme: dark`, a `.dark` class, or `[data-theme="dark"]`, so an app that already toggles dark mode gets the gallery for free.
+
+See [Theming](/theming) for the full token table and a complete re-skin.
 
 ## Notes
 
