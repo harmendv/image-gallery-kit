@@ -15,12 +15,9 @@ const props = withDefaults(
     mainImageIndex?: number | null;
     mainImagePosition?: 'top' | 'right' | 'bottom' | 'left';
     mainImageSize?: number | string;
-    gap?: string;
-    imageFit?: 'cover' | 'contain';
     allowGridView?: boolean;
     height?: string | null;
     width?: string | null;
-    imageRadius?: string | null;
   }>(),
   {
     images: () => demoImages,
@@ -32,12 +29,9 @@ const props = withDefaults(
     mainImageIndex: null,
     mainImagePosition: 'left',
     mainImageSize: 0.4,
-    gap: '1rem',
-    imageFit: 'cover',
     allowGridView: true,
     height: '26rem',
-    width: '100%',
-    imageRadius: '1.4rem'
+    width: '100%'
   }
 );
 
@@ -58,12 +52,9 @@ const visibleImages = computed(() => {
       :main-image-index="mainImageIndex"
       :main-image-position="mainImagePosition"
       :main-image-size="mainImageSize"
-      :gap="gap"
-      :image-fit="imageFit"
       :allow-grid-view="allowGridView"
       :height="height"
       :width="width"
-      :image-radius="imageRadius"
     />
   </div>
 </template>

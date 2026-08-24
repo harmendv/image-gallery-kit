@@ -1,8 +1,51 @@
-@import "tailwindcss";
+/*
+ * Tailwind's Preflight is deliberately NOT imported. It is a global reset, and
+ * a component library has no business stripping browser defaults from a host
+ * page just because its stylesheet was imported. The gallery needs a handful of
+ * those normalisations, so they are re-declared below scoped to its root class.
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @source "./**/*.{vue,ts}";
 
+@layer base {
+  /* In @layer base so utility classes still win over these defaults. */
+  .image-gallery-theme,
+  .image-gallery-theme *,
+  .image-gallery-theme *::before,
+  .image-gallery-theme *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: currentColor;
+  }
+
+  .image-gallery-theme button {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    background-image: none;
+    font: inherit;
+    color: inherit;
+  }
+
+  .image-gallery-theme img,
+  .image-gallery-theme svg {
+    display: block;
+    vertical-align: middle;
+  }
+
+  .image-gallery-theme img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
 :root {
+  /* Dialog chrome */
   --ig-overlay: rgba(255, 255, 255, 0.98);
+  --ig-surface: #ffffff;
   --ig-panel: rgba(255, 255, 255, 0.92);
   --ig-border: rgba(15, 23, 42, 0.08);
   --ig-text: rgba(15, 23, 42, 0.96);
@@ -10,31 +53,216 @@
   --ig-button: rgba(255, 255, 255, 0.9);
   --ig-button-hover: rgba(248, 250, 252, 1);
   --ig-ring: rgba(15, 23, 42, 0.2);
+
+  /* Preview surface */
+  --ig-tile-bg: #ffffff;
+  --ig-tile-shadow: none;
+  --ig-image-fit: cover;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
+  --ig-trigger-bg-hover: #ffffff;
+  --ig-trigger-border: rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: #334155;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  --ig-gap: 1rem;
+  --ig-grid-gap: 1rem;
+  --ig-grid-columns: 2;
+  --ig-grid-columns-md: 4;
+  --ig-grid-columns-lg: 5;
+
+  /* Shape */
   --ig-radius: 1.5rem;
+  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
+
+  /* Motion */
+  --ig-transition-duration: 500ms;
+  --ig-hover-scale: 1.03;
+}
+
+/*
+ * Theming contract
+ * ----------------
+ * Tokens are declared on ancestors only, never on .image-gallery-theme itself.
+ * An element's own declaration beats an inherited one, so re-declaring the
+ * light values on the gallery would block any dark palette from reaching it.
+ *
+ * Dark applies when the OS asks for it, or when the gallery or any ancestor
+ * carries the conventional dark switches: a `dark` class (Tailwind's class
+ * strategy, shadcn/ui, next-themes, VitePress) or [data-theme="dark"]
+ * (DaisyUI, next-themes attribute mode). The matching light switches force
+ * light back on even under an OS dark preference.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not([data-theme='light']) {
+    --ig-overlay: rgba(2, 6, 23, 0.98);
+    --ig-surface: #0f172a;
+    --ig-panel: rgba(15, 23, 42, 0.92);
+    --ig-border: rgba(226, 232, 240, 0.12);
+    --ig-text: rgba(241, 245, 249, 0.96);
+    --ig-muted: rgba(148, 163, 184, 0.78);
+    --ig-button: rgba(30, 41, 59, 0.9);
+    --ig-button-hover: rgba(51, 65, 85, 1);
+    --ig-ring: rgba(226, 232, 240, 0.28);
+
+    --ig-tile-bg: #0f172a;
+    --ig-tile-shadow: none;
+
+    --ig-trigger-bg: rgba(15, 23, 42, 0.88);
+    --ig-trigger-bg-hover: #0f172a;
+    --ig-trigger-border: rgba(226, 232, 240, 0.12);
+    --ig-trigger-text: #e2e8f0;
+    --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+.dark,
+[data-theme='dark'] {
+  --ig-overlay: rgba(2, 6, 23, 0.98);
+  --ig-surface: #0f172a;
+  --ig-panel: rgba(15, 23, 42, 0.92);
+  --ig-border: rgba(226, 232, 240, 0.12);
+  --ig-text: rgba(241, 245, 249, 0.96);
+  --ig-muted: rgba(148, 163, 184, 0.78);
+  --ig-button: rgba(30, 41, 59, 0.9);
+  --ig-button-hover: rgba(51, 65, 85, 1);
+  --ig-ring: rgba(226, 232, 240, 0.28);
+
+  --ig-tile-bg: #0f172a;
+  --ig-tile-shadow: none;
+
+  --ig-trigger-bg: rgba(15, 23, 42, 0.88);
+  --ig-trigger-bg-hover: #0f172a;
+  --ig-trigger-border: rgba(226, 232, 240, 0.12);
+  --ig-trigger-text: #e2e8f0;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+}
+
+.light,
+[data-theme='light'] {
+  /* Dialog chrome */
+  --ig-overlay: rgba(255, 255, 255, 0.98);
+  --ig-surface: #ffffff;
+  --ig-panel: rgba(255, 255, 255, 0.92);
+  --ig-border: rgba(15, 23, 42, 0.08);
+  --ig-text: rgba(15, 23, 42, 0.96);
+  --ig-muted: rgba(71, 85, 105, 0.72);
+  --ig-button: rgba(255, 255, 255, 0.9);
+  --ig-button-hover: rgba(248, 250, 252, 1);
+  --ig-ring: rgba(15, 23, 42, 0.2);
+
+  /* Preview surface */
+  --ig-tile-bg: #ffffff;
+  --ig-tile-shadow: none;
+  --ig-image-fit: cover;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
+  --ig-trigger-bg-hover: #ffffff;
+  --ig-trigger-border: rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: #334155;
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  --ig-gap: 1rem;
+  --ig-grid-gap: 1rem;
+  --ig-grid-columns: 2;
+  --ig-grid-columns-md: 4;
+  --ig-grid-columns-lg: 5;
+
+  /* Shape */
+  --ig-radius: 1.5rem;
+  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
+
+  /* Motion */
+  --ig-transition-duration: 500ms;
+  --ig-hover-scale: 1.03;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ig-transition-duration: 0ms;
+    --ig-hover-scale: 1;
+  }
 }
 
 .image-gallery-theme {
   color: var(--ig-text);
 }
 
-.image-gallery-masonry {
-  column-gap: 1rem;
-  column-count: 2;
+/*
+ * Every image sits absolutely inside an aspect-ratio frame, so it has to fill
+ * that frame. The template also carries the matching utilities, but those live
+ * in a cascade layer and any unlayered `img { height: auto }` reset in the host
+ * app (VitePress ships one) beats them -- the image then falls back to its
+ * intrinsic ratio and the tile letterboxes, which reads as a broken grid. These
+ * declarations ship with the package so the layout never depends on the
+ * consumer having Tailwind, or on winning that cascade fight.
+ */
+.image-gallery-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: var(--ig-image-fit, cover);
 }
 
-.image-gallery-masonry > * {
-  break-inside: avoid;
-  margin-bottom: 1rem;
+/*
+ * The all-images overlay keeps its own spacing and density tokens rather than
+ * sharing --ig-gap. The overlay renders inside the gallery root, so pointing it
+ * at --ig-gap would make the `gap` prop silently start driving overlay layout
+ * it has never touched. Each breakpoint reads its own token so a theme can
+ * retune the density without giving up the responsive steps.
+ */
+/*
+ * --ig-grid-columns-current is the resolved count, and exists so the component
+ * can read one number instead of re-deriving which breakpoint won. Themes still
+ * override the three density tokens; only the plumbing changed. It is declared
+ * on the grid rather than :root so the media queries below can reassign it
+ * without a theme's own :root overrides taking precedence.
+ */
+.image-gallery-masonry {
+  --ig-grid-columns-current: var(--ig-grid-columns, 2);
+
+  display: grid;
+  grid-template-columns: repeat(var(--ig-grid-columns-current), minmax(0, 1fr));
+  gap: var(--ig-grid-gap, 1rem);
+  align-items: start;
+}
+
+.image-gallery-masonry-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--ig-grid-gap, 1rem);
+}
+
+/*
+ * Off-screen tiles keep their box but skip layout and paint of their contents,
+ * which is what lets a collection of thousands stay in the DOM without paying
+ * for it on every scroll and resize. It relies on each tile carrying its own
+ * aspect-ratio: that gives a definite height from the column width alone, so a
+ * skipped tile still reserves the right space and nothing jumps when it comes
+ * into range. This is also why the columns above are explicit elements --
+ * multi-column layout has to lay out all content to balance its columns, which
+ * defeats the containment entirely.
+ */
+.image-gallery-masonry-tile {
+  content-visibility: auto;
 }
 
 @media (min-width: 768px) {
   .image-gallery-masonry {
-    column-count: 4;
+    --ig-grid-columns-current: var(--ig-grid-columns-md, 4);
   }
 }
 
 @media (min-width: 1280px) {
   .image-gallery-masonry {
-    column-count: 5;
+    --ig-grid-columns-current: var(--ig-grid-columns-lg, 5);
   }
 }

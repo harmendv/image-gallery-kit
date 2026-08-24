@@ -1,0 +1,12 @@
+{
+  "plugins": ["import", "vue", "typescript"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "rules": {
+    "import/no-unassigned-import": "off"
+  },
+  "ignorePatterns": ["**/dist/**", "**/.vitepress/cache/**"]
+}

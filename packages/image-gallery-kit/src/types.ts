@@ -12,6 +12,19 @@ export interface GalleryImage {
   decoding?: 'sync' | 'async' | 'auto';
 }
 
+export interface GalleryLabels {
+  counter: (current: number, total: number) => string;
+  dialog: (counter: string) => string;
+  openImage: (index: number) => string;
+  openImageFromGrid: (index: number) => string;
+  showAllImages: (total: number) => string;
+  allImages: string;
+  toggleGrid: string;
+  close: string;
+  previous: string;
+  next: string;
+  empty: string;
+}
+
 export type MainImagePosition = 'top' | 'right' | 'bottom' | 'left';
 export type MainImageSize = number | string;
-export type ImageFit = 'cover' | 'contain';

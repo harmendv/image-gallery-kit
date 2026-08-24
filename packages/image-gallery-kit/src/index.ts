@@ -2,7 +2,7 @@ import type { App, Plugin } from 'vue';
 import ImageGallery from './components/ImageGallery.vue';
 import './style.css';
 
-export type { GalleryImage, ImageFit, MainImagePosition, MainImageSize } from './types';
+export type { GalleryImage, GalleryLabels, MainImagePosition, MainImageSize } from './types';
 export { ImageGallery };
 
 const plugin: Plugin = {

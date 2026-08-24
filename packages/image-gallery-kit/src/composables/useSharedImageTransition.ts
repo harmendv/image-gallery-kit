@@ -14,23 +14,100 @@ interface BentoExitOptions {
 
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
-export function useSharedImageTransition() {
-  function getTransitionRadius(element: HTMLElement) {
-    return element.dataset.transitionRadius || getComputedStyle(element).borderRadius;
+/*
+ * requestAnimationFrame is paused while a tab is backgrounded, so a GSAP tween
+ * started just before a tab switch never ticks and its onComplete never fires.
+ * Racing every tween against a deadline guarantees the cleanup that restores
+ * element visibility and removes flying clones still runs.
+ */
+function withDeadline(run: (done: () => void) => void, maxMs: number) {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      window.clearTimeout(timer);
+      resolve();
+    };
+
+    const timer = window.setTimeout(done, maxMs);
+    run(done);
+  });
+}
+
+function prefersReducedMotion() {
+  return isBrowser && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
+/*
+ * The all-images grid renders every image, so a collection of a few thousand
+ * puts a few thousand tiles in the DOM. Animating all of them is wasted work at
+ * best: the ones outside the scrollport are never seen moving, and cloning them
+ * (see animateBentoExit) is what turns a click into a multi-second main-thread
+ * stall. The margin keeps a band of just-off-screen tiles animating so a scroll
+ * arriving mid-transition does not reveal a row that never moved.
+ */
+const VIEWPORT_MARGIN = 200;
+const STAGGER_EACH = 0.04;
+const STAGGER_MAX_TOTAL = 0.4;
+
+function intersectsViewport(rect: DOMRect) {
+  if (!rect.width || !rect.height) {
+    return false;
   }
+
+  return (
+    rect.bottom > -VIEWPORT_MARGIN &&
+    rect.top < window.innerHeight + VIEWPORT_MARGIN &&
+    rect.right > -VIEWPORT_MARGIN &&
+    rect.left < window.innerWidth + VIEWPORT_MARGIN
+  );
+}
+
+/*
+ * Measure every candidate before touching the DOM. Interleaving a rect read
+ * with a clone-and-append per item forces a synchronous layout on each
+ * iteration; batching the reads pays for one layout and serves the rest from
+ * it, which is the difference that makes the filter worth doing at all.
+ */
+function measureVisible(items: HTMLElement[]) {
+  return items
+    .map((item) => ({ item, rect: item.getBoundingClientRect() }))
+    .filter(({ rect }) => intersectsViewport(rect));
+}
+
+export function useSharedImageTransition() {
+  /*
+   * Read the radius the element actually has rather than any value the caller
+   * thinks it should have. A theme can move --ig-radius through raw CSS, which
+   * no prop-derived constant would know about, and the two surfaces differ
+   * anyway: preview tiles round to --ig-radius, all-images grid tiles to
+   * --ig-tile-radius. Computed style resolves both, and in px, which is what
+   * gsap needs to tween the corner between them instead of snapping.
+   */
+  function getTransitionRadius(element: HTMLElement) {
+    return getComputedStyle(element).borderRadius;
+  }
+
+  // The clone flies outside the gallery root, so anything it reads through a
+  // token has to travel with it. --ig-image-fit is load-bearing here: the tile
+  // it was cloned from resolves object-fit through the token, and losing it
+  // mid-flight would re-crop the image in the middle of the transition.
+  const TRAVELLING_TOKENS = ['--ig-radius', '--ig-ring', '--ig-image-fit'];
 
   function copyGalleryCustomProperties(source: HTMLElement, clone: HTMLElement) {
     const computedStyle = getComputedStyle(source);
-    const galleryRadius = computedStyle.getPropertyValue('--ig-radius').trim();
-    const galleryRing = computedStyle.getPropertyValue('--ig-ring').trim();
 
-    if (galleryRadius) {
-      clone.style.setProperty('--ig-radius', galleryRadius);
-    }
+    TRAVELLING_TOKENS.forEach((token) => {
+      const value = computedStyle.getPropertyValue(token).trim();
 
-    if (galleryRing) {
-      clone.style.setProperty('--ig-ring', galleryRing);
-    }
+      if (value) {
+        clone.style.setProperty(token, value);
+      }
+    });
   }
 
   function createFlyingClone(source: HTMLElement) {
@@ -74,9 +151,12 @@ export function useSharedImageTransition() {
       return;
     }
 
-    await new Promise<void>((resolve) => {
-      window.requestAnimationFrame(() => resolve());
-    });
+    // Same deadline treatment as the tweens: rAF is paused in a backgrounded
+    // tab, so a bare requestAnimationFrame promise never settles and would
+    // strand the caller before it even reaches the animation.
+    await withDeadline((done) => {
+      window.requestAnimationFrame(() => done());
+    }, 250);
   }
 
   async function animateBetween(
@@ -84,7 +164,7 @@ export function useSharedImageTransition() {
     toGetter: ElementGetter,
     options: TransitionOptions = {}
   ) {
-    if (!isBrowser) {
+    if (!isBrowser || prefersReducedMotion()) {
       return;
     }
 
@@ -121,18 +201,23 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      await new Promise<void>((resolve) => {
-        gsap.to(clone, {
-          left: toRect.left,
-          top: toRect.top,
-          width: toRect.width,
-          height: toRect.height,
-          borderRadius: getTransitionRadius(toEl),
-          duration: options.duration ?? 0.48,
-          ease: options.ease ?? 'power3.inOut',
-          onComplete: () => resolve()
-        });
-      });
+      const duration = options.duration ?? 0.48;
+
+      await withDeadline(
+        (done) => {
+          gsap.to(clone, {
+            left: toRect.left,
+            top: toRect.top,
+            width: toRect.width,
+            height: toRect.height,
+            borderRadius: getTransitionRadius(toEl),
+            duration,
+            ease: options.ease ?? 'power3.inOut',
+            onComplete: done
+          });
+        },
+        duration * 1000 + 400
+      );
     } catch {
       // If GSAP is unavailable, the state change still succeeds without animation.
     } finally {
@@ -147,6 +232,12 @@ export function useSharedImageTransition() {
       return;
     }
 
+    // The hidden state is class-driven by isBentoEntering, which the caller
+    // clears straight after this resolves, so returning early reveals the tiles.
+    if (prefersReducedMotion()) {
+      return;
+    }
+
     await waitForPaint();
 
     const container = containerGetter();
@@ -154,9 +245,13 @@ export function useSharedImageTransition() {
       return;
     }
 
-    const items = Array.from(
+    const candidates = Array.from(
       container.querySelectorAll<HTMLElement>('[data-bento-item="true"]:not([data-bento-active="true"])')
     );
+
+    // Tiles below the fold stay at their class-driven hidden state until the
+    // caller clears isBentoEntering, which happens as soon as this resolves.
+    const items = measureVisible(candidates).map(({ item }) => item);
     if (!items.length) {
       return;
     }
@@ -164,30 +259,40 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      await new Promise<void>((resolve) => {
-        gsap.to(
-          items,
-          {
+      /*
+       * A per-item stagger has to be capped, not just applied to fewer items: at
+       * 0.04s each, 1000 tiles spread the reveal over 40 seconds and this
+       * promise -- which the caller awaits before clearing isBentoEntering --
+       * resolves 40 seconds after the grid opened. Spreading a fixed budget
+       * keeps the cascade legible at ten tiles and bounded at a thousand.
+       */
+      const duration = 0.34;
+      // Spread is measured across the gaps between tiles, not the tiles
+      // themselves, so a small collection keeps exactly its old per-tile 0.04s.
+      const gaps = items.length - 1;
+      const staggerTotal = Math.min(gaps * STAGGER_EACH, STAGGER_MAX_TOTAL);
+
+      await withDeadline(
+        (done) => {
+          gsap.to(items, {
             opacity: 1,
             y: 0,
             scale: 1,
-            duration: 0.34,
+            duration,
             ease: 'power2.out',
-            stagger: 0.04,
-            onComplete: () => resolve()
-          }
-        );
-      });
+            stagger: gaps > 0 ? staggerTotal / gaps : 0,
+            onComplete: done
+          });
+        },
+        (duration + staggerTotal) * 1000 + 400
+      );
     } catch {
       // No-op fallback when GSAP is unavailable.
     }
   }
 
-  async function animateBentoExit(
-    containerGetter: ElementGetter,
-    options: BentoExitOptions = {}
-  ) {
-    if (!isBrowser) {
+  async function animateBentoExit(containerGetter: ElementGetter, options: BentoExitOptions = {}) {
+    if (!isBrowser || prefersReducedMotion()) {
       return;
     }
 
@@ -196,33 +301,33 @@ export function useSharedImageTransition() {
       return;
     }
 
-    const items = Array.from(
-      container.querySelectorAll<HTMLElement>('[data-bento-item="true"]')
-    ).filter((item) => item.dataset.bentoIndex !== `${options.activeIndex ?? ''}`);
+    const candidates = Array.from(container.querySelectorAll<HTMLElement>('[data-bento-item="true"]')).filter(
+      (item) => item.dataset.bentoIndex !== `${options.activeIndex ?? ''}`
+    );
 
-    if (!items.length) {
+    if (!candidates.length) {
       return;
     }
 
-    const clones = items
-      .map((item) => {
-        const rect = item.getBoundingClientRect();
-        if (!rect.width || !rect.height) {
-          return null;
-        }
-
-        const clone = createFlyingClone(item);
-        clone.style.position = 'fixed';
-        clone.style.left = `${rect.left}px`;
-        clone.style.top = `${rect.top}px`;
-        clone.style.width = `${rect.width}px`;
-        clone.style.height = `${rect.height}px`;
-        clone.style.zIndex = '9998';
-        clone.style.opacity = '1';
-        document.body.appendChild(clone);
-        return clone;
-      })
-      .filter((clone): clone is HTMLElement => clone !== null);
+    /*
+     * Every clone is a deep copy carrying its own <img>, and building one reads
+     * computed style off each descendant of the source. Doing that for a whole
+     * collection means thousands of style reads and thousands of extra images
+     * entering the document, all synchronously, on a single tile click. Only
+     * tiles the user can actually watch fade out are worth that cost.
+     */
+    const clones = measureVisible(candidates).map(({ item, rect }) => {
+      const clone = createFlyingClone(item);
+      clone.style.position = 'fixed';
+      clone.style.left = `${rect.left}px`;
+      clone.style.top = `${rect.top}px`;
+      clone.style.width = `${rect.width}px`;
+      clone.style.height = `${rect.height}px`;
+      clone.style.zIndex = '9998';
+      clone.style.opacity = '1';
+      document.body.appendChild(clone);
+      return clone;
+    });
 
     if (!clones.length) {
       return;
@@ -231,15 +336,17 @@ export function useSharedImageTransition() {
     try {
       const { gsap } = await import('gsap');
 
-      gsap.to(clones, {
-        opacity: 0,
-        y: -8,
-        scale: 0.985,
-        duration: 0.2,
-        ease: 'power2.in',
-        onComplete: () => {
-          clones.forEach((clone) => clone.remove());
-        }
+      void withDeadline((done) => {
+        gsap.to(clones, {
+          opacity: 0,
+          y: -8,
+          scale: 0.985,
+          duration: 0.2,
+          ease: 'power2.in',
+          onComplete: done
+        });
+      }, 600).then(() => {
+        clones.forEach((clone) => clone.remove());
       });
     } catch {
       clones.forEach((clone) => clone.remove());

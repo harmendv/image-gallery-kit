@@ -5,7 +5,4 @@
   image-aspect-ratio="3 / 4"
   height="18rem"
   width="92%"
-  image-radius="2rem"
-  gap="1.25rem"
-  image-fit="contain"
 />
