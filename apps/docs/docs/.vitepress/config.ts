@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 
 const docsRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -18,6 +19,11 @@ export default defineConfig({
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
   srcExclude: ['README.md'],
   vite: {
+    // Tailwind runs as a Vite plugin rather than a PostCSS plugin. Both
+    // `@import 'tailwindcss'` and `@import 'tw-animate-css'` publish their CSS
+    // only under the "style" export condition, which Vite's postcss-import
+    // resolver does not honour; Tailwind's plugin resolves them itself.
+    plugins: [tailwindcss()],
     // gsap is an optional peer of the package now, so nothing in the docs
     // source imports it and the dep scanner never sees the bare specifier
     // inside the built entry. Without this the gallery silently falls back to

@@ -14,9 +14,10 @@
     "strict": true,
     "declaration": true,
     "types": ["vite/client", "vitest/globals"],
-    "baseUrl": ".",
+    // No baseUrl: it is deprecated in TS 6 and removed in TS 7. "paths" is
+    // resolved relative to this file, so the "@/" alias works without it.
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "vite.config.ts", "vitest.config.ts"],

@@ -16,14 +16,18 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      '@': resolve(import.meta.dirname, 'src')
     }
   },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(import.meta.dirname, 'src/index.ts'),
       name: 'ImageGallery',
       fileName: (format) => (format === 'es' ? 'image-gallery-kit.js' : 'image-gallery-kit.umd.cjs'),
+      // Vite 8 names lib CSS after the library ("image-gallery-kit.css").
+      // `image-gallery-kit/style.css` is public API — it is the import in the
+      // README, the docs, and every consumer's setup — so pin the old name.
+      cssFileName: 'style',
       formats: ['es', 'umd']
     },
     rollupOptions: {
