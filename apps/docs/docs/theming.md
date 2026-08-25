@@ -21,18 +21,21 @@ import 'image-gallery-kit/style.css'
 | --- | --- | --- |
 | `--ig-overlay` | `rgba(255, 255, 255, 0.98)` | Backdrop behind the dialog. |
 | `--ig-surface` | `#ffffff` | Dialog shell. |
-| `--ig-panel` | `rgba(255, 255, 255, 0.92)` | Dialog image stage. |
-| `--ig-border` | `rgba(15, 23, 42, 0.08)` | Dialog header rule and the empty-state outline. |
-| `--ig-text` | `rgba(15, 23, 42, 0.96)` | Primary text and icons. |
-| `--ig-muted` | `rgba(71, 85, 105, 0.72)` | Counter, captions, empty-state text. |
-| `--ig-button` / `--ig-button-hover` | `rgba(255, 255, 255, 0.9)` / `#f8fafc` | Dialog controls. |
-| `--ig-ring` | `rgba(15, 23, 42, 0.2)` | Focus ring. |
+| `--ig-panel` | `rgba(246, 246, 247, 0.92)` | Dialog image stage. |
+| `--ig-topbar-bg` | `rgba(255, 255, 255, 0.95)` | Dialog top bar fill. The bar floats over the image stage, so an alpha below `1` lets the content show through. Set it to `var(--ig-surface)` for an opaque bar. |
+| `--ig-topbar-blur` | `12px` | Blur radius behind the top bar. Set `0px` to keep the translucency without the frosting. Browsers without `backdrop-filter` fall back to an opaque `--ig-surface` bar. |
+| `--ig-topbar-height` | `4rem` | Height of the dialog top bar. Also reserved above the all-images grid and subtracted from the carousel image's maximum height, so changing it keeps both clear of the bar. |
+| `--ig-border` | `rgba(60, 60, 67, 0.12)` | Dialog header rule and the empty-state outline. |
+| `--ig-text` | `rgba(60, 60, 67, 0.96)` | Primary text and icons. |
+| `--ig-muted` | `rgba(60, 60, 67, 0.68)` | Counter, captions, empty-state text. |
+| `--ig-button` / `--ig-button-hover` | `rgba(244, 244, 245, 0.9)` / `rgba(235, 235, 237, 1)` | Dialog controls. |
+| `--ig-ring` | `rgba(60, 60, 67, 0.2)` | Focus ring. |
 | `--ig-tile-bg` | `#ffffff` | Preview tile surface, visible while images load and behind `--ig-image-fit: contain`. |
 | `--ig-image-fit` | `cover` | Object-fit for every image, preview and dialog alike. Pair `contain` with `--ig-tile-bg`, which becomes visible around the image. |
 | `--ig-tile-shadow` | `none` | Preview tile shadow. Use a `0 0 0 1px` inset-style spread for a hairline border without shifting layout. |
 | `--ig-trigger-bg` / `--ig-trigger-bg-hover` | `rgba(255, 255, 255, 0.88)` / `#ffffff` | "Show all images" trigger. |
 | `--ig-trigger-border` | `rgba(0, 0, 0, 0.08)` | Trigger border. |
-| `--ig-trigger-text` | `#334155` | Trigger icon. |
+| `--ig-trigger-text` | `rgba(60, 60, 67, 0.96)` | Trigger icon. |
 | `--ig-trigger-shadow` | Tailwind `shadow-lg` | Trigger shadow. |
 | `--ig-gap` | `1rem` | Spacing between preview tiles. |
 | `--ig-grid-gap` | `1rem` | Spacing between tiles in the all-images overlay. Independent of `--ig-gap`, so the two grids can breathe differently. |
@@ -124,13 +127,14 @@ Two things worth knowing when you reskin:
 
 ## Dark Mode
 
-A dark palette ships with the stylesheet and applies automatically under `prefers-color-scheme: dark`. It also follows the conventional dark-mode switches, so if your app already toggles dark mode the gallery comes along with no extra wiring:
+A neutral dark palette ships with the stylesheet. Three mechanisms select it, in this order of precedence:
 
-| Switch | Used by |
-| --- | --- |
-| `prefers-color-scheme: dark` | The OS setting, applied automatically. |
-| `.dark` class | Tailwind's `darkMode: 'class'` strategy, shadcn/ui, next-themes, VitePress. |
-| `[data-theme="dark"]` | DaisyUI, next-themes in attribute mode. |
+| Precedence | Mechanism | Used by |
+| --- | --- | --- |
+| 1 | `colorScheme="light \| dark"` prop | An explicit per-instance override. |
+| 2 | `.dark` class | Tailwind's `darkMode: 'class'` strategy, shadcn/ui, next-themes, VitePress. |
+| 2 | `[data-theme="dark"]` attribute | DaisyUI, next-themes in attribute mode. |
+| 3 | `prefers-color-scheme: dark` | The OS setting, applied automatically. |
 
 ```html
 <html class="dark">
@@ -139,6 +143,35 @@ A dark palette ships with the stylesheet and applies automatically under `prefer
 ```
 
 `.light` and `[data-theme="light"]` force light back on even when the OS asks for dark.
+
+### If your app toggles a class
+
+Level 3 needs an opt-out whenever levels 1 and 2 are also in play, and the reason is worth spelling out. A class-based theme switch only ever *adds* `dark`; choosing light again just removes it. In CSS that is indistinguishable from a page with no theme system at all — so on a machine whose OS prefers dark, the gallery would stay dark on a page the user had just switched to light.
+
+Tell the gallery that classes are the only authority by putting `data-ig-color-scheme` on the root element:
+
+```html
+<html data-ig-color-scheme="class">
+```
+
+The OS query is then ignored entirely and only `.dark` / `[data-theme="dark"]` move the palette. Do this in any app with its own light/dark toggle; the attribute value is never read, so use whatever is self-documenting.
+
+### Per-instance override
+
+`colorScheme` wins over everything, including a `dark` ancestor, and is the escape hatch when the gallery needs to disagree with the page — a permanently dark lightbox on a light site, say. It also covers the case where you would rather drive the palette from your own theme state than from a class:
+
+```vue
+<script setup>
+import { useData } from 'vitepress'
+const { isDark } = useData()
+</script>
+
+<template>
+  <ImageGallery :images="images" :color-scheme="isDark ? 'dark' : 'light'" />
+</template>
+```
+
+The class it emits lands on the gallery root *and* on the dialog, which is teleported to `<body>` and so sits outside any wrapper you styled.
 
 Tokens are declared on ancestors only, never on the gallery element itself, so a switch anywhere up the tree reaches the gallery through inheritance. Putting one directly on the gallery themes a single instance:
 

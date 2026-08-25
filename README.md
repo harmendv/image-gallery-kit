@@ -167,14 +167,20 @@ Full prop, event, slot, and token reference: [the API docs](https://harmendv.git
 
 ## Theming
 
-Every surface is driven by a CSS custom property. A dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`. Transitions respect `prefers-reduced-motion`.
+Every surface is driven by a CSS custom property. A neutral dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`; the `colorScheme` prop overrides both for a single instance. Transitions respect `prefers-reduced-motion`.
+
+If your app has its own light/dark toggle, add `data-ig-color-scheme` to the root element so the gallery follows your class instead of the OS preference:
+
+```html
+<html data-ig-color-scheme="class">
+```
 
 ```css
 :root {
   --ig-radius: 1.5rem;
   --ig-gap: 1rem;
   --ig-surface: #ffffff;
-  --ig-text: rgba(15, 23, 42, 0.96);
+  --ig-text: rgba(60, 60, 67, 0.96);
   --ig-tile-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
   --ig-image-fit: cover;
   --ig-hover-scale: 1.03;

@@ -51,9 +51,16 @@ app.use(ImageGalleryKit)
 
 ## Theming
 
-Every surface is driven by CSS custom properties. A dark palette ships with the
-stylesheet and follows `prefers-color-scheme`, a `.dark` class, or
-`[data-theme="dark"]`.
+Every surface is driven by CSS custom properties. A neutral dark palette ships
+with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or
+`[data-theme="dark"]`; the `colorScheme` prop overrides both per instance.
+
+If your app has its own light/dark toggle, add `data-ig-color-scheme` to the
+root element so the gallery follows your class rather than the OS preference:
+
+```html
+<html data-ig-color-scheme="class">
+```
 
 ```css
 :root {

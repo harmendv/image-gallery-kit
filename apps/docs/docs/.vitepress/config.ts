@@ -23,7 +23,16 @@ export default defineConfig({
   title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
+    // VitePress owns the light/dark decision and expresses it as a `dark` class
+    // it adds and removes. This tells the gallery to follow that class alone:
+    // without it, picking light on a machine whose OS prefers dark leaves the
+    // gallery on its OS-driven dark palette while the page around it turns
+    // light. Set from a head script rather than declared on <html> because
+    // VitePress renders that tag itself.
+    ['script', {}, "document.documentElement.setAttribute('data-ig-color-scheme', 'class')"]
+  ],
   srcExclude: ['README.md'],
   vite: {
     // Tailwind runs as a Vite plugin rather than a PostCSS plugin. Both

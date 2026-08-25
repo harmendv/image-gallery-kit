@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
-import type { GalleryImage, GalleryLabels, MainImagePosition, MainImageSize } from '@/types';
+import type {
+  GalleryColorScheme,
+  GalleryImage,
+  GalleryLabels,
+  MainImagePosition,
+  MainImageSize
+} from '@/types';
 
 type DialogMode = 'single' | 'bento';
 type PreviewEntry = {
@@ -22,6 +28,7 @@ const props = withDefaults(
     mainImagePosition?: MainImagePosition;
     mainImageSize?: MainImageSize | null;
     allowGridView?: boolean;
+    colorScheme?: GalleryColorScheme;
     height?: string | null;
     width?: string | null;
     labels?: Partial<GalleryLabels>;
@@ -37,6 +44,7 @@ const props = withDefaults(
     mainImagePosition: 'left',
     mainImageSize: 0.4,
     allowGridView: true,
+    colorScheme: 'auto',
     height: null,
     width: '100%',
     labels: undefined
@@ -195,6 +203,17 @@ const masonryTileRadius = 'var(--ig-tile-radius)';
 const galleryStyle = computed(() => ({
   width: props.width ?? '100%'
 }));
+/*
+ * `auto` deliberately emits nothing: the stylesheet's cascade of OS query and
+ * `dark`/`data-theme` switches only works while the gallery declares no palette
+ * of its own. The explicit values are the opt-out for a host whose theme toggle
+ * CSS cannot be seen from here -- see the theming contract in style.css. The
+ * class goes on the dialog too, which is teleported to <body> and so escapes
+ * any wrapper the host styled.
+ */
+const colorSchemeClass = computed(() =>
+  props.colorScheme === 'light' ? 'ig-scheme-light' : props.colorScheme === 'dark' ? 'ig-scheme-dark' : null
+);
 
 function clampIndex(index: number) {
   if (!totalImages.value) {
@@ -877,7 +896,7 @@ watch(dialogIsVisible, async (open) => {
 </script>
 
 <template>
-  <section class="image-gallery-theme w-full" :style="galleryStyle">
+  <section class="image-gallery-theme w-full" :class="colorSchemeClass" :style="galleryStyle">
     <div
       v-if="!props.images.length"
       class="image-gallery-empty flex w-full items-center justify-center rounded-[var(--ig-radius)] border border-dashed border-[var(--ig-border)] text-sm text-[var(--ig-muted)]"
@@ -1029,14 +1048,22 @@ watch(dialogIsVisible, async (open) => {
         v-if="dialogIsVisible && activeImage"
         ref="dialogRef"
         class="fixed inset-0 z-50 bg-[var(--ig-overlay)]"
+        :class="colorSchemeClass"
         role="dialog"
         aria-modal="true"
         :aria-label="resolvedLabels.dialog(counterLabel)"
         tabindex="-1"
       >
-        <div class="relative z-10 flex h-screen w-screen flex-col overflow-hidden bg-[var(--ig-surface)]">
+        <div class="relative z-10 h-screen w-screen overflow-hidden bg-[var(--ig-surface)]">
+          <!--
+            The bar floats over a full-bleed stage rather than sitting above it
+            in the flow. A translucent bar stacked on the opaque shell would
+            blur nothing but flat paint; overlapping the stage is what makes the
+            fill read as glass, and is why the stage below is `inset-0` and the
+            grid scrolls its tiles underneath.
+          -->
           <div
-            class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--ig-border)] px-4 py-3 text-[var(--ig-text)] sm:px-6"
+            class="image-gallery-topbar absolute inset-x-0 top-0 z-20 grid h-[var(--ig-topbar-height,4rem)] grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--ig-border)] px-4 text-[var(--ig-text)] sm:px-6"
           >
             <div class="flex min-w-0 items-center gap-3">
               <button
@@ -1090,7 +1117,7 @@ watch(dialogIsVisible, async (open) => {
             </div>
           </div>
 
-          <div class="relative flex-1 overflow-hidden bg-[var(--ig-panel)]">
+          <div class="absolute inset-0 overflow-hidden bg-[var(--ig-panel)]">
             <div v-if="dialogMode === 'single'" class="flex h-full items-center justify-center">
               <button
                 type="button"
@@ -1110,7 +1137,7 @@ watch(dialogIsVisible, async (open) => {
                   :style="{
                     aspectRatio: getImageAspectRatio(activeImage, '4 / 5'),
                     width: 'min(100%, 56rem)',
-                    maxHeight: 'calc(100vh - 8rem)'
+                    maxHeight: 'calc(100vh - (2 * var(--ig-topbar-height, 4rem)) - 4rem)'
                   }"
                 >
                   <img
@@ -1147,7 +1174,11 @@ watch(dialogIsVisible, async (open) => {
               </button>
             </div>
 
-            <div v-else class="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div
+              v-else
+              class="h-full overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-5"
+              :style="{ paddingTop: 'calc(var(--ig-topbar-height, 4rem) + 1rem)' }"
+            >
               <div ref="bentoGridRef" class="image-gallery-masonry">
                 <div
                   v-for="(column, columnIndex) in bentoColumns"

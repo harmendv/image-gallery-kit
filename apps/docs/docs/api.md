@@ -90,6 +90,7 @@ Spacing, object-fit and corner radius are not props. They are pure presentation 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `allowGridView` | `boolean` | `true` | Enables the all-images grid entrypoint and the dialog grid toggle. |
+| `colorScheme` | `'auto' \| 'light' \| 'dark'` | `'auto'` | Forces a palette for this instance, overriding a `dark` ancestor and the OS preference. `'auto'` defers to both. See [Dark Mode](/theming#dark-mode). |
 | `height` | `string \| null` | `null` | Fixes the preview height and divides the secondary grid rows evenly. |
 | `width` | `string \| null` | `'100%'` | Controls the outer gallery width. |
 | `labels` | `Partial<GalleryLabels>` | `undefined` | Overrides the built-in English UI strings. Partial objects are merged over the defaults. |

@@ -46,13 +46,15 @@
   /* Dialog chrome */
   --ig-overlay: rgba(255, 255, 255, 0.98);
   --ig-surface: #ffffff;
-  --ig-panel: rgba(255, 255, 255, 0.92);
-  --ig-border: rgba(15, 23, 42, 0.08);
-  --ig-text: rgba(15, 23, 42, 0.96);
-  --ig-muted: rgba(71, 85, 105, 0.72);
-  --ig-button: rgba(255, 255, 255, 0.9);
-  --ig-button-hover: rgba(248, 250, 252, 1);
-  --ig-ring: rgba(15, 23, 42, 0.2);
+  --ig-panel: rgba(246, 246, 247, 0.92);
+  --ig-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-topbar-blur: 12px;
+  --ig-border: rgba(60, 60, 67, 0.12);
+  --ig-text: rgba(60, 60, 67, 0.96);
+  --ig-muted: rgba(60, 60, 67, 0.68);
+  --ig-button: rgba(244, 244, 245, 0.9);
+  --ig-button-hover: rgba(235, 235, 237, 1);
+  --ig-ring: rgba(60, 60, 67, 0.2);
 
   /* Preview surface */
   --ig-tile-bg: #ffffff;
@@ -63,10 +65,11 @@
   --ig-trigger-bg: rgba(255, 255, 255, 0.88);
   --ig-trigger-bg-hover: #ffffff;
   --ig-trigger-border: rgba(0, 0, 0, 0.08);
-  --ig-trigger-text: #334155;
+  --ig-trigger-text: rgba(60, 60, 67, 0.96);
   --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 
   /* Layout */
+  --ig-topbar-height: 4rem;
   --ig-gap: 1rem;
   --ig-grid-gap: 1rem;
   --ig-grid-columns: 2;
@@ -88,55 +91,83 @@
  * Tokens are declared on ancestors only, never on .image-gallery-theme itself.
  * An element's own declaration beats an inherited one, so re-declaring the
  * light values on the gallery would block any dark palette from reaching it.
+ * The one exception is the explicit `.ig-scheme-*` opt-in below, which the
+ * component puts on its own root precisely because it should win.
  *
- * Dark applies when the OS asks for it, or when the gallery or any ancestor
- * carries the conventional dark switches: a `dark` class (Tailwind's class
- * strategy, shadcn/ui, next-themes, VitePress) or [data-theme="dark"]
- * (DaisyUI, next-themes attribute mode). The matching light switches force
- * light back on even under an OS dark preference.
+ * Three ways to pick a palette, in order of precedence:
+ *
+ *   1. `colorScheme="light|dark"` on the component. Emits `.ig-scheme-light` /
+ *      `.ig-scheme-dark` on the gallery root and on the teleported dialog.
+ *   2. A `dark` class (Tailwind's class strategy, shadcn/ui, next-themes,
+ *      VitePress) or [data-theme="dark"] (DaisyUI, next-themes attribute mode)
+ *      on the gallery or any ancestor. `.light` / [data-theme="light"] force
+ *      light back on even under an OS dark preference.
+ *   3. The OS `prefers-color-scheme` setting.
+ *
+ * Step 3 is the reason step 2 needs an escape hatch. A host that toggles
+ * classes only ever *adds* `dark` -- picking light again just removes it, which
+ * is indistinguishable in CSS from having no theme system at all. Under an OS
+ * dark preference the gallery would then stay dark on a page that just went
+ * light. Such a host opts out of the OS query entirely with
+ * [data-ig-color-scheme] on <html>:
+ *
+ *   <html data-ig-color-scheme="class">
+ *
+ * ...after which only the class switches in step 2 (or the prop in step 1) move
+ * the palette.
  */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light):not([data-theme='light']) {
-    --ig-overlay: rgba(2, 6, 23, 0.98);
-    --ig-surface: #0f172a;
-    --ig-panel: rgba(15, 23, 42, 0.92);
-    --ig-border: rgba(226, 232, 240, 0.12);
-    --ig-text: rgba(241, 245, 249, 0.96);
-    --ig-muted: rgba(148, 163, 184, 0.78);
-    --ig-button: rgba(30, 41, 59, 0.9);
-    --ig-button-hover: rgba(51, 65, 85, 1);
-    --ig-ring: rgba(226, 232, 240, 0.28);
+  :root:not(.light):not([data-theme='light']):not([data-ig-color-scheme]) {
+    /* Dialog chrome */
+    --ig-overlay: rgba(27, 27, 31, 0.98);
+    --ig-surface: #1b1b1f;
+    --ig-panel: rgba(22, 22, 24, 0.92);
+    --ig-topbar-bg: rgba(27, 27, 31, 0.95);
+    --ig-topbar-blur: 12px;
+    --ig-border: rgba(82, 82, 89, 0.32);
+    --ig-text: rgba(255, 255, 245, 0.86);
+    --ig-muted: rgba(235, 235, 245, 0.6);
+    --ig-button: rgba(50, 50, 56, 0.9);
+    --ig-button-hover: rgba(65, 65, 71, 1);
+    --ig-ring: rgba(255, 255, 245, 0.28);
 
-    --ig-tile-bg: #0f172a;
+    /* Preview surface */
+    --ig-tile-bg: #1b1b1f;
     --ig-tile-shadow: none;
 
-    --ig-trigger-bg: rgba(15, 23, 42, 0.88);
-    --ig-trigger-bg-hover: #0f172a;
-    --ig-trigger-border: rgba(226, 232, 240, 0.12);
-    --ig-trigger-text: #e2e8f0;
+    /* Overflow trigger */
+    --ig-trigger-bg: rgba(27, 27, 31, 0.88);
+    --ig-trigger-bg-hover: #1b1b1f;
+    --ig-trigger-border: rgba(82, 82, 89, 0.32);
+    --ig-trigger-text: rgba(255, 255, 245, 0.86);
     --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
   }
 }
 
 .dark,
 [data-theme='dark'] {
-  --ig-overlay: rgba(2, 6, 23, 0.98);
-  --ig-surface: #0f172a;
-  --ig-panel: rgba(15, 23, 42, 0.92);
-  --ig-border: rgba(226, 232, 240, 0.12);
-  --ig-text: rgba(241, 245, 249, 0.96);
-  --ig-muted: rgba(148, 163, 184, 0.78);
-  --ig-button: rgba(30, 41, 59, 0.9);
-  --ig-button-hover: rgba(51, 65, 85, 1);
-  --ig-ring: rgba(226, 232, 240, 0.28);
+  /* Dialog chrome */
+  --ig-overlay: rgba(27, 27, 31, 0.98);
+  --ig-surface: #1b1b1f;
+  --ig-panel: rgba(22, 22, 24, 0.92);
+  --ig-topbar-bg: rgba(27, 27, 31, 0.95);
+  --ig-topbar-blur: 12px;
+  --ig-border: rgba(82, 82, 89, 0.32);
+  --ig-text: rgba(255, 255, 245, 0.86);
+  --ig-muted: rgba(235, 235, 245, 0.6);
+  --ig-button: rgba(50, 50, 56, 0.9);
+  --ig-button-hover: rgba(65, 65, 71, 1);
+  --ig-ring: rgba(255, 255, 245, 0.28);
 
-  --ig-tile-bg: #0f172a;
+  /* Preview surface */
+  --ig-tile-bg: #1b1b1f;
   --ig-tile-shadow: none;
 
-  --ig-trigger-bg: rgba(15, 23, 42, 0.88);
-  --ig-trigger-bg-hover: #0f172a;
-  --ig-trigger-border: rgba(226, 232, 240, 0.12);
-  --ig-trigger-text: #e2e8f0;
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(27, 27, 31, 0.88);
+  --ig-trigger-bg-hover: #1b1b1f;
+  --ig-trigger-border: rgba(82, 82, 89, 0.32);
+  --ig-trigger-text: rgba(255, 255, 245, 0.86);
   --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 }
 
@@ -145,13 +176,15 @@
   /* Dialog chrome */
   --ig-overlay: rgba(255, 255, 255, 0.98);
   --ig-surface: #ffffff;
-  --ig-panel: rgba(255, 255, 255, 0.92);
-  --ig-border: rgba(15, 23, 42, 0.08);
-  --ig-text: rgba(15, 23, 42, 0.96);
-  --ig-muted: rgba(71, 85, 105, 0.72);
-  --ig-button: rgba(255, 255, 255, 0.9);
-  --ig-button-hover: rgba(248, 250, 252, 1);
-  --ig-ring: rgba(15, 23, 42, 0.2);
+  --ig-panel: rgba(246, 246, 247, 0.92);
+  --ig-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-topbar-blur: 12px;
+  --ig-border: rgba(60, 60, 67, 0.12);
+  --ig-text: rgba(60, 60, 67, 0.96);
+  --ig-muted: rgba(60, 60, 67, 0.68);
+  --ig-button: rgba(244, 244, 245, 0.9);
+  --ig-button-hover: rgba(235, 235, 237, 1);
+  --ig-ring: rgba(60, 60, 67, 0.2);
 
   /* Preview surface */
   --ig-tile-bg: #ffffff;
@@ -162,10 +195,11 @@
   --ig-trigger-bg: rgba(255, 255, 255, 0.88);
   --ig-trigger-bg-hover: #ffffff;
   --ig-trigger-border: rgba(0, 0, 0, 0.08);
-  --ig-trigger-text: #334155;
+  --ig-trigger-text: rgba(60, 60, 67, 0.96);
   --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 
   /* Layout */
+  --ig-topbar-height: 4rem;
   --ig-gap: 1rem;
   --ig-grid-gap: 1rem;
   --ig-grid-columns: 2;
@@ -179,6 +213,81 @@
   /* Motion */
   --ig-transition-duration: 500ms;
   --ig-hover-scale: 1.03;
+}
+
+/*
+ * The explicit opt-in from the `colorScheme` prop. These land on the gallery
+ * root and on the teleported dialog -- both descendants of the elements every
+ * rule above targets -- and an element's own declaration always beats an
+ * inherited one regardless of specificity, so a plain class is enough to win.
+ */
+.ig-scheme-light {
+  /* Dialog chrome */
+  --ig-overlay: rgba(255, 255, 255, 0.98);
+  --ig-surface: #ffffff;
+  --ig-panel: rgba(246, 246, 247, 0.92);
+  --ig-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-topbar-blur: 12px;
+  --ig-border: rgba(60, 60, 67, 0.12);
+  --ig-text: rgba(60, 60, 67, 0.96);
+  --ig-muted: rgba(60, 60, 67, 0.68);
+  --ig-button: rgba(244, 244, 245, 0.9);
+  --ig-button-hover: rgba(235, 235, 237, 1);
+  --ig-ring: rgba(60, 60, 67, 0.2);
+
+  /* Preview surface */
+  --ig-tile-bg: #ffffff;
+  --ig-tile-shadow: none;
+  --ig-image-fit: cover;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
+  --ig-trigger-bg-hover: #ffffff;
+  --ig-trigger-border: rgba(0, 0, 0, 0.08);
+  --ig-trigger-text: rgba(60, 60, 67, 0.96);
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  --ig-topbar-height: 4rem;
+  --ig-gap: 1rem;
+  --ig-grid-gap: 1rem;
+  --ig-grid-columns: 2;
+  --ig-grid-columns-md: 4;
+  --ig-grid-columns-lg: 5;
+
+  /* Shape */
+  --ig-radius: 1.5rem;
+  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
+
+  /* Motion */
+  --ig-transition-duration: 500ms;
+  --ig-hover-scale: 1.03;
+}
+
+.ig-scheme-dark {
+  /* Dialog chrome */
+  --ig-overlay: rgba(27, 27, 31, 0.98);
+  --ig-surface: #1b1b1f;
+  --ig-panel: rgba(22, 22, 24, 0.92);
+  --ig-topbar-bg: rgba(27, 27, 31, 0.95);
+  --ig-topbar-blur: 12px;
+  --ig-border: rgba(82, 82, 89, 0.32);
+  --ig-text: rgba(255, 255, 245, 0.86);
+  --ig-muted: rgba(235, 235, 245, 0.6);
+  --ig-button: rgba(50, 50, 56, 0.9);
+  --ig-button-hover: rgba(65, 65, 71, 1);
+  --ig-ring: rgba(255, 255, 245, 0.28);
+
+  /* Preview surface */
+  --ig-tile-bg: #1b1b1f;
+  --ig-tile-shadow: none;
+
+  /* Overflow trigger */
+  --ig-trigger-bg: rgba(27, 27, 31, 0.88);
+  --ig-trigger-bg-hover: #1b1b1f;
+  --ig-trigger-border: rgba(82, 82, 89, 0.32);
+  --ig-trigger-text: rgba(255, 255, 245, 0.86);
+  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -209,6 +318,26 @@
   height: 100%;
   max-width: 100%;
   object-fit: var(--ig-image-fit, cover);
+}
+
+/*
+ * The dialog's top bar sits over the image stage rather than beside it, so a
+ * translucent fill reads as glass instead of as a lighter strip. The blur is
+ * behind a @supports guard because without it the fill's alpha just leaks the
+ * stage through at 5%, which looks like a rendering fault rather than a choice
+ * -- so the unsupported path stays opaque. `-webkit-` first for Safari, which
+ * shipped the prefixed property years before the standard one.
+ */
+.image-gallery-topbar {
+  background-color: var(--ig-surface);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .image-gallery-topbar {
+    background-color: var(--ig-topbar-bg, var(--ig-surface));
+    -webkit-backdrop-filter: blur(var(--ig-topbar-blur, 12px)) saturate(180%);
+    backdrop-filter: blur(var(--ig-topbar-blur, 12px)) saturate(180%);
+  }
 }
 
 /*
