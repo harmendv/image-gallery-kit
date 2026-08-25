@@ -14,8 +14,8 @@
       </div>
       <h1 class="home-hero-title">Simple image gallery layouts for Vue.</h1>
       <p class="home-hero-text">
-        Build image galleries with one component, your own markup and classes for the layout, and SSR-safe
-        rendering that works cleanly in real apps.
+        Build image galleries with your own markup and classes for the layout, a finished fullscreen dialog
+        you don't have to write, and SSR-safe rendering that works cleanly in real apps.
       </p>
       <div class="home-hero-actions">
         <a class="home-hero-action home-hero-action-brand" :href="withBase('/guide/getting-started')">

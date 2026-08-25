@@ -2,7 +2,7 @@
 
 `ImageGallery` renders no preview of its own. You put the tiles in its default slot, and **arrangement and size are CSS** — so every breakpoint is a class you already know how to write.
 
-```vue
+```vue-html
 <ImageGallery :images="images">
   <div class="grid grid-cols-3 gap-3">
     <ImageGalleryImage
@@ -21,11 +21,7 @@
   :count="3"
 />
 
-What the component still owns is everything that isn't layout: the fullscreen dialog, the carousel, the all-images grid, the shared-element flight animation, focus trapping, scroll locking and keyboard handling. All of it renders from `images`, so it works the same whatever your preview looks like.
-
-::: info Why there are no layout props
-Earlier versions took `rows`, `columns`, `mainImagePosition`, `mainImageSize`, `imageAspectRatio` and `height`, and derived tile sizes from them in JavaScript. That vocabulary could not express a different arrangement per breakpoint — the thing people wanted most — and every addition to it was another prop that had to compose with all the others. Classes already compose, already have breakpoints, and already have an escape hatch for whatever the vocabulary would have missed.
-:::
+What the component owns is everything that isn't layout: the fullscreen dialog, the carousel, the all-images grid, the shared-element flight animation, focus trapping, scroll locking and keyboard handling. All of it renders from `images`, so it works the same whatever your preview looks like.
 
 ## How Sizing Works
 
@@ -43,7 +39,7 @@ Because the clip lives on the tile, a radius class works without any extra wrapp
 
 The `<img>` inside a tile is a descendant, so your classes cannot reach it — `imageClass` does. That is where `object-fit` and the hover transform belong, and the tile carries `group` so a hover anywhere on it can drive the image:
 
-```vue
+```vue-html
 <ImageGalleryImage
   :image="image"
   class="aspect-[4/5] rounded-xl bg-neutral-100"
@@ -58,7 +54,7 @@ The image inside a tile is absolutely positioned, so the tile contributes **noth
 
 This is easy to trip over in a grid, because grid rows size to their content by default and a row of tiles has no content height to measure:
 
-```vue
+```vue-html
 <!-- Collapses to zero. `grid-rows-2` sizes both rows to content, and there is none. -->
 <div class="grid grid-cols-4 grid-rows-2 gap-3">
   <ImageGalleryImage :image="images[0]" class="col-span-2 row-span-2" />
@@ -75,7 +71,7 @@ This is easy to trip over in a grid, because grid rows size to their content by 
 </div>
 ```
 
-The first one is not exaggerating: every tile computes to exactly `0px` tall, so there is nothing to show you. Both fixes render properly, and the difference between them is worth knowing — definite tracks give every tile the same height, while `aspect-[4/5]` lets each tile derive its own from its width:
+Every tile in the first one computes to exactly `0px` tall, so there is nothing to show. Both fixes render properly, and they differ: definite tracks give every tile the same height, while `aspect-[4/5]` lets each tile derive its own from its width:
 
 <DemoGrid>
   <LayoutShowcase
@@ -98,14 +94,14 @@ In a flex row the reverse applies and works in your favour: `align-items: stretc
 
 ## Positioning The Main Image
 
-There is no `mainImagePosition`. `flex-direction` already says it, and unlike a prop it takes a breakpoint:
+`flex-direction` places the main image, and unlike a prop it takes a breakpoint:
 
-| Old prop value | Class |
+| Main image sits | Class |
 | --- | --- |
-| `main-image-position="left"` | `flex` |
-| `main-image-position="right"` | `flex flex-row-reverse` |
-| `main-image-position="top"` | `flex flex-col` |
-| `main-image-position="bottom"` | `flex flex-col-reverse` |
+| Left | `flex` |
+| Right | `flex flex-row-reverse` |
+| Top | `flex flex-col` |
+| Bottom | `flex flex-col-reverse` |
 
 The `-reverse` variants matter for more than brevity: they move the image visually without reordering your markup, and DOM order is what decides tab order and what a screen reader announces. Write the main image first and let CSS place it.
 
@@ -146,7 +142,7 @@ The `-reverse` variants matter for more than brevity: they move the image visual
 
 Combining them is the part no prop could do — top on phones, left on desktops:
 
-```vue
+```vue-html
 <!-- Resize the page to see this one switch. -->
 <div class="flex flex-col md:flex-row gap-3">
 ```
@@ -163,7 +159,7 @@ Combining them is the part no prop could do — top on phones, left on desktops:
 
 `images` is the source of truth for the collection; your slot describes only what the preview shows. The difference between the two is the overflow, so `ImageGalleryOverflowTrigger` derives its own count and renders nothing when there is none:
 
-```vue
+```vue-html
 <ImageGalleryOverflowTrigger v-slot="{ count }" class="absolute bottom-2 right-2">
   +{{ count }}
 </ImageGalleryOverflowTrigger>
@@ -192,7 +188,7 @@ The default slot receives what only the gallery can know:
 | `open` | `(index: number) => void` | Open the carousel at a collection index. |
 | `openGrid` | `(index: number) => void` | Open the all-images grid, scrolled to a collection index. |
 
-```vue
+```vue-html
 <ImageGallery v-slot="{ total, open, openGrid }" :images="images">
   <ImageGalleryImage v-for="image in images.slice(0, 4)" :key="image.id" :image="image" class="h-32" />
 
@@ -230,7 +226,7 @@ Render your tiles from the same array you pass to `images` — `images.slice(0, 
 
 `ImageGalleryImage` has a default slot for anything that sits on top of the image — a badge, a caption, an index, the overflow trigger. The tile is already `position: relative`, so `absolute` works directly:
 
-```vue
+```vue-html
 <ImageGalleryImage v-slot="{ index }" :image="image" class="aspect-square">
   <span class="absolute left-2 top-2 rounded bg-black/60 px-2 text-xs text-white">
     {{ index + 1 }}

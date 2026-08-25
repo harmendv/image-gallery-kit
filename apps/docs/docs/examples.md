@@ -1,12 +1,12 @@
 # Examples
 
-Every example below is the same component with different classes. That is the whole idea: `ImageGallery` owns the dialog, the carousel, the all-images grid and the transitions, and your markup owns the layout. Nothing here uses a layout prop, because there aren't any.
+Every example below is the same component with different classes. `ImageGallery` owns the dialog, the carousel, the all-images grid and the transitions; your markup owns the layout.
 
 These run the real package from the workspace, not a local source import.
 
 ## Responsive Arrangement
 
-The one that motivated all of this. The main image sits on top below `md` and docks left from `md`, and the tiles change height with it. Resize the page — no JavaScript is involved and no prop takes a breakpoint.
+The main image sits on top below `md` and docks left from `md`, and the tiles change height with it. Resize the page — no JavaScript is involved.
 
 <div class="vp-raw">
   <LayoutShowcase
@@ -18,7 +18,7 @@ The one that motivated all of this. The main image sits on top below `md` and do
   />
 </div>
 
-<<< ./snippets/examples/responsive.txt{vue}
+<<< ./snippets/examples/responsive.txt{vue-html}
 
 `shrink-0` on the main image and `min-w-0 flex-1` on the grid are worth copying. Flex items refuse to shrink below their content by default, so a grid of images without `min-w-0` pushes past its container instead of narrowing.
 
@@ -34,11 +34,11 @@ No main image. Six tiles at a fixed ratio, and an overflow trigger on the last o
   />
 </div>
 
-<<< ./snippets/examples/plain-grid.txt{vue}
+<<< ./snippets/examples/plain-grid.txt{vue-html}
 
 ## Left-Docked Main Image
 
-`w-2/5` is what `main-image-size="0.4"` used to mean. The main image no longer needs a matching `height` prop either: the tile grid establishes the height and `align-items: stretch` — flex's default — makes the main image meet it.
+`w-2/5` sizes the main image to two fifths of the row. It needs no height of its own: the tile grid establishes the height, and `align-items: stretch` — flex's default — makes the main image meet it.
 
 <div class="vp-raw">
   <LayoutShowcase
@@ -50,7 +50,7 @@ No main image. Six tiles at a fixed ratio, and an overflow trigger on the last o
   />
 </div>
 
-<<< ./snippets/examples/left-main.txt{vue}
+<<< ./snippets/examples/left-main.txt{vue-html}
 
 ## Right-Docked Main Image
 
@@ -66,11 +66,11 @@ Identical markup to the previous example. The only difference is `flex-row-rever
   />
 </div>
 
-<<< ./snippets/examples/right-main.txt{vue}
+<<< ./snippets/examples/right-main.txt{vue-html}
 
 ## Top Banner
 
-A wide banner over a row of squares. `aspect-[21/9]` replaces the old `main-image-aspect-ratio`, and it composes with everything else because it is just a class.
+A wide banner over a row of squares. `aspect-[21/9]` sets the banner's ratio, and it composes with everything else because it is just a class.
 
 <div class="vp-raw">
   <LayoutShowcase
@@ -82,7 +82,7 @@ A wide banner over a row of squares. `aspect-[21/9]` replaces the old `main-imag
   />
 </div>
 
-<<< ./snippets/examples/top-banner.txt{vue}
+<<< ./snippets/examples/top-banner.txt{vue-html}
 
 ## Bottom Banner
 
@@ -98,7 +98,7 @@ A wide banner over a row of squares. `aspect-[21/9]` replaces the old `main-imag
   />
 </div>
 
-<<< ./snippets/examples/bottom-banner.txt{vue}
+<<< ./snippets/examples/bottom-banner.txt{vue-html}
 
 ## Mosaic
 
@@ -114,7 +114,7 @@ Spans of differing size — a 2×2 main image and one double-width tile. There w
   />
 </div>
 
-<<< ./snippets/examples/mosaic.txt{vue}
+<<< ./snippets/examples/mosaic.txt{vue-html}
 
 Note the explicit `grid-rows-[9rem_9rem]`. A tile has no intrinsic height, so `grid-rows-2` would size both rows to content and collapse to nothing — see [the warning in Layout](/layout#how-sizing-works).
 
@@ -130,17 +130,17 @@ No grid and no main image: a snap-scrolling row. The dialog still opens on the r
   />
 </div>
 
-<<< ./snippets/examples/strip.txt{vue}
+<<< ./snippets/examples/strip.txt{vue-html}
 
 ## Wide Tiles
 
-`aspect-video` where you would previously have passed `image-aspect-ratio="16 / 9"`. Per-tile now, so one tile can differ from its neighbours.
+`aspect-video` fixes each tile to 16 / 9. The ratio lives on the tile, so one tile can differ from its neighbours.
 
 <div class="vp-raw">
   <LayoutShowcase root-class="grid grid-cols-2 gap-3" tile-class="aspect-video rounded-xl" :count="4" />
 </div>
 
-<<< ./snippets/examples/wide-tiles.txt{vue}
+<<< ./snippets/examples/wide-tiles.txt{vue-html}
 
 ## Carousel Only
 
@@ -155,4 +155,4 @@ Place no overflow trigger and the preview has no route into the grid. `allow-gri
   />
 </div>
 
-<<< ./snippets/examples/carousel-only.txt{vue}
+<<< ./snippets/examples/carousel-only.txt{vue-html}

@@ -64,12 +64,14 @@ interface GalleryLabels {
 | `images` | `GalleryImage[]` | required | The collection. Drives the dialog, carousel and all-images grid, and is what tiles resolve their index against. |
 | `open` | `boolean \| null` | `null` | Controlled dialog state for `v-model:open`. Leave unset for internal state. |
 | `index` | `number \| null` | `null` | Controlled active image index for `v-model:index`. Leave unset for internal state. |
+| `imageAspectRatio` | `number \| string` | `'4 / 5'` | Fallback ratio for images with no intrinsic `width`/`height`. Read by the dialog and the all-images grid only — preview tiles are sized by your classes. |
+| `colorScheme` | `'auto' \| 'light' \| 'dark'` | `'auto'` | Forces the dialog palette for this instance. `'auto'` follows the page. |
 
 ### Labels
 
 Every visible string and `aria-label` comes from `labels`, merged over English defaults. Pass only the keys you want to change — the component has no i18n dependency, so wire it to whatever your app already uses.
 
-```vue
+```vue-html
 <ImageGallery
   :images="images"
   :labels="{
@@ -117,7 +119,7 @@ You build the preview out of these. Both must be rendered inside `ImageGallery`'
 
 ### `ImageGalleryImage`
 
-One preview tile. Deliberately unsized *and* unstyled: it renders a positioning context, an overflow clip and `group`, and the image fills it absolutely — so height, width, aspect ratio, spans, radius, background, shadow and hover all come from the classes you put on it. There are no tokens for any of that, because you own the element.
+One preview tile. Deliberately unsized *and* unstyled: it renders a positioning context, an overflow clip and `group`, and the image fills it absolutely — so height, width, aspect ratio, spans, radius, background, shadow and hover all come from the classes you put on it.
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |

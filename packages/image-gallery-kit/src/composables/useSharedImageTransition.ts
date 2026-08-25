@@ -275,7 +275,7 @@ export function useSharedImageTransition() {
        */
       const duration = 0.34;
       // Spread is measured across the gaps between tiles, not the tiles
-      // themselves, so a small collection keeps exactly its old per-tile 0.04s.
+      // themselves, so a small collection keeps exactly the uncapped per-tile 0.04s.
       const gaps = items.length - 1;
       const staggerTotal = Math.min(gaps * STAGGER_EACH, STAGGER_MAX_TOTAL);
 

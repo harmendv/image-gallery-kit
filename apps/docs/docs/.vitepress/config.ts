@@ -34,6 +34,18 @@ export default defineConfig({
     ['script', {}, "document.documentElement.setAttribute('data-ig-color-scheme', 'class')"]
   ],
   srcExclude: ['README.md'],
+
+  // The example snippets are template *fragments*, not whole SFCs, so they are
+  // fenced as `vue-html`: Shiki's `vue` grammar only tokenises HTML inside a
+  // `<template>` block and emits every other line as one flat, uncoloured token.
+  // `vue-html` resolves to a grammar Shiki registers under the name `template`,
+  // which is what reaches the label, so both keys are mapped back to `vue`.
+  markdown: {
+    languageLabel: {
+      'vue-html': 'vue',
+      template: 'vue'
+    }
+  },
   vite: {
     // Tailwind runs as a Vite plugin rather than a PostCSS plugin. Both
     // `@import 'tailwindcss'` and `@import 'tw-animate-css'` publish their CSS

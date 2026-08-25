@@ -1,4 +1,4 @@
-<!-- `md:w-2/5` is the old `main-image-size="0.4"`, expressed where it belongs. -->
+<!-- `w-2/5` gives the main image two fifths of the row, and `shrink-0` holds it there. -->
 <ImageGallery :images="images">
   <div class="flex gap-3">
     <ImageGalleryImage :image="images[0]" class="w-2/5 shrink-0 rounded-2xl" />

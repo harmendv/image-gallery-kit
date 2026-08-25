@@ -16,7 +16,7 @@ Classes on the two components you render. `imageClass` reaches the `<img>` insid
 
 Dark mode comes along with them: it is a `dark:` variant on the same class, using whatever dark-mode strategy your app already has. There is no second palette to declare.
 
-```vue
+```vue-html
 <ImageGalleryImage
   :image="image"
   class="aspect-[4/5] rounded-xl bg-neutral-100 shadow-md
@@ -42,15 +42,11 @@ Toggle this page's theme and watch the tiles follow:
   :count="6"
 />
 
-The tile carries `group`, which is what lets `group-hover:` on the image react to a hover anywhere on the tile. Since the hover is yours now, so is its reduced-motion behaviour — reach for `motion-safe:` when you add one:
+The tile carries `group`, which is what lets `group-hover:` on the image react to a hover anywhere on the tile. Since the hover is yours, so is its reduced-motion behaviour — reach for `motion-safe:` when you add one:
 
-```vue
+```vue-html
 image-class="transition duration-500 motion-safe:group-hover:scale-105"
 ```
-
-::: tip Why not tokens for these too?
-They were, until they weren't doing anything. Once the preview became your markup, a token like `--ig-tile-shadow` was a second way to say `shadow-md` — and the component had no element left to apply it to that you weren't already styling. Two mechanisms for one job is worse than one, so the preview tokens are gone.
-:::
 
 ## Tokens
 
@@ -98,7 +94,7 @@ All of it is dialog, because the dialog is the only thing you cannot reach with 
 
 ## Reskin It Entirely
 
-Nothing about the default look is baked in. A reskin has two halves now, and it is worth seeing them side by side: **classes** carry the preview, **tokens** carry the dialog.
+Nothing about the default look is baked in. A reskin has two halves, and it is worth seeing them side by side: **classes** carry the preview, **tokens** carry the dialog.
 
 Here is a "gazette" theme — warm paper, deep ink borders three pixels thick, chunky rounding, a lifted shadow, an ink-black trigger.
 
@@ -116,7 +112,7 @@ Open it — the dialog, its frosted top bar, the carousel chrome and the all-ima
 
 The preview half is classes on the components you render. The 3px rule and the lift are one `shadow-[...]`, because a spread shadow costs no layout and never shifts a tile:
 
-```vue
+```vue-html
 <ImageGalleryImage
   :image="image"
   class="aspect-[4/5] rounded-[1.25rem] bg-[#ece2d2]
@@ -249,7 +245,7 @@ Under `prefers-reduced-motion: reduce` the shared-element flight, the grid entra
 
 Tile hover is the exception, and deliberately so: it is a class you wrote, so the package has nothing to disable. Guard it yourself with `motion-safe:`, which is one word and keeps the decision where the animation is:
 
-```vue
+```vue-html
 image-class="transition duration-500 motion-safe:group-hover:scale-105"
 ```
 

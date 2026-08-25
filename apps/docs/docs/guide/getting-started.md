@@ -1,6 +1,6 @@
 # Getting Started
 
-`image-gallery-kit` is built for Vue 3.5+ and ships as a focused package: one component, one plugin install path, one stylesheet, and a small prop surface for layout control.
+`image-gallery-kit` is built for Vue 3.5+ and ships as a focused package: three components, one plugin install path, one stylesheet, and no layout props — the arrangement is markup and classes you write.
 
 ```sh
 npm install image-gallery-kit
@@ -36,7 +36,7 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 
 `ImageGallery` renders no preview of its own — you put the tiles in its default slot, and CSS decides the arrangement. A different layout per breakpoint is a class, not a prop:
 
-```vue
+```vue-html
 <ImageGallery :images="images">
   <div class="flex flex-col gap-3 md:flex-row">
     <ImageGalleryImage :image="images[0]" class="h-56 shrink-0 rounded-2xl md:h-auto md:w-2/5" />
@@ -69,7 +69,7 @@ Styling splits in two, along one line: **you style what you render, tokens style
 
 Your tiles and overflow trigger are your markup, so their appearance is classes — dark mode included, as a `dark:` variant. `imageClass` reaches the `<img>` inside a tile, where `object-fit` and the hover transform live:
 
-```vue
+```vue-html
 <ImageGalleryImage
   :image="image"
   class="aspect-[4/5] rounded-xl bg-neutral-100 shadow-md dark:bg-neutral-800"
@@ -99,9 +99,21 @@ Declare them on `:root` for the whole site, or on any wrapper element to theme a
 
 See [Theming](/theming) for the full token table and a complete re-skin.
 
+## Animation
+
+Opening a tile plays a shared-element flight: the tile's frame and corner radius tween onto the dialog image, and the all-images grid animates its tiles in and out the same way.
+
+Those animations are driven by [gsap](https://gsap.com), which is an *optional* peer dependency — install it to switch them on:
+
+```sh
+npm install gsap
+```
+
+Without it the gallery still works exactly as it does with it: the dialog opens, the index changes and the grid toggles, just without the tweens. The same is true under `prefers-reduced-motion: reduce`, which skips the animations even when gsap is installed.
+
 ## Notes
 
 - Import `image-gallery-kit/style.css` once in your app.
-- `vue` is a peer dependency.
+- `vue` is a required peer dependency; `gsap` is an optional one that enables the animations.
 - The component is safe to render on the server; dialog and transition behavior activate on the client.
 - The dialog traps focus, restores focus to the trigger, and locks body scroll while open.
