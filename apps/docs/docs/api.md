@@ -165,4 +165,5 @@ Every visual surface is driven by CSS custom properties, with a dark palette and
 - The fullscreen dialog still supports both the single-image carousel and the all-images masonry view.
 - The component keeps SSR output free of browser-only dialog behavior until mounted.
 - The dialog traps focus, restores focus to the previously focused trigger, and locks background scrolling while open.
+- In the carousel, `ArrowLeft` / `ArrowRight` page and `Escape` closes. Below 768px the prev/next arrows give way to swiping: drag the image sideways and it slides the neighbour in, snapping in past 30% of the stage and back below it. One drag turns one image however far it runs. Both halves are switched by `--ig-dialog-swipe` — see [Theming](/theming) to keep swiping at every width, or to turn it off.
 - `vue` must be installed by the consuming app because it is a peer dependency.

@@ -20,7 +20,7 @@ import { withBase } from 'vitepress'
   </a>
   <a class="home-feature" :href="withBase('/api#behavior-notes')">
     <div class="home-feature-title">Dialog that's actually finished</div>
-    <p>Focus trap, scroll lock, keyboard nav, and an all-images view.</p>
+    <p>Focus trap, scroll lock, keyboard nav, swipe on touch, and an all-images view.</p>
   </a>
   <a class="home-feature" :href="withBase('/theming')">
     <div class="home-feature-title">Tokens where classes can't reach</div>

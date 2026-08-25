@@ -76,6 +76,8 @@ All of it is dialog, because the dialog is the only thing you cannot reach with 
 | `--ig-dialog-topbar-bg` | `rgba(255, 255, 255, 0.95)` | Top bar fill. The bar floats over the image stage, so an alpha below `1` lets content show through. Set it to `var(--ig-dialog-surface)` for an opaque bar. |
 | `--ig-dialog-topbar-blur` | `12px` | Blur behind the top bar. `0px` keeps the translucency without the frosting. Browsers without `backdrop-filter` fall back to an opaque `--ig-dialog-surface` bar. |
 | `--ig-dialog-topbar-height` | `4rem` | Top bar height. Also reserved above the all-images grid and subtracted from the carousel image's maximum height, so changing it keeps both clear of the bar. |
+| `--ig-dialog-swipe` | `1` below 768px, `0` from 768px | Whether the swipe gesture is armed. The same breakpoint hides the prev/next arrows, so exactly one of the two is live at any width — set it to `1` at all widths to keep swiping on desktop as well, or `0` to turn the gesture off and rely on the arrows and arrow keys. |
+| `--ig-dialog-slide-gap` | `5rem` | Distance between the image on screen and the one waiting off it during a swipe. It only ever shows as travel: the pair stays exactly one image plus this gap apart for the whole turn, which is what keeps them from overlapping. Must clear the stage's own padding, or a sliver of the next image shows past the frame mid-swipe. |
 
 ### `ImageGallery` — the all-images grid
 
