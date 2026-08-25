@@ -23,8 +23,29 @@ export default defineConfig({
   title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
+    // VitePress owns the light/dark decision and expresses it as a `dark` class
+    // it adds and removes. This tells the gallery to follow that class alone:
+    // without it, picking light on a machine whose OS prefers dark leaves the
+    // gallery on its OS-driven dark palette while the page around it turns
+    // light. Set from a head script rather than declared on <html> because
+    // VitePress renders that tag itself.
+    ['script', {}, "document.documentElement.setAttribute('data-ig-color-scheme', 'class')"]
+  ],
   srcExclude: ['README.md'],
+
+  // The example snippets are template *fragments*, not whole SFCs, so they are
+  // fenced as `vue-html`: Shiki's `vue` grammar only tokenises HTML inside a
+  // `<template>` block and emits every other line as one flat, uncoloured token.
+  // `vue-html` resolves to a grammar Shiki registers under the name `template`,
+  // which is what reaches the label, so both keys are mapped back to `vue`.
+  markdown: {
+    languageLabel: {
+      'vue-html': 'vue',
+      template: 'vue'
+    }
+  },
   vite: {
     // Tailwind runs as a Vite plugin rather than a PostCSS plugin. Both
     // `@import 'tailwindcss'` and `@import 'tw-animate-css'` publish their CSS
@@ -67,6 +88,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Getting Started', link: '/guide/getting-started' },
+      { text: 'Layout', link: '/layout' },
       { text: 'Examples', link: '/examples' },
       { text: 'Theming', link: '/theming' },
       { text: 'API', link: '/api' }
@@ -82,6 +104,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: 'Layout', link: '/layout' },
           { text: 'Examples', link: '/examples' },
           { text: 'Theming', link: '/theming' },
           { text: 'API', link: '/api' }

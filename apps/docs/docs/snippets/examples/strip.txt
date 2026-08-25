@@ -1,0 +1,10 @@
+<ImageGallery :images="images">
+  <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+    <ImageGalleryImage
+      v-for="image in images.slice(0, 6)"
+      :key="image.id"
+      :image="image"
+      class="h-40 w-56 shrink-0 snap-start rounded-xl"
+    />
+  </div>
+</ImageGallery>

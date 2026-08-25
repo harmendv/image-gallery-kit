@@ -1,6 +1,0 @@
-<ImageGallery
-  :images="images"
-  :rows="2"
-  :columns="3"
-  image-aspect-ratio="16 / 9"
-/>

@@ -1,7 +1,0 @@
-<ImageGallery
-  :images="images"
-  :rows="2"
-  :columns="3"
-  height="22rem"
-  image-aspect-ratio="1 / 1"
-/>

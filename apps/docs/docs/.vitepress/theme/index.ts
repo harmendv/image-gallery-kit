@@ -4,8 +4,9 @@ import { h } from 'vue';
 import 'image-gallery-kit/style.css';
 import './style.css';
 import DocsLogo from './DocsLogo.vue';
-import GalleryShowcase from '../../components/GalleryShowcase.vue';
 import HomeHero from '../../components/HomeHero.vue';
+import DemoGrid from '../../components/DemoGrid.vue';
+import LayoutShowcase from '../../components/LayoutShowcase.vue';
 
 const theme: Theme = {
   ...DefaultTheme,
@@ -14,8 +15,9 @@ const theme: Theme = {
       'nav-bar-title-before': () => h(DocsLogo)
     }),
   enhanceApp({ app }) {
-    app.component('GalleryShowcase', GalleryShowcase);
     app.component('HomeHero', HomeHero);
+    app.component('DemoGrid', DemoGrid);
+    app.component('LayoutShowcase', LayoutShowcase);
   }
 };
 

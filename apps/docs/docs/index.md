@@ -14,21 +14,21 @@ import { withBase } from 'vitepress'
 <HomeHero />
 
 <div class="home-feature-grid">
-  <a class="home-feature" :href="withBase('/api#grid-layout')">
-    <div class="home-feature-title">One component, every layout</div>
-    <p>Featured, grid, or bento — same images, different props.</p>
+  <a class="home-feature" :href="withBase('/layout')">
+    <div class="home-feature-title">Layout is CSS, not props</div>
+    <p>You write the preview markup. Arrangement and breakpoints are your own classes.</p>
   </a>
   <a class="home-feature" :href="withBase('/api#behavior-notes')">
     <div class="home-feature-title">Dialog that's actually finished</div>
-    <p>Focus trap, scroll lock, keyboard nav, and an all-images view.</p>
+    <p>Focus trap, scroll lock, keyboard nav, swipe on touch, and an all-images view.</p>
   </a>
   <a class="home-feature" :href="withBase('/theming')">
-    <div class="home-feature-title">Themed with tokens</div>
-    <p>Every surface reads a CSS variable. Reskin it without touching a class.</p>
+    <div class="home-feature-title">Tokens where classes can't reach</div>
+    <p>The dialog is teleported out of your markup, so variables theme it. Your preview stays classes.</p>
   </a>
-  <a class="home-feature" :href="withBase('/examples')">
+  <a class="home-feature" :href="withBase('/guide/getting-started#animation')">
     <div class="home-feature-title">Tiles fly into the dialog</div>
-    <p>The tile animates into place instead of cross-fading a copy.</p>
+    <p>The tile's frame and radius tween onto the dialog image. Add gsap to switch it on.</p>
   </a>
   <a class="home-feature" :href="withBase('/guide/getting-started')">
     <div class="home-feature-title">Renders on the server</div>

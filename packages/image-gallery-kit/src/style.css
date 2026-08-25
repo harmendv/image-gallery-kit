@@ -43,43 +43,32 @@
 }
 
 :root {
-  /* Dialog chrome */
-  --ig-overlay: rgba(255, 255, 255, 0.98);
-  --ig-surface: #ffffff;
-  --ig-panel: rgba(255, 255, 255, 0.92);
-  --ig-border: rgba(15, 23, 42, 0.08);
-  --ig-text: rgba(15, 23, 42, 0.96);
-  --ig-muted: rgba(71, 85, 105, 0.72);
-  --ig-button: rgba(255, 255, 255, 0.9);
-  --ig-button-hover: rgba(248, 250, 252, 1);
-  --ig-ring: rgba(15, 23, 42, 0.2);
+  /* ImageGallery -- the dialog it renders and teleports to <body> */
+  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
+  --ig-dialog-surface: #ffffff;
+  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
+  --ig-dialog-border: rgba(60, 60, 67, 0.12);
+  --ig-dialog-text: rgba(60, 60, 67, 0.96);
+  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
+  --ig-dialog-button: rgba(244, 244, 245, 0.9);
+  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
+  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
+  --ig-dialog-radius: 1.5rem;
+  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-dialog-topbar-blur: 12px;
+  --ig-dialog-topbar-height: 4rem;
+  --ig-dialog-slide-gap: 5rem;
 
-  /* Preview surface */
-  --ig-tile-bg: #ffffff;
-  --ig-tile-shadow: none;
-  --ig-image-fit: cover;
+  /* ImageGallery -- the all-images grid inside that dialog */
+  --ig-dialog-grid-gap: 1rem;
+  --ig-dialog-grid-columns: 2;
+  --ig-dialog-grid-columns-md: 4;
+  --ig-dialog-grid-columns-lg: 5;
+  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
 
-  /* Overflow trigger */
-  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
-  --ig-trigger-bg-hover: #ffffff;
-  --ig-trigger-border: rgba(0, 0, 0, 0.08);
-  --ig-trigger-text: #334155;
-  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-
-  /* Layout */
-  --ig-gap: 1rem;
-  --ig-grid-gap: 1rem;
-  --ig-grid-columns: 2;
-  --ig-grid-columns-md: 4;
-  --ig-grid-columns-lg: 5;
-
-  /* Shape */
-  --ig-radius: 1.5rem;
-  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
-
-  /* Motion */
-  --ig-transition-duration: 500ms;
-  --ig-hover-scale: 1.03;
+  /* Every rendered <img>, preview and dialog alike. Named after the property it
+     sets rather than a component, because it belongs to no single one. */
+  --ig-object-fit: cover;
 }
 
 /*
@@ -88,108 +77,172 @@
  * Tokens are declared on ancestors only, never on .image-gallery-theme itself.
  * An element's own declaration beats an inherited one, so re-declaring the
  * light values on the gallery would block any dark palette from reaching it.
+ * The one exception is the explicit `.ig-scheme-*` opt-in below, which the
+ * component puts on its own root precisely because it should win.
  *
- * Dark applies when the OS asks for it, or when the gallery or any ancestor
- * carries the conventional dark switches: a `dark` class (Tailwind's class
- * strategy, shadcn/ui, next-themes, VitePress) or [data-theme="dark"]
- * (DaisyUI, next-themes attribute mode). The matching light switches force
- * light back on even under an OS dark preference.
+ * Three ways to pick a palette, in order of precedence:
+ *
+ *   1. `colorScheme="light|dark"` on the component. Emits `.ig-scheme-light` /
+ *      `.ig-scheme-dark` on the gallery root and on the teleported dialog.
+ *   2. A `dark` class (Tailwind's class strategy, shadcn/ui, next-themes,
+ *      VitePress) or [data-theme="dark"] (DaisyUI, next-themes attribute mode)
+ *      on the gallery or any ancestor. `.light` / [data-theme="light"] force
+ *      light back on even under an OS dark preference.
+ *   3. The OS `prefers-color-scheme` setting.
+ *
+ * Step 3 is the reason step 2 needs an escape hatch. A host that toggles
+ * classes only ever *adds* `dark` -- picking light again just removes it, which
+ * is indistinguishable in CSS from having no theme system at all. Under an OS
+ * dark preference the gallery would then stay dark on a page that just went
+ * light. Such a host opts out of the OS query entirely with
+ * [data-ig-color-scheme] on <html>:
+ *
+ *   <html data-ig-color-scheme="class">
+ *
+ * ...after which only the class switches in step 2 (or the prop in step 1) move
+ * the palette.
  */
 @media (prefers-color-scheme: dark) {
-  :root:not(.light):not([data-theme='light']) {
-    --ig-overlay: rgba(2, 6, 23, 0.98);
-    --ig-surface: #0f172a;
-    --ig-panel: rgba(15, 23, 42, 0.92);
-    --ig-border: rgba(226, 232, 240, 0.12);
-    --ig-text: rgba(241, 245, 249, 0.96);
-    --ig-muted: rgba(148, 163, 184, 0.78);
-    --ig-button: rgba(30, 41, 59, 0.9);
-    --ig-button-hover: rgba(51, 65, 85, 1);
-    --ig-ring: rgba(226, 232, 240, 0.28);
-
-    --ig-tile-bg: #0f172a;
-    --ig-tile-shadow: none;
-
-    --ig-trigger-bg: rgba(15, 23, 42, 0.88);
-    --ig-trigger-bg-hover: #0f172a;
-    --ig-trigger-border: rgba(226, 232, 240, 0.12);
-    --ig-trigger-text: #e2e8f0;
-    --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  :root:not(.light):not([data-theme='light']):not([data-ig-color-scheme]) {
+    /* ImageGallery -- the dialog it renders and teleports to <body> */
+    --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
+    --ig-dialog-surface: #1b1b1f;
+    --ig-dialog-panel: rgba(22, 22, 24, 0.92);
+    --ig-dialog-border: rgba(82, 82, 89, 0.32);
+    --ig-dialog-text: rgba(255, 255, 245, 0.86);
+    --ig-dialog-muted: rgba(235, 235, 245, 0.6);
+    --ig-dialog-button: rgba(50, 50, 56, 0.9);
+    --ig-dialog-button-hover: rgba(65, 65, 71, 1);
+    --ig-dialog-ring: rgba(255, 255, 245, 0.28);
+    --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
+    --ig-dialog-topbar-blur: 12px;
   }
 }
 
 .dark,
 [data-theme='dark'] {
-  --ig-overlay: rgba(2, 6, 23, 0.98);
-  --ig-surface: #0f172a;
-  --ig-panel: rgba(15, 23, 42, 0.92);
-  --ig-border: rgba(226, 232, 240, 0.12);
-  --ig-text: rgba(241, 245, 249, 0.96);
-  --ig-muted: rgba(148, 163, 184, 0.78);
-  --ig-button: rgba(30, 41, 59, 0.9);
-  --ig-button-hover: rgba(51, 65, 85, 1);
-  --ig-ring: rgba(226, 232, 240, 0.28);
-
-  --ig-tile-bg: #0f172a;
-  --ig-tile-shadow: none;
-
-  --ig-trigger-bg: rgba(15, 23, 42, 0.88);
-  --ig-trigger-bg-hover: #0f172a;
-  --ig-trigger-border: rgba(226, 232, 240, 0.12);
-  --ig-trigger-text: #e2e8f0;
-  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  /* ImageGallery -- the dialog it renders and teleports to <body> */
+  --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
+  --ig-dialog-surface: #1b1b1f;
+  --ig-dialog-panel: rgba(22, 22, 24, 0.92);
+  --ig-dialog-border: rgba(82, 82, 89, 0.32);
+  --ig-dialog-text: rgba(255, 255, 245, 0.86);
+  --ig-dialog-muted: rgba(235, 235, 245, 0.6);
+  --ig-dialog-button: rgba(50, 50, 56, 0.9);
+  --ig-dialog-button-hover: rgba(65, 65, 71, 1);
+  --ig-dialog-ring: rgba(255, 255, 245, 0.28);
+  --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
+  --ig-dialog-topbar-blur: 12px;
 }
 
 .light,
 [data-theme='light'] {
-  /* Dialog chrome */
-  --ig-overlay: rgba(255, 255, 255, 0.98);
-  --ig-surface: #ffffff;
-  --ig-panel: rgba(255, 255, 255, 0.92);
-  --ig-border: rgba(15, 23, 42, 0.08);
-  --ig-text: rgba(15, 23, 42, 0.96);
-  --ig-muted: rgba(71, 85, 105, 0.72);
-  --ig-button: rgba(255, 255, 255, 0.9);
-  --ig-button-hover: rgba(248, 250, 252, 1);
-  --ig-ring: rgba(15, 23, 42, 0.2);
+  /* ImageGallery -- the dialog it renders and teleports to <body> */
+  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
+  --ig-dialog-surface: #ffffff;
+  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
+  --ig-dialog-border: rgba(60, 60, 67, 0.12);
+  --ig-dialog-text: rgba(60, 60, 67, 0.96);
+  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
+  --ig-dialog-button: rgba(244, 244, 245, 0.9);
+  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
+  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
+  --ig-dialog-radius: 1.5rem;
+  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-dialog-topbar-blur: 12px;
+  --ig-dialog-topbar-height: 4rem;
+  --ig-dialog-slide-gap: 5rem;
 
-  /* Preview surface */
-  --ig-tile-bg: #ffffff;
-  --ig-tile-shadow: none;
-  --ig-image-fit: cover;
+  /* ImageGallery -- the all-images grid inside that dialog */
+  --ig-dialog-grid-gap: 1rem;
+  --ig-dialog-grid-columns: 2;
+  --ig-dialog-grid-columns-md: 4;
+  --ig-dialog-grid-columns-lg: 5;
+  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
 
-  /* Overflow trigger */
-  --ig-trigger-bg: rgba(255, 255, 255, 0.88);
-  --ig-trigger-bg-hover: #ffffff;
-  --ig-trigger-border: rgba(0, 0, 0, 0.08);
-  --ig-trigger-text: #334155;
-  --ig-trigger-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-
-  /* Layout */
-  --ig-gap: 1rem;
-  --ig-grid-gap: 1rem;
-  --ig-grid-columns: 2;
-  --ig-grid-columns-md: 4;
-  --ig-grid-columns-lg: 5;
-
-  /* Shape */
-  --ig-radius: 1.5rem;
-  --ig-tile-radius: max(0px, calc(var(--ig-radius) - 0.4rem));
-
-  /* Motion */
-  --ig-transition-duration: 500ms;
-  --ig-hover-scale: 1.03;
+  /* Every rendered <img>, preview and dialog alike. Named after the property it
+     sets rather than a component, because it belongs to no single one. */
+  --ig-object-fit: cover;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --ig-transition-duration: 0ms;
-    --ig-hover-scale: 1;
-  }
+/*
+ * The explicit opt-in from the `colorScheme` prop. These land on the gallery
+ * root and on the teleported dialog -- both descendants of the elements every
+ * rule above targets -- and an element's own declaration always beats an
+ * inherited one regardless of specificity, so a plain class is enough to win.
+ */
+.ig-scheme-light {
+  /* ImageGallery -- the dialog it renders and teleports to <body> */
+  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
+  --ig-dialog-surface: #ffffff;
+  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
+  --ig-dialog-border: rgba(60, 60, 67, 0.12);
+  --ig-dialog-text: rgba(60, 60, 67, 0.96);
+  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
+  --ig-dialog-button: rgba(244, 244, 245, 0.9);
+  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
+  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
+  --ig-dialog-radius: 1.5rem;
+  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
+  --ig-dialog-topbar-blur: 12px;
+  --ig-dialog-topbar-height: 4rem;
+  --ig-dialog-slide-gap: 5rem;
+
+  /* ImageGallery -- the all-images grid inside that dialog */
+  --ig-dialog-grid-gap: 1rem;
+  --ig-dialog-grid-columns: 2;
+  --ig-dialog-grid-columns-md: 4;
+  --ig-dialog-grid-columns-lg: 5;
+  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
+
+  /* Every rendered <img>, preview and dialog alike. Named after the property it
+     sets rather than a component, because it belongs to no single one. */
+  --ig-object-fit: cover;
+}
+
+.ig-scheme-dark {
+  /* ImageGallery -- the dialog it renders and teleports to <body> */
+  --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
+  --ig-dialog-surface: #1b1b1f;
+  --ig-dialog-panel: rgba(22, 22, 24, 0.92);
+  --ig-dialog-border: rgba(82, 82, 89, 0.32);
+  --ig-dialog-text: rgba(255, 255, 245, 0.86);
+  --ig-dialog-muted: rgba(235, 235, 245, 0.6);
+  --ig-dialog-button: rgba(50, 50, 56, 0.9);
+  --ig-dialog-button-hover: rgba(65, 65, 71, 1);
+  --ig-dialog-ring: rgba(255, 255, 245, 0.28);
+  --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
+  --ig-dialog-topbar-blur: 12px;
 }
 
 .image-gallery-theme {
-  color: var(--ig-text);
+  color: var(--ig-dialog-text);
+}
+
+/*
+ * The one thing ImageGalleryImage insists on. Not cosmetic: a tile is a
+ * <button>, which is shrink-to-fit even at `display: block`, and the image
+ * inside is absolutely positioned -- so a tile that is not a grid or flex item
+ * has no content to derive a width from and collapses to zero. In @layer
+ * components so `w-56`, `md:w-2/5` and friends still win.
+ *
+ * Everything else about a tile's appearance -- background, shadow, radius,
+ * hover -- is a class you put on it. There are no tokens for those, because you
+ * own the element.
+ */
+@layer components {
+  .image-gallery-tile {
+    width: 100%;
+  }
+
+  /*
+   * Layered, unlike the geometry below, so `object-contain` passed through
+   * `imageClass` beats it. The geometry has to stay unlayered to survive a host
+   * reset; this does not, and being unlayered would make it unoverridable.
+   */
+  .image-gallery-image {
+    object-fit: var(--ig-object-fit, cover);
+  }
 }
 
 /*
@@ -208,29 +261,47 @@
   width: 100%;
   height: 100%;
   max-width: 100%;
-  object-fit: var(--ig-image-fit, cover);
 }
 
 /*
- * The all-images overlay keeps its own spacing and density tokens rather than
- * sharing --ig-gap. The overlay renders inside the gallery root, so pointing it
- * at --ig-gap would make the `gap` prop silently start driving overlay layout
- * it has never touched. Each breakpoint reads its own token so a theme can
+ * The dialog's top bar sits over the image stage rather than beside it, so a
+ * translucent fill reads as glass instead of as a lighter strip. The blur is
+ * behind a @supports guard because without it the fill's alpha just leaks the
+ * stage through at 5%, which looks like a rendering fault rather than a choice
+ * -- so the unsupported path stays opaque. `-webkit-` first for Safari, which
+ * shipped the prefixed property years before the standard one.
+ */
+.image-gallery-topbar {
+  background-color: var(--ig-dialog-surface);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .image-gallery-topbar {
+    background-color: var(--ig-dialog-topbar-bg, var(--ig-dialog-surface));
+    -webkit-backdrop-filter: blur(var(--ig-dialog-topbar-blur, 12px)) saturate(180%);
+    backdrop-filter: blur(var(--ig-dialog-topbar-blur, 12px)) saturate(180%);
+  }
+}
+
+/*
+ * The all-images grid carries its own spacing and density tokens because the
+ * preview has none to share: preview spacing is a `gap-*` class on the
+ * consumer's own element. Each breakpoint reads its own token so a theme can
  * retune the density without giving up the responsive steps.
  */
 /*
- * --ig-grid-columns-current is the resolved count, and exists so the component
+ * --ig-dialog-grid-columns-current is the resolved count, and exists so the component
  * can read one number instead of re-deriving which breakpoint won. Themes still
  * override the three density tokens; only the plumbing changed. It is declared
  * on the grid rather than :root so the media queries below can reassign it
  * without a theme's own :root overrides taking precedence.
  */
 .image-gallery-masonry {
-  --ig-grid-columns-current: var(--ig-grid-columns, 2);
+  --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns, 2);
 
   display: grid;
-  grid-template-columns: repeat(var(--ig-grid-columns-current), minmax(0, 1fr));
-  gap: var(--ig-grid-gap, 1rem);
+  grid-template-columns: repeat(var(--ig-dialog-grid-columns-current), minmax(0, 1fr));
+  gap: var(--ig-dialog-grid-gap, 1rem);
   align-items: start;
 }
 
@@ -238,7 +309,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: var(--ig-grid-gap, 1rem);
+  gap: var(--ig-dialog-grid-gap, 1rem);
 }
 
 /*
@@ -257,12 +328,102 @@
 
 @media (min-width: 768px) {
   .image-gallery-masonry {
-    --ig-grid-columns-current: var(--ig-grid-columns-md, 4);
+    --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns-md, 4);
   }
 }
 
 @media (min-width: 1280px) {
   .image-gallery-masonry {
-    --ig-grid-columns-current: var(--ig-grid-columns-lg, 5);
+    --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns-lg, 5);
   }
 }
+
+/*
+ * The swipe is a phone gesture and the arrows are its pointer equivalent, so
+ * exactly one of the two is live at any width -- and one media query decides
+ * both, which is what stops a stage from ending up with neither. The component
+ * asks this same element which side of the line it is on rather than carrying a
+ * breakpoint of its own (see swipeEnabledFor), so a theme can move the line, or
+ * arm the gesture at every width, and the arrows follow.
+ *
+ * Mobile-first: an unset --ig-dialog-swipe reads as armed, so a consumer who
+ * never loaded this stylesheet gets the gesture and visible arrows rather than a
+ * dialog with no way forward at all.
+ *
+ * `touch-action` is the other load-bearing declaration. Without `pan-y` the
+ * browser owns horizontal touch here and answers a swipe with a pointercancel
+ * partway through, so navigation would fire only sometimes. Vertical panning and
+ * pinch-zoom stay with the browser -- a reader zoomed into a photo needs both,
+ * and the caption can be taller than the stage.
+ */
+.image-gallery-stage {
+  --ig-dialog-swipe: 1;
+
+  touch-action: pan-y pinch-zoom;
+}
+
+.image-gallery-stage-arrow {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .image-gallery-stage {
+    --ig-dialog-swipe: 0;
+  }
+
+  .image-gallery-stage-arrow {
+    display: inline-flex;
+  }
+}
+
+/* Only while a finger is actually down, so a caption stays selectable. */
+.image-gallery-stage[data-ig-swiping='true'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/*
+ * A neighbour waits a full slide and a gap out to either side, so it sits off the
+ * stage until a turn draws it in and the two images are never on screen on top of
+ * one another. The gap is what clears the stage's own padding: a slide is as wide
+ * as the padded frame rather than as the viewport, so a gap narrower than that
+ * padding would leave a sliver of the neighbour showing past the frame the moment
+ * a turn began. The default covers the widest padding the stage uses at any width
+ * the gesture is armed at. Opacity is the belt to that braces.
+ *
+ * Each keeps its own aspect ratio instead of borrowing the outgoing image's box,
+ * so a portrait never arrives pre-cropped to a landscape frame. The component
+ * replaces this transform wholesale mid-turn, so it repeats the centring itself.
+ */
+.image-gallery-stage-slide {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--ig-dialog-radius);
+  opacity: 0;
+}
+
+/*
+ * The resting offset is declared here rather than left to the component, so a
+ * slide is genuinely parked off the stage even before a turn touches it and
+ * returns there if one is interrupted. The component's inline transform takes
+ * over mid-turn and reaches exactly these values at either end of it.
+ */
+.image-gallery-stage-slide[data-ig-slide='previous'] {
+  transform: translate(calc(-100% - var(--ig-dialog-slide-gap, 5rem)), -50%);
+}
+
+.image-gallery-stage-slide[data-ig-slide='next'] {
+  transform: translate(calc(100% + var(--ig-dialog-slide-gap, 5rem)), -50%);
+}
+
+/*
+ * No transition here on purpose. The snap after release is animated by the
+ * component, one frame at a time, for the reason spelled out in startSettle: a
+ * transition declared on these properties would be armed by the very update that
+ * moves them, and a browser starts no transition from that. Both halves of the
+ * gesture -- the finger and the snap -- write this transform the same way, and
+ * the only thing that must not happen is a transition interfering with either.
+ */

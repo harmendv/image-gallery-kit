@@ -14,8 +14,8 @@
       </div>
       <h1 class="home-hero-title">Simple image gallery layouts for Vue.</h1>
       <p class="home-hero-text">
-        Build image galleries with one component, a small set of layout props, and SSR-safe rendering that
-        works cleanly in real apps.
+        Build image galleries with your own markup and classes for the layout, a finished fullscreen dialog
+        you don't have to write, and SSR-safe rendering that works cleanly in real apps.
       </p>
       <div class="home-hero-actions">
         <a class="home-hero-action home-hero-action-brand" :href="withBase('/guide/getting-started')">
@@ -26,26 +26,24 @@
 
       <div class="home-hero-media home-hero-media-mobile vp-raw">
         <div class="home-hero-mobile-gallery-shell">
-          <GalleryShowcase
-            :rows="2"
-            :columns="2"
-            :main-image-index="3"
-            main-image-position="top"
-            main-image-size="12rem"
+          <LayoutShowcase
+            root-class="flex flex-col gap-3"
+            main-class="h-48 rounded-2xl"
+            grid-class="grid grid-cols-2 gap-3"
+            tile-class="aspect-square rounded-xl"
+            :count="5"
           />
         </div>
       </div>
     </div>
 
     <div class="home-hero-media home-hero-media-desktop vp-raw">
-      <GalleryShowcase
-        :rows="2"
-        :columns="2"
-        :main-image-index="3"
-        main-image-position="left"
-        :main-image-size="0.42"
-        height="28rem"
-        image-aspect-ratio="1"
+      <LayoutShowcase
+        root-class="flex gap-3"
+        main-class="w-[42%] shrink-0 rounded-2xl"
+        grid-class="grid min-w-0 flex-1 grid-cols-2 gap-3"
+        tile-class="aspect-square rounded-xl"
+        :count="5"
       />
     </div>
   </section>
@@ -53,5 +51,5 @@
 
 <script setup lang="ts">
 import { withBase } from 'vitepress';
-import GalleryShowcase from './GalleryShowcase.vue';
+import LayoutShowcase from './LayoutShowcase.vue';
 </script>

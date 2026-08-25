@@ -1,8 +1,0 @@
-<ImageGallery
-  :images="images"
-  :rows="2"
-  :columns="3"
-  :main-image-index="1"
-  main-image-position="top"
-  main-image-size="14rem"
-/>

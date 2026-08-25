@@ -82,21 +82,25 @@ function measureVisible(items: HTMLElement[]) {
 export function useSharedImageTransition() {
   /*
    * Read the radius the element actually has rather than any value the caller
-   * thinks it should have. A theme can move --ig-radius through raw CSS, which
-   * no prop-derived constant would know about, and the two surfaces differ
-   * anyway: preview tiles round to --ig-radius, all-images grid tiles to
-   * --ig-tile-radius. Computed style resolves both, and in px, which is what
-   * gsap needs to tween the corner between them instead of snapping.
+   * thinks it should have. The two ends of the flight get their corners from
+   * different places entirely -- a preview tile from whatever class the consumer
+   * put on it, an all-images grid tile from --ig-dialog-grid-tile-radius -- and
+   * neither is knowable from here. Computed style resolves both, and in px,
+   * which is what gsap needs to tween the corner instead of snapping it.
    */
   function getTransitionRadius(element: HTMLElement) {
     return getComputedStyle(element).borderRadius;
   }
 
-  // The clone flies outside the gallery root, so anything it reads through a
-  // token has to travel with it. --ig-image-fit is load-bearing here: the tile
-  // it was cloned from resolves object-fit through the token, and losing it
-  // mid-flight would re-crop the image in the middle of the transition.
-  const TRAVELLING_TOKENS = ['--ig-radius', '--ig-ring', '--ig-image-fit'];
+  /*
+   * The clone flies outside the gallery root, so anything it resolves through an
+   * inherited token has to travel with it. --ig-object-fit is the load-bearing
+   * one: the tile it was cloned from reads object-fit from that token, and
+   * losing it mid-flight would re-crop the image partway through the
+   * transition. Appearance that comes from a class needs no help -- cloneNode
+   * carries the class list along.
+   */
+  const TRAVELLING_TOKENS = ['--ig-object-fit', '--ig-dialog-radius', '--ig-dialog-ring'];
 
   function copyGalleryCustomProperties(source: HTMLElement, clone: HTMLElement) {
     const computedStyle = getComputedStyle(source);
@@ -136,8 +140,11 @@ export function useSharedImageTransition() {
       element.style.transition = 'none';
       element.style.overflow = computedStyle.overflow;
 
-      if (computedStyle.getPropertyValue('--ig-radius').trim()) {
-        element.style.setProperty('--ig-radius', computedStyle.getPropertyValue('--ig-radius').trim());
+      if (computedStyle.getPropertyValue('--ig-dialog-radius').trim()) {
+        element.style.setProperty(
+          '--ig-dialog-radius',
+          computedStyle.getPropertyValue('--ig-dialog-radius').trim()
+        );
       }
     });
 
@@ -268,7 +275,7 @@ export function useSharedImageTransition() {
        */
       const duration = 0.34;
       // Spread is measured across the gaps between tiles, not the tiles
-      // themselves, so a small collection keeps exactly its old per-tile 0.04s.
+      // themselves, so a small collection keeps exactly the uncapped per-tile 0.04s.
       const gaps = items.length - 1;
       const staggerTotal = Math.min(gaps * STAGGER_EACH, STAGGER_MAX_TOTAL);
 

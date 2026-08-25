@@ -35,7 +35,7 @@
 
 |  | |
 | --- | --- |
-| **One component, every layout** | Featured, plain grid, or bento — same images, different props. |
+| **Layout is CSS, not props** | You write the preview markup. Arrangement, sizing and breakpoints are your own classes. |
 | **A dialog that's actually finished** | Keyboard navigation, focus trap, focus restore, and body-scroll locking. |
 | **Tiles fly into the dialog** | The real tile animates into place instead of cross-fading a copy. |
 | **Renders on the server** | No browser globals touched before mount, no hydration mismatch, no empty-grid flash. |
@@ -60,7 +60,7 @@ npm install gsap
 
 ```vue
 <script setup lang="ts">
-import { ImageGallery, type GalleryImage } from 'image-gallery-kit'
+import { ImageGallery, ImageGalleryImage, type GalleryImage } from 'image-gallery-kit'
 import 'image-gallery-kit/style.css'
 
 const images: GalleryImage[] = [
@@ -70,7 +70,16 @@ const images: GalleryImage[] = [
 </script>
 
 <template>
-  <ImageGallery :images="images" :rows="2" :columns="3" :main-image-index="0" />
+  <ImageGallery :images="images">
+    <div class="grid grid-cols-3 gap-4">
+      <ImageGalleryImage
+        v-for="image in images"
+        :key="image.src"
+        :image="image"
+        class="aspect-[4/5] rounded-xl"
+      />
+    </div>
+  </ImageGallery>
 </template>
 ```
 
@@ -99,19 +108,33 @@ The dialog manages its own state by default. Pass `open` and/or `index` to take 
 
 ## Layouts
 
+There are no layout props. The preview is your markup, so arrangement is whatever CSS you already write — including things a prop could never express, like a different arrangement per breakpoint:
+
 ```vue
-<!-- Featured image docked to a side, rest in a secondary grid -->
-<ImageGallery :images="images" :rows="2" :columns="3" :main-image-index="0" main-image-position="left" />
+<!-- Main image on top for phones, docked left from md -->
+<ImageGallery :images="images">
+  <div class="flex flex-col gap-3 md:flex-row">
+    <ImageGalleryImage :image="images[0]" class="h-56 shrink-0 rounded-2xl md:h-auto md:w-2/5" />
 
-<!-- Plain grid, no featured tile -->
-<ImageGallery :images="images" :rows="2" :columns="4" />
-
-<!-- Featured tile on top, half the height -->
-<ImageGallery :images="images" :rows="1" :columns="3" :main-image-index="0" main-image-position="top" :main-image-size="0.5" />
+    <div class="grid min-w-0 flex-1 grid-cols-2 gap-3">
+      <ImageGalleryImage
+        v-for="image in images.slice(1, 5)"
+        :key="image.id"
+        :image="image"
+        class="h-24 rounded-xl md:h-40"
+      >
+        <!-- Knows how many images the preview left out, and hides itself when none -->
+        <ImageGalleryOverflowTrigger v-slot="{ count }" class="absolute bottom-2 right-2">
+          +{{ count }}
+        </ImageGalleryOverflowTrigger>
+      </ImageGalleryImage>
+    </div>
+  </div>
+</ImageGallery>
 ```
 
-`rows * columns` is the capacity of the *secondary* grid only — a featured image adds one tile on top of that.
-A numeric `mainImageSize` is a layout fraction; a string is a raw CSS size such as `18rem`.
+`flex-row` / `flex-row-reverse` / `flex-col` / `flex-col-reverse` place the main image on any side.
+A tile has no intrinsic height, so give it one — a class on the tile, or a definite track in its parent.
 
 ## API at a glance
 
@@ -123,19 +146,16 @@ A numeric `mainImageSize` is a layout fraction; a string is a raw CSS size such 
 | `images` | `GalleryImage[]` | required |
 | `open` | `boolean \| null` | `null` (uncontrolled) |
 | `index` | `number \| null` | `null` (uncontrolled) |
-| `rows` | `number` | `2` |
-| `columns` | `number` | `2` |
-| `imageAspectRatio` | `number \| string` | `'4 / 5'` |
-| `mainImageIndex` | `number \| null` | `null` |
-| `mainImagePosition` | `'top' \| 'right' \| 'bottom' \| 'left'` | `'left'` |
-| `mainImageSize` | `number \| string \| null` | `0.4` |
-| `mainImageAspectRatio` | `number \| string \| null` | `null` |
 | `allowGridView` | `boolean` | `true` |
-| `height` | `string \| null` | `null` |
-| `width` | `string \| null` | `'100%'` |
+| `imageAspectRatio` | `number \| string` | `'4 / 5'` |
+| `colorScheme` | `'auto' \| 'light' \| 'dark'` | `'auto'` |
 | `labels` | `Partial<GalleryLabels>` | `undefined` |
 
-Pure presentation — gaps, radii, `object-fit`, hover scale, transition duration — lives in [CSS tokens](#theming), not props.
+`imageAspectRatio` is a fallback for the all-images grid only — it needs a height per tile to pack columns, so images without intrinsic `width`/`height` borrow it. Preview tiles are sized by your classes.
+
+`ImageGalleryImage` takes one prop, `image`. `ImageGalleryOverflowTrigger` takes none — it derives its count.
+
+Layout is your markup; pure presentation — gaps, radii, `object-fit`, hover scale, transition duration — lives in [CSS tokens](#theming). Neither is a prop.
 
 </details>
 
@@ -167,19 +187,32 @@ Full prop, event, slot, and token reference: [the API docs](https://harmendv.git
 
 ## Theming
 
-Every surface is driven by a CSS custom property. A dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`. Transitions respect `prefers-reduced-motion`.
+Every surface is driven by a CSS custom property. A neutral dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`; the `colorScheme` prop overrides both for a single instance. Transitions respect `prefers-reduced-motion`.
+
+If your app has its own light/dark toggle, add `data-ig-color-scheme` to the root element so the gallery follows your class instead of the OS preference:
+
+```html
+<html data-ig-color-scheme="class">
+```
 
 ```css
+/* Tokens style the dialog -- the part you cannot reach with a class. */
 :root {
-  --ig-radius: 1.5rem;
-  --ig-gap: 1rem;
-  --ig-surface: #ffffff;
-  --ig-text: rgba(15, 23, 42, 0.96);
-  --ig-tile-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
-  --ig-image-fit: cover;
-  --ig-hover-scale: 1.03;
-  --ig-transition-duration: 500ms;
+  --ig-dialog-surface: #ffffff;
+  --ig-dialog-text: rgba(60, 60, 67, 0.96);
+  --ig-dialog-radius: 1.5rem;
+  --ig-dialog-grid-columns-md: 3;
 }
+```
+
+The preview is your markup, so its appearance is classes. `imageClass` reaches the `<img>` inside a tile:
+
+```vue
+<ImageGalleryImage
+  :image="image"
+  class="aspect-[4/5] rounded-xl shadow-md"
+  image-class="transition duration-500 motion-safe:group-hover:scale-105"
+/>
 ```
 
 See [Theming](https://harmendv.github.io/image-gallery-kit/theming) for the complete token table.
