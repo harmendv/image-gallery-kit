@@ -3,6 +3,7 @@ import { afterEach } from 'vitest';
 import { createSSRApp, h } from 'vue';
 import { renderToString } from '@vue/server-renderer';
 import ImageGallery from '@/components/ImageGallery.vue';
+import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
 const images: GalleryImage[] = [
@@ -29,7 +30,8 @@ describe('dialog teleport', () => {
     document.body.appendChild(host);
 
     const wrapper = mount(ImageGallery, {
-      props: { images, rows: 1, columns: 2 },
+      props: { images },
+      slots: { default: previewSlot(images) },
       attachTo: host,
       ...realTeleport
     });
@@ -45,7 +47,8 @@ describe('dialog teleport', () => {
 
   it('removes the teleported dialog on close and on unmount', async () => {
     const wrapper = mount(ImageGallery, {
-      props: { images, rows: 1, columns: 2 },
+      props: { images },
+      slots: { default: previewSlot(images) },
       attachTo: document.body,
       ...realTeleport
     });

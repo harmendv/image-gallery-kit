@@ -14,9 +14,9 @@ import { withBase } from 'vitepress'
 <HomeHero />
 
 <div class="home-feature-grid">
-  <a class="home-feature" :href="withBase('/api#grid-layout')">
-    <div class="home-feature-title">One component, every layout</div>
-    <p>Featured, grid, or bento — same images, different props.</p>
+  <a class="home-feature" :href="withBase('/layout')">
+    <div class="home-feature-title">Layout is CSS, not props</div>
+    <p>You write the preview markup. Arrangement and breakpoints are your own classes.</p>
   </a>
   <a class="home-feature" :href="withBase('/api#behavior-notes')">
     <div class="home-feature-title">Dialog that's actually finished</div>

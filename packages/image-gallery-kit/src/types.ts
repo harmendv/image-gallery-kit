@@ -23,9 +23,6 @@ export interface GalleryLabels {
   close: string;
   previous: string;
   next: string;
-  empty: string;
 }
 
-export type MainImagePosition = 'top' | 'right' | 'bottom' | 'left';
-export type MainImageSize = number | string;
 export type GalleryColorScheme = 'auto' | 'light' | 'dark';

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, vi } from 'vitest';
 import ImageGallery from '@/components/ImageGallery.vue';
+import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
 const images: GalleryImage[] = Array.from({ length: 9 }, (_, index) => ({
@@ -26,7 +27,7 @@ function stubResolvedColumns(count: number) {
       get(target, property) {
         if (property === 'getPropertyValue') {
           return (name: string) =>
-            name === '--ig-grid-columns-current' ? `${count}` : target.getPropertyValue(name);
+            name === '--ig-dialog-grid-columns-current' ? `${count}` : target.getPropertyValue(name);
         }
 
         const value = Reflect.get(target, property);
@@ -61,7 +62,8 @@ function stubRects(resolve: (element: Element) => Partial<DOMRect>) {
 
 async function openBento(props: Record<string, unknown> = {}) {
   const wrapper = mount(ImageGallery, {
-    props: { images, rows: 1, columns: 2, ...props },
+    props: { images, ...props },
+    slots: { default: previewSlot(images, 2) },
     attachTo: document.body
   });
 
@@ -134,7 +136,8 @@ describe('all-images grid at collection scale', () => {
     Element.prototype.scrollIntoView = scrollIntoView;
 
     const wrapper = mount(ImageGallery, {
-      props: { images, rows: 1, columns: 2, index: 7 },
+      props: { images, index: 7 },
+      slots: { default: previewSlot(images, 2) },
       attachTo: document.body
     });
 

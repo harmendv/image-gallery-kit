@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  shallowRef,
+  useSlots,
+  watch
+} from 'vue';
+import type { Ref } from 'vue';
+import { GALLERY_CONTEXT } from '@/composables/useGalleryContext';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
-import type {
-  GalleryColorScheme,
-  GalleryImage,
-  GalleryLabels,
-  MainImagePosition,
-  MainImageSize
-} from '@/types';
+import type { GalleryColorScheme, GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
 type PreviewEntry = {
@@ -20,33 +26,23 @@ const props = withDefaults(
     images: GalleryImage[];
     open?: boolean | null;
     index?: number | null;
-    rows?: number;
-    columns?: number;
+    /*
+     * Only the dialog reads this now. The grid packs columns shortest-first and
+     * needs a height for every tile to do it, so an image without intrinsic
+     * `width`/`height` borrows this ratio. Preview tiles are sized by the
+     * classes on them and never consult it.
+     */
     imageAspectRatio?: number | string;
-    mainImageAspectRatio?: number | string | null;
-    mainImageIndex?: number | null;
-    mainImagePosition?: MainImagePosition;
-    mainImageSize?: MainImageSize | null;
     allowGridView?: boolean;
     colorScheme?: GalleryColorScheme;
-    height?: string | null;
-    width?: string | null;
     labels?: Partial<GalleryLabels>;
   }>(),
   {
     open: null,
     index: null,
-    rows: 2,
-    columns: 2,
     imageAspectRatio: '4 / 5',
-    mainImageAspectRatio: null,
-    mainImageIndex: null,
-    mainImagePosition: 'left',
-    mainImageSize: 0.4,
     allowGridView: true,
     colorScheme: 'auto',
-    height: null,
-    width: '100%',
     labels: undefined
   }
 );
@@ -64,7 +60,6 @@ const isMounted = ref(false);
 const internalOpen = ref(props.open ?? false);
 const internalIndex = ref(props.index ?? 0);
 const dialogMode = ref<DialogMode>('single');
-const previewFrameRefs = ref<(HTMLDivElement | null)[]>([]);
 const bentoFrameRefs = ref<(HTMLDivElement | null)[]>([]);
 const carouselFrameRef = ref<HTMLDivElement | null>(null);
 const bentoGridRef = ref<HTMLDivElement | null>(null);
@@ -89,8 +84,7 @@ const DEFAULT_LABELS: GalleryLabels = {
   toggleGrid: 'Toggle image grid',
   close: 'Close dialog',
   previous: 'Previous image',
-  next: 'Next image',
-  empty: 'No images available'
+  next: 'Next image'
 };
 
 const resolvedLabels = computed<GalleryLabels>(() => {
@@ -103,11 +97,7 @@ const resolvedLabels = computed<GalleryLabels>(() => {
 
 const isOpenControlled = computed(() => props.open !== null);
 const isIndexControlled = computed(() => props.index !== null);
-const rowCount = computed(() => Math.max(1, Math.floor(props.rows)));
-const columnCount = computed(() => Math.max(1, Math.floor(props.columns)));
-const secondaryCapacity = computed(() => rowCount.value * columnCount.value);
 const totalImages = computed(() => props.images.length);
-const heightValue = computed(() => props.height);
 const imageAspectRatioValue = computed(() => {
   if (typeof props.imageAspectRatio === 'number') {
     return `${props.imageAspectRatio}`;
@@ -133,76 +123,7 @@ const imageAspectRatioNumber = computed(() => {
 
   return width / height;
 });
-const mainImageAspectRatioValue = computed(() => {
-  if (props.mainImageAspectRatio === null || props.mainImageAspectRatio === undefined) {
-    return null;
-  }
-
-  if (typeof props.mainImageAspectRatio === 'number') {
-    return props.mainImageAspectRatio > 0 ? `${props.mainImageAspectRatio}` : null;
-  }
-
-  const value = props.mainImageAspectRatio.trim();
-  return value.length ? value : null;
-});
-const useCustomMainImageAspectRatio = computed(() => !heightValue.value && !!mainImageAspectRatioValue.value);
-const validMainImageIndex = computed(() => {
-  if (props.mainImageIndex === null || props.mainImageIndex === undefined) {
-    return null;
-  }
-
-  return props.mainImageIndex >= 0 && props.mainImageIndex < props.images.length
-    ? props.mainImageIndex
-    : null;
-});
-const hasMainImage = computed(() => validMainImageIndex.value !== null);
-const mainImageEntry = computed<PreviewEntry | null>(() => {
-  if (validMainImageIndex.value === null) {
-    return null;
-  }
-
-  return {
-    image: props.images[validMainImageIndex.value],
-    actualIndex: validMainImageIndex.value
-  };
-});
-const mainImageActualIndex = computed(() => mainImageEntry.value?.actualIndex ?? -1);
-const secondaryEntries = computed<PreviewEntry[]>(() =>
-  props.images
-    .map((image, index) => ({ image, actualIndex: index }))
-    .filter((entry) => entry.actualIndex !== validMainImageIndex.value)
-);
-const visibleSecondaryEntries = computed(() => secondaryEntries.value.slice(0, secondaryCapacity.value));
-const hiddenSecondaryCount = computed(() =>
-  Math.max(0, secondaryEntries.value.length - visibleSecondaryEntries.value.length)
-);
-const hasOverflow = computed(() => props.allowGridView && hiddenSecondaryCount.value > 0);
-const plainGridItemCount = computed(() => visibleSecondaryEntries.value.length);
-const plainGridRows = computed(() => Math.max(1, Math.ceil(plainGridItemCount.value / columnCount.value)));
-
-const normalizedMainImageSize = computed(() => {
-  if (props.mainImageSize === null || props.mainImageSize === undefined) {
-    return null;
-  }
-
-  if (typeof props.mainImageSize === 'number') {
-    return Math.min(0.95, Math.max(0.05, props.mainImageSize));
-  }
-
-  return props.mainImageSize.trim();
-});
-/*
- * Pure presentation reads straight from the tokens. The literal fallbacks are
- * belt-and-braces for a host that forgot the stylesheet; the gap needs one most
- * because it is interpolated into the grid's calc() track math, where an
- * unresolved var() invalidates the whole expression instead of dropping a
- * single visual flourish.
- */
-const previewGap = 'var(--ig-gap, 1rem)';
-const masonryTileRadius = 'var(--ig-tile-radius)';
-const galleryStyle = computed(() => ({
-  width: props.width ?? '100%'
-}));
+const masonryTileRadius = 'var(--ig-dialog-grid-tile-radius)';
 /*
  * `auto` deliberately emits nothing: the stylesheet's cascade of OS query and
  * `dark`/`data-theme` switches only works while the gallery declares no palette
@@ -233,202 +154,6 @@ const dialogIsVisible = computed(() => isDialogOpen.value && activeImage.value !
 const counterLabel = computed(() => resolvedLabels.value.counter(currentIndex.value + 1, totalImages.value));
 const hasDialogToolbarSlot = computed(() => Boolean(slots['dialog-toolbar']));
 const hasDialogCaptionSlot = computed(() => Boolean(slots['dialog-caption']));
-
-function getSecondaryHeightTerm() {
-  const ratio = imageAspectRatioNumber.value;
-  const columns = columnCount.value;
-  const rows = rowCount.value;
-  const gap = previewGap;
-  const cellWidth = `((100% - (${Math.max(columns - 1, 0)} * ${gap})) / ${columns})`;
-  const cellHeight = `(${cellWidth} / ${ratio})`;
-
-  return `((${rows} * ${cellHeight}) + (${Math.max(rows - 1, 0)} * ${gap}))`;
-}
-
-function getMainImageHeightExpression() {
-  const secondaryHeightTerm = getSecondaryHeightTerm();
-  const mainSize = typeof normalizedMainImageSize.value === 'number' ? normalizedMainImageSize.value : null;
-
-  if (mainSize === null) {
-    return null;
-  }
-
-  const mainFactor = mainSize / (1 - mainSize);
-  return `calc((${secondaryHeightTerm}) * ${mainFactor})`;
-}
-
-const featuredLayoutStyle = computed(() => {
-  if (!hasMainImage.value) {
-    return null;
-  }
-
-  const gap = previewGap;
-  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
-  const baseStyle: Record<string, string> = {
-    display: 'grid',
-    gap
-  };
-
-  if (isHorizontal) {
-    let mainTrack = '';
-    let secondaryTrack = '';
-
-    if (typeof normalizedMainImageSize.value === 'number') {
-      const mainFraction = normalizedMainImageSize.value;
-      const secondaryFraction = 1 - mainFraction;
-      mainTrack = `minmax(0, calc((100% - ${gap}) * ${mainFraction}))`;
-      secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
-    } else if (typeof normalizedMainImageSize.value === 'string') {
-      mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
-      secondaryTrack = 'minmax(0, 1fr)';
-    } else {
-      mainTrack = 'minmax(0, auto)';
-      secondaryTrack = 'minmax(0, 1fr)';
-    }
-
-    baseStyle.gridTemplateColumns =
-      props.mainImagePosition === 'left'
-        ? `${mainTrack} ${secondaryTrack}`
-        : `${secondaryTrack} ${mainTrack}`;
-
-    if (heightValue.value) {
-      baseStyle.height = heightValue.value;
-      baseStyle.alignItems = 'stretch';
-    } else {
-      baseStyle.alignItems = 'start';
-    }
-
-    return baseStyle;
-  }
-
-  let mainTrack = '';
-  let secondaryTrack = '';
-  const shouldUseCustomMainAspectRatio = useCustomMainImageAspectRatio.value;
-
-  if (shouldUseCustomMainAspectRatio) {
-    mainTrack = 'auto';
-    secondaryTrack = 'auto';
-  } else if (typeof normalizedMainImageSize.value === 'number') {
-    if (heightValue.value) {
-      const mainFraction = normalizedMainImageSize.value;
-      const secondaryFraction = 1 - mainFraction;
-      mainTrack = `minmax(0, calc((100% - ${gap}) * ${mainFraction}))`;
-      secondaryTrack = `minmax(0, calc((100% - ${gap}) * ${secondaryFraction}))`;
-      baseStyle.height = heightValue.value;
-    } else {
-      mainTrack = `minmax(0, ${getMainImageHeightExpression()})`;
-      secondaryTrack = 'auto';
-    }
-  } else if (typeof normalizedMainImageSize.value === 'string') {
-    mainTrack = `minmax(0, ${normalizedMainImageSize.value})`;
-    secondaryTrack = heightValue.value ? 'minmax(0, 1fr)' : 'auto';
-
-    if (heightValue.value) {
-      baseStyle.height = heightValue.value;
-    }
-  } else {
-    mainTrack = 'auto';
-    secondaryTrack = 'auto';
-  }
-
-  baseStyle.gridTemplateRows =
-    props.mainImagePosition === 'top' ? `${mainTrack} ${secondaryTrack}` : `${secondaryTrack} ${mainTrack}`;
-
-  return baseStyle;
-});
-
-const secondaryGridStyle = computed(() => {
-  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
-  const syncHeightWithMainImage =
-    hasMainImage.value && (heightValue.value ? true : isHorizontal && !useCustomMainImageAspectRatio.value);
-
-  return {
-    display: 'grid',
-    gap: previewGap,
-    gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
-    gridTemplateRows: heightValue.value ? `repeat(${rowCount.value}, minmax(0, 1fr))` : undefined,
-    height: syncHeightWithMainImage ? '100%' : (heightValue.value ?? undefined),
-    alignContent: 'start'
-  };
-});
-
-const plainGridStyle = computed(() => ({
-  display: 'grid',
-  gap: previewGap,
-  gridTemplateColumns: `repeat(${columnCount.value}, minmax(0, 1fr))`,
-  gridTemplateRows: heightValue.value ? `repeat(${plainGridRows.value}, minmax(0, 1fr))` : undefined,
-  height: heightValue.value ?? undefined,
-  alignContent: 'start'
-}));
-
-const mainImageItemStyle = computed(() => {
-  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
-  const hasCustomMainAspectRatio = useCustomMainImageAspectRatio.value;
-  const intrinsicHeight =
-    !isHorizontal && !heightValue.value && typeof normalizedMainImageSize.value === 'number'
-      ? hasCustomMainAspectRatio
-        ? undefined
-        : (getMainImageHeightExpression() ?? undefined)
-      : undefined;
-
-  return {
-    minHeight: 0,
-    height: heightValue.value || (isHorizontal && !hasCustomMainAspectRatio) ? '100%' : intrinsicHeight,
-    gridColumn: isHorizontal ? (props.mainImagePosition === 'right' ? '2' : '1') : '1',
-    gridRow: isHorizontal ? '1' : props.mainImagePosition === 'bottom' ? '2' : '1'
-  };
-});
-
-const secondaryWrapperStyle = computed(() => {
-  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
-
-  return {
-    gridColumn: isHorizontal ? (props.mainImagePosition === 'right' ? '1' : '2') : '1',
-    gridRow: isHorizontal ? '1' : props.mainImagePosition === 'bottom' ? '1' : '2'
-  };
-});
-
-const mainImageFrameStyle = computed(() => {
-  const isHorizontal = props.mainImagePosition === 'left' || props.mainImagePosition === 'right';
-
-  if (heightValue.value) {
-    return {
-      width: '100%',
-      height: '100%',
-      aspectRatio: 'auto'
-    };
-  }
-
-  if (useCustomMainImageAspectRatio.value) {
-    return {
-      width: '100%',
-      height: 'auto',
-      aspectRatio: mainImageAspectRatioValue.value ?? 'auto'
-    };
-  }
-
-  if (isHorizontal) {
-    return {
-      width: '100%',
-      height: '100%',
-      aspectRatio: 'auto'
-    };
-  }
-
-  if (typeof normalizedMainImageSize.value === 'string') {
-    return {
-      width: '100%',
-      height: normalizedMainImageSize.value,
-      aspectRatio: 'auto'
-    };
-  }
-
-  return {
-    width: '100%',
-    height: getMainImageHeightExpression() ?? '100%',
-    aspectRatio: 'auto'
-  };
-});
 
 function getImageAspectRatio(image: GalleryImage | null, fallback: string = imageAspectRatioValue.value) {
   if (!image?.width || !image?.height) {
@@ -491,11 +216,133 @@ function syncGridColumnCount() {
   }
 
   const parsed = Number.parseInt(
-    getComputedStyle(container).getPropertyValue('--ig-grid-columns-current'),
+    getComputedStyle(container).getPropertyValue('--ig-dialog-grid-columns-current'),
     10
   );
 
   gridColumnCount.value = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+/*
+ * Keyed by image rather than by index: a child knows which image it draws, and
+ * its index is derived. Keying on index instead would break the moment the
+ * consumer reordered or filtered their preview subset, because two tiles would
+ * briefly claim the same slot mid-update.
+ *
+ * shallowRef, not ref, and the distinction is load-bearing. `ref` would make
+ * the Map deeply reactive, and iterating a reactive collection yields *proxies*
+ * of its keys -- so copying it to publish a change would silently swap every
+ * raw image key for a proxy, and the unregister on unmount would then look up
+ * the raw object and miss. Registrations would accumulate and the overflow
+ * count would never come back down. shallowRef leaves the keys alone and makes
+ * the reassignment itself the reactive signal.
+ */
+const previewRegistry = shallowRef(new Map<GalleryImage, Ref<HTMLElement | null>>());
+
+/*
+ * Read by ImageGalleryOverflowTrigger, never by this component's own render.
+ * That distinction is load-bearing: children register during setup, which runs
+ * inside this component's render pass, so a render that depended on the count
+ * would invalidate itself the moment a child registered and loop forever. The
+ * trigger is a separate component rendering after the tiles, so it sees the
+ * settled count -- on the server too, which is what keeps the SSR markup right.
+ *
+ * Nothing is lost by keeping it out of the slot props: the consumer chose which
+ * tiles to render, so they already know how many there are.
+ */
+const registeredIndices = computed(() => {
+  const indices: number[] = [];
+
+  previewRegistry.value.forEach((_frame, image) => {
+    const index = resolveImageIndex(image);
+
+    if (index >= 0) {
+      indices.push(index);
+    }
+  });
+
+  return indices;
+});
+
+const composedOverflowCount = computed(() =>
+  Math.max(0, totalImages.value - new Set(registeredIndices.value).size)
+);
+
+const composedLastPreviewedIndex = computed(() =>
+  registeredIndices.value.length ? Math.max(...registeredIndices.value) : 0
+);
+
+/*
+ * Identity first, then id, then src. A consumer whose `images` come from a
+ * computed `.map()` hands children a fresh object every recompute, so identity
+ * alone would resolve to -1 and every tile would lose its place in the
+ * collection -- silently, showing up only as a transition that flies from
+ * nowhere.
+ */
+function resolveImageIndex(image: GalleryImage) {
+  const direct = props.images.indexOf(image);
+
+  if (direct >= 0) {
+    return direct;
+  }
+
+  if (image.id !== undefined) {
+    const byId = props.images.findIndex((candidate) => candidate.id === image.id);
+
+    if (byId >= 0) {
+      return byId;
+    }
+  }
+
+  return props.images.findIndex((candidate) => candidate.src === image.src);
+}
+
+provide(GALLERY_CONTEXT, {
+  registerPreview(image, frame) {
+    if (previewRegistry.value.get(image) === frame) {
+      return;
+    }
+
+    previewRegistry.value = new Map(previewRegistry.value).set(image, frame);
+
+    if (resolveImageIndex(image) < 0 && import.meta.env?.DEV) {
+      console.warn(
+        '[image-gallery-kit] <ImageGalleryImage> was given an image that is not in the `images` prop. ' +
+          'Opening it will not work; match by object identity, `id`, or `src`.',
+        image
+      );
+    }
+  },
+  unregisterPreview(image) {
+    const next = new Map(previewRegistry.value);
+
+    if (next.delete(image)) {
+      previewRegistry.value = next;
+    }
+  },
+  resolveIndex: resolveImageIndex,
+  openImage: openSingle,
+  openGrid: openBentoFromPreview,
+  labels: resolvedLabels,
+  overflowCount: composedOverflowCount,
+  total: totalImages,
+  allowGridView: computed(() => props.allowGridView),
+  lastPreviewedIndex: composedLastPreviewedIndex
+});
+
+/*
+ * Resolved at click time, not at registration time: a tile's element can be
+ * replaced by a keyed update or a v-if between mounting and being clicked, and
+ * animateBetween measures whatever this returns.
+ */
+function getPreviewFrame(index: number) {
+  for (const [image, frame] of previewRegistry.value) {
+    if (resolveImageIndex(image) === index) {
+      return frame.value ?? null;
+    }
+  }
+
+  return null;
 }
 
 function getImageKey(image: GalleryImage, index: number) {
@@ -512,10 +359,6 @@ function getPreviewImageLoading(image: GalleryImage) {
 
 function getDialogImageLoading(image: GalleryImage) {
   return image.loading ?? 'eager';
-}
-
-function setPreviewFrameRef(index: number, element: HTMLDivElement | null) {
-  previewFrameRefs.value[index] = element;
 }
 
 function setBentoFrameRef(index: number, element: HTMLDivElement | null) {
@@ -582,7 +425,7 @@ async function openSingle(index: number) {
     return;
   }
 
-  const fromFrame = previewFrameRefs.value[index] ?? null;
+  const fromFrame = getPreviewFrame(index);
   const fromRect = getElementRect(fromFrame);
 
   const nextIndex = setCurrentIndex(index);
@@ -601,7 +444,7 @@ async function openSingle(index: number) {
 
 async function openBentoFromPreview(index: number) {
   const targetIndex = Math.min(index, totalImages.value - 1);
-  const fromFrame = previewFrameRefs.value[targetIndex] ?? null;
+  const fromFrame = getPreviewFrame(targetIndex);
   const fromRect = getElementRect(fromFrame);
 
   const nextIndex = setCurrentIndex(Math.max(0, targetIndex));
@@ -862,7 +705,6 @@ watch([dialogMode, dialogIsVisible], async () => {
 watch(
   () => props.images,
   () => {
-    previewFrameRefs.value = [];
     bentoFrameRefs.value = [];
     focusableCache.value = null;
 
@@ -896,146 +738,15 @@ watch(dialogIsVisible, async (open) => {
 </script>
 
 <template>
-  <section class="image-gallery-theme w-full" :class="colorSchemeClass" :style="galleryStyle">
-    <div
-      v-if="!props.images.length"
-      class="image-gallery-empty flex w-full items-center justify-center rounded-[var(--ig-radius)] border border-dashed border-[var(--ig-border)] text-sm text-[var(--ig-muted)]"
-      :style="{ aspectRatio: imageAspectRatioValue }"
-    >
-      <slot name="empty">{{ resolvedLabels.empty }}</slot>
-    </div>
-
-    <div
-      v-else-if="hasMainImage && mainImageEntry && featuredLayoutStyle"
-      class="image-gallery-featured"
-      :style="featuredLayoutStyle"
-    >
-      <div
-        class="group relative overflow-hidden rounded-[var(--ig-radius)] shadow-[var(--ig-tile-shadow)] text-left"
-        :style="mainImageItemStyle"
-      >
-        <button
-          type="button"
-          class="relative block h-full w-full focus-visible:outline-none"
-          :aria-label="resolvedLabels.openImage(mainImageActualIndex + 1)"
-          @click="openSingle(mainImageActualIndex)"
-        >
-          <div
-            :ref="(element) => setPreviewFrameRef(mainImageActualIndex, element as HTMLDivElement | null)"
-            class="relative overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-            :style="mainImageFrameStyle"
-          >
-            <img
-              :src="getPreviewImageSrc(mainImageEntry.image)"
-              :alt="mainImageEntry.image.alt"
-              :srcset="mainImageEntry.image.srcset"
-              :sizes="mainImageEntry.image.sizes"
-              :decoding="mainImageEntry.image.decoding"
-              class="image-gallery-image absolute inset-0 block h-full w-full transition duration-[var(--ig-transition-duration)] group-hover:scale-[var(--ig-hover-scale)]"
-              :loading="getPreviewImageLoading(mainImageEntry.image)"
-            />
-          </div>
-        </button>
-      </div>
-
-      <div class="image-gallery-secondary" :style="[secondaryGridStyle, secondaryWrapperStyle]">
-        <div
-          v-for="entry in visibleSecondaryEntries"
-          :key="getImageKey(entry.image, entry.actualIndex)"
-          class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] shadow-[var(--ig-tile-shadow)] text-left"
-        >
-          <button
-            type="button"
-            class="relative block h-full w-full focus-visible:outline-none"
-            :aria-label="resolvedLabels.openImage(entry.actualIndex + 1)"
-            @click="openSingle(entry.actualIndex)"
-          >
-            <div
-              :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
-              class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-              :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
-            >
-              <img
-                :src="getPreviewImageSrc(entry.image)"
-                :alt="entry.image.alt"
-                :srcset="entry.image.srcset"
-                :sizes="entry.image.sizes"
-                :decoding="entry.image.decoding"
-                class="image-gallery-image absolute inset-0 block h-full w-full transition duration-[var(--ig-transition-duration)] group-hover:scale-[var(--ig-hover-scale)]"
-                :loading="getPreviewImageLoading(entry.image)"
-              />
-            </div>
-          </button>
-
-          <button
-            v-if="
-              hasOverflow &&
-              entry.actualIndex === visibleSecondaryEntries[visibleSecondaryEntries.length - 1]?.actualIndex
-            "
-            type="button"
-            class="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--ig-trigger-border)] bg-[var(--ig-trigger-bg)] text-[var(--ig-trigger-text)] shadow-[var(--ig-trigger-shadow)] backdrop-blur transition hover:bg-[var(--ig-trigger-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
-            :aria-label="resolvedLabels.showAllImages(totalImages)"
-            @click.stop="openBentoFromPreview(entry.actualIndex)"
-          >
-            <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current" stroke-width="1.7">
-              <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-              <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-              <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-              <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-else class="image-gallery-secondary" :style="plainGridStyle">
-      <div
-        v-for="entry in visibleSecondaryEntries"
-        :key="getImageKey(entry.image, entry.actualIndex)"
-        class="group relative min-h-0 overflow-hidden rounded-[var(--ig-radius)] shadow-[var(--ig-tile-shadow)] text-left"
-      >
-        <button
-          type="button"
-          class="relative block h-full w-full focus-visible:outline-none"
-          :aria-label="resolvedLabels.openImage(entry.actualIndex + 1)"
-          @click="openSingle(entry.actualIndex)"
-        >
-          <div
-            :ref="(element) => setPreviewFrameRef(entry.actualIndex, element as HTMLDivElement | null)"
-            class="relative h-full w-full overflow-hidden rounded-[var(--ig-radius)] bg-[var(--ig-tile-bg)]"
-            :style="heightValue ? undefined : { aspectRatio: imageAspectRatioValue }"
-          >
-            <img
-              :src="getPreviewImageSrc(entry.image)"
-              :alt="entry.image.alt"
-              :srcset="entry.image.srcset"
-              :sizes="entry.image.sizes"
-              :decoding="entry.image.decoding"
-              class="image-gallery-image absolute inset-0 block h-full w-full transition duration-[var(--ig-transition-duration)] group-hover:scale-[var(--ig-hover-scale)]"
-              :loading="getPreviewImageLoading(entry.image)"
-            />
-          </div>
-        </button>
-
-        <button
-          v-if="
-            hasOverflow &&
-            entry.actualIndex === visibleSecondaryEntries[visibleSecondaryEntries.length - 1]?.actualIndex
-          "
-          type="button"
-          class="absolute bottom-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--ig-trigger-border)] bg-[var(--ig-trigger-bg)] text-[var(--ig-trigger-text)] shadow-[var(--ig-trigger-shadow)] backdrop-blur transition hover:bg-[var(--ig-trigger-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
-          :aria-label="resolvedLabels.showAllImages(totalImages)"
-          @click.stop="openBentoFromPreview(entry.actualIndex)"
-        >
-          <svg viewBox="0 0 24 24" class="h-5 w-5 fill-none stroke-current" stroke-width="1.7">
-            <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-            <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-            <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-            <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
-          </svg>
-        </button>
-      </div>
-    </div>
+  <section class="image-gallery-theme w-full" :class="colorSchemeClass">
+    <!--
+      The preview is entirely the consumer's markup. Nothing is emitted around
+      it -- no wrapper grid, no sizing -- so their own element is the layout
+      root and their classes are the only thing deciding arrangement. Slot props
+      carry what only the gallery can know: the collection, how much of it the
+      preview covers, and the two ways into the dialog.
+    -->
+    <slot :images="props.images" :total="totalImages" :open="openSingle" :open-grid="openBentoFromPreview" />
 
     <!--
       Teleported to body: a fixed overlay is positioned against the nearest
@@ -1047,14 +758,14 @@ watch(dialogIsVisible, async (open) => {
       <div
         v-if="dialogIsVisible && activeImage"
         ref="dialogRef"
-        class="fixed inset-0 z-50 bg-[var(--ig-overlay)]"
+        class="fixed inset-0 z-50 bg-[var(--ig-dialog-overlay)]"
         :class="colorSchemeClass"
         role="dialog"
         aria-modal="true"
         :aria-label="resolvedLabels.dialog(counterLabel)"
         tabindex="-1"
       >
-        <div class="relative z-10 h-screen w-screen overflow-hidden bg-[var(--ig-surface)]">
+        <div class="relative z-10 h-screen w-screen overflow-hidden bg-[var(--ig-dialog-surface)]">
           <!--
             The bar floats over a full-bleed stage rather than sitting above it
             in the flow. A translucent bar stacked on the opaque shell would
@@ -1063,14 +774,14 @@ watch(dialogIsVisible, async (open) => {
             grid scrolls its tiles underneath.
           -->
           <div
-            class="image-gallery-topbar absolute inset-x-0 top-0 z-20 grid h-[var(--ig-topbar-height,4rem)] grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--ig-border)] px-4 text-[var(--ig-text)] sm:px-6"
+            class="image-gallery-topbar absolute inset-x-0 top-0 z-20 grid h-[var(--ig-dialog-topbar-height,4rem)] grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[var(--ig-dialog-border)] px-4 text-[var(--ig-dialog-text)] sm:px-6"
           >
             <div class="flex min-w-0 items-center gap-3">
               <button
                 v-if="dialogMode === 'single' && props.allowGridView && totalImages > 1"
                 type="button"
                 :aria-label="resolvedLabels.toggleGrid"
-                class="inline-flex items-center gap-2 rounded-full bg-[var(--ig-button)] px-3 py-2 text-sm font-medium text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+                class="inline-flex items-center gap-2 rounded-full bg-[var(--ig-dialog-button)] px-3 py-2 text-sm font-medium text-[var(--ig-dialog-text)] transition hover:bg-[var(--ig-dialog-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-dialog-ring)]"
                 @click="toggleDialogMode"
               >
                 <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="1.7">
@@ -1096,7 +807,7 @@ watch(dialogIsVisible, async (open) => {
 
             <div
               v-if="dialogMode === 'single'"
-              class="text-center text-[11px] font-medium tracking-[0.18em] text-[var(--ig-muted)] uppercase"
+              class="text-center text-[11px] font-medium tracking-[0.18em] text-[var(--ig-dialog-muted)] uppercase"
             >
               {{ counterLabel }}
             </div>
@@ -1106,7 +817,7 @@ watch(dialogIsVisible, async (open) => {
               <button
                 ref="closeButtonRef"
                 type="button"
-                class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ig-button)] text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ig-dialog-button)] text-[var(--ig-dialog-text)] transition hover:bg-[var(--ig-dialog-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-dialog-ring)]"
                 :aria-label="resolvedLabels.close"
                 @click="closeDialog"
               >
@@ -1117,11 +828,11 @@ watch(dialogIsVisible, async (open) => {
             </div>
           </div>
 
-          <div class="absolute inset-0 overflow-hidden bg-[var(--ig-panel)]">
+          <div class="absolute inset-0 overflow-hidden bg-[var(--ig-dialog-panel)]">
             <div v-if="dialogMode === 'single'" class="flex h-full items-center justify-center">
               <button
                 type="button"
-                class="absolute left-4 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--ig-button)] text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+                class="absolute left-4 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--ig-dialog-button)] text-[var(--ig-dialog-text)] transition hover:bg-[var(--ig-dialog-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-dialog-ring)]"
                 :aria-label="resolvedLabels.previous"
                 @click="goPrevious"
               >
@@ -1133,11 +844,11 @@ watch(dialogIsVisible, async (open) => {
               <div class="flex h-full w-full flex-col items-center justify-center px-10 py-6 sm:px-20">
                 <div
                   ref="carouselFrameRef"
-                  class="relative overflow-hidden rounded-[var(--ig-radius)]"
+                  class="relative overflow-hidden rounded-[var(--ig-dialog-radius)]"
                   :style="{
                     aspectRatio: getImageAspectRatio(activeImage, '4 / 5'),
                     width: 'min(100%, 56rem)',
-                    maxHeight: 'calc(100vh - (2 * var(--ig-topbar-height, 4rem)) - 4rem)'
+                    maxHeight: 'calc(100vh - (2 * var(--ig-dialog-topbar-height, 4rem)) - 4rem)'
                   }"
                 >
                   <img
@@ -1148,13 +859,13 @@ watch(dialogIsVisible, async (open) => {
                     :sizes="activeImage.sizes"
                     :decoding="activeImage.decoding"
                     :loading="getDialogImageLoading(activeImage)"
-                    class="image-gallery-image absolute inset-0 block h-full w-full rounded-[var(--ig-radius)]"
+                    class="image-gallery-image absolute inset-0 block h-full w-full rounded-[var(--ig-dialog-radius)]"
                   />
                 </div>
 
                 <div
                   v-if="hasDialogCaptionSlot || activeImage.caption"
-                  class="mt-4 w-full max-w-3xl text-center text-sm leading-6 text-[var(--ig-muted)]"
+                  class="mt-4 w-full max-w-3xl text-center text-sm leading-6 text-[var(--ig-dialog-muted)]"
                 >
                   <slot name="dialog-caption" :image="activeImage" :index="currentIndex" :total="totalImages">
                     {{ activeImage.caption }}
@@ -1164,7 +875,7 @@ watch(dialogIsVisible, async (open) => {
 
               <button
                 type="button"
-                class="absolute right-4 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--ig-button)] text-[var(--ig-text)] transition hover:bg-[var(--ig-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]"
+                class="absolute right-4 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--ig-dialog-button)] text-[var(--ig-dialog-text)] transition hover:bg-[var(--ig-dialog-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-dialog-ring)]"
                 :aria-label="resolvedLabels.next"
                 @click="goNext"
               >
@@ -1177,7 +888,7 @@ watch(dialogIsVisible, async (open) => {
             <div
               v-else
               class="h-full overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-5"
-              :style="{ paddingTop: 'calc(var(--ig-topbar-height, 4rem) + 1rem)' }"
+              :style="{ paddingTop: 'calc(var(--ig-dialog-topbar-height, 4rem) + 1rem)' }"
             >
               <div ref="bentoGridRef" class="image-gallery-masonry">
                 <div
@@ -1193,7 +904,7 @@ watch(dialogIsVisible, async (open) => {
                     :data-bento-index="entry.actualIndex"
                     :data-bento-active="entry.actualIndex === currentIndex ? 'true' : 'false'"
                     :class="[
-                      'image-gallery-masonry-tile group relative block w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-ring)]',
+                      'image-gallery-masonry-tile group relative block w-full overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ig-dialog-ring)]',
                       isBentoEntering && entry.actualIndex !== currentIndex
                         ? 'opacity-0 translate-y-5 scale-[0.98]'
                         : ''

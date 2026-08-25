@@ -1,0 +1,15 @@
+<!-- `flex-col-reverse` puts the banner underneath without reordering the markup. -->
+<ImageGallery :images="images">
+  <div class="flex flex-col-reverse gap-3">
+    <ImageGalleryImage :image="images[0]" class="h-48 rounded-2xl" />
+
+    <div class="grid grid-cols-3 gap-3">
+      <ImageGalleryImage
+        v-for="image in images.slice(1, 4)"
+        :key="image.id"
+        :image="image"
+        class="aspect-square rounded-xl"
+      />
+    </div>
+  </div>
+</ImageGallery>

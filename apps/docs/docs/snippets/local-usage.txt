@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ImageGallery } from 'image-gallery-kit'
+import { ImageGallery, ImageGalleryImage, ImageGalleryOverflowTrigger } from 'image-gallery-kit'
 import 'image-gallery-kit/style.css'
 
 const images = [
   {
+    id: 'tasting-table',
     src: 'https://images.unsplash.com/photo-1511300636408-a63a89df3482?auto=format&fit=crop&w=1400&q=80',
     alt: 'Guests trading baked treats at a tasting table',
     width: 1400,
     height: 1800
   },
   {
+    id: 'plating',
     src: 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=1800&q=80',
     alt: 'Baker plating pastries in a warm kitchen',
     width: 1800,
@@ -19,5 +21,14 @@ const images = [
 </script>
 
 <template>
-  <ImageGallery :images="images" :rows="1" :columns="2" image-aspect-ratio="4 / 5" />
+  <ImageGallery :images="images">
+    <div class="grid grid-cols-2 gap-4">
+      <ImageGalleryImage
+        v-for="image in images"
+        :key="image.id"
+        :image="image"
+        class="aspect-[4/5] rounded-xl"
+      />
+    </div>
+  </ImageGallery>
 </template>

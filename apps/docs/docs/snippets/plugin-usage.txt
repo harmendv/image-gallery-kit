@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import ImageGallery from 'image-gallery-kit'
+import ImageGalleryPlugin from 'image-gallery-kit'
 import 'image-gallery-kit/style.css'
 
-createApp(App).use(ImageGallery).mount('#app')
+// Registers ImageGallery, ImageGalleryImage and ImageGalleryOverflowTrigger.
+createApp(App).use(ImageGalleryPlugin).mount('#app')

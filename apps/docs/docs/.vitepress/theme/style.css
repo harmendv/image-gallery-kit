@@ -7,25 +7,46 @@
 @import 'tw-animate-css';
 @source "../../components/**/*.{vue,ts}";
 @source "../../*.md";
-
-:root {
-  --vp-c-brand-1: #011a28;
-  --vp-c-brand-2: #02283d;
-  --vp-c-brand-3: #033551;
-  --vp-c-brand-soft: rgba(1, 26, 40, 0.14);
-}
+@source "../../guide/*.md";
 
 /*
- * The brand navy is near-black, so it is unreadable on VitePress's dark
- * surfaces (inline code measured 1.04:1). Dark mode borrows the logo's teal
- * tile instead: #06b6d4 lifted to #22d3ee for text-weight contrast on
- * --vp-c-bg (#1b1b1f), with the raw logo value kept as the deep step.
+ * Tailwind's `dark:` defaults to prefers-color-scheme, but VitePress owns the
+ * light/dark decision and expresses it as a `dark` class it adds and removes.
+ * Without this remap every `dark:` class in the docs would follow the OS and
+ * ignore the appearance toggle -- the same mismatch the package documents for
+ * its own tokens.
  */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Both themes take the brand from the logo's rose tile (#f43f5e) and move it
+ * as far as their own background allows. The raw value sits at 3.67:1 on white
+ * and 3.40:1 on --vp-c-bg-alt, so light mode cannot use it for text; dark mode
+ * nearly can (4.68:1) but has room to spare, so it takes a brighter step.
+ *
+ * The binding constraint in light mode is --vp-c-bg-alt (#f6f6f7), where inline
+ * code sits -- stricter than plain white. rose-600 clears white at 4.70:1 but
+ * only reaches 4.35:1 there, so rose-700 is the vivid ceiling for light text:
+ * 6.29:1 on white, 5.82:1 on the alt surface.
+ *
+ * Where the brand is a *background* rather than text the maths flips, and both
+ * themes get the full logo rose -- see the hero CTA below.
+ *
+ * -2 is the hover step and -3 the solid button fill, following VitePress's own
+ * mapping. Light darkens on hover; dark lightens.
+ */
+:root {
+  --vp-c-brand-1: #be123c;
+  --vp-c-brand-2: #9f1239;
+  --vp-c-brand-3: #be123c;
+  --vp-c-brand-soft: rgba(244, 63, 94, 0.18);
+}
+
 .dark {
-  --vp-c-brand-1: #22d3ee;
-  --vp-c-brand-2: #67e8f9;
-  --vp-c-brand-3: #06b6d4;
-  --vp-c-brand-soft: rgba(34, 211, 238, 0.16);
+  --vp-c-brand-1: #fb7185;
+  --vp-c-brand-2: #fda4af;
+  --vp-c-brand-3: #f43f5e;
+  --vp-c-brand-soft: rgba(244, 63, 94, 0.2);
 }
 
 :root,
@@ -199,33 +220,47 @@
     background-color 0.2s ease;
 }
 
+/*
+ * `.vp-doc a` paints prose links with the brand and outranks `.home-hero-action`
+ * on specificity, so the secondary action has to claim its own colour back --
+ * for every link state, since :visited and :active would otherwise win on
+ * source order. The brand rule below is later still, so it keeps the primary.
+ */
+.home-hero-action,
+.home-hero-action:hover,
+.home-hero-action:visited,
+.home-hero-action:active {
+  color: var(--vp-c-text-1) !important;
+}
+
 .home-hero-action:hover {
-  border-color: var(--vp-c-brand-1);
-}
-
-.home-hero-action-brand {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-1);
-  color: #fff !important;
-}
-
-.home-hero-action-brand:hover,
-.home-hero-action-brand:visited,
-.home-hero-action-brand:active {
-  color: #fff !important;
+  border-color: var(--vp-c-text-3);
+  background: var(--vp-c-bg-soft);
 }
 
 /*
- * Dark mode swaps the brand to a light teal, so white-on-brand collapses to
- * ~1.7:1. Flip the label to the deep teal instead. This has to restate every
- * link state: the :visited/:active rules above carry the same specificity, so
- * a bare `.dark .home-hero-action-brand` loses to them on source order alone.
+ * White label, so the fill is picked to carry it: rose-600 measures 4.70:1
+ * against white, where the raw logo rose (#f43f5e) manages only 3.67:1 and
+ * would fail at this text size. Hover darkens to rose-700, 6.29:1.
+ *
+ * Every link state is restated because :visited and :active carry the same
+ * specificity as the neutral rule above and would win on source order.
  */
-.dark .home-hero-action-brand,
-.dark .home-hero-action-brand:hover,
-.dark .home-hero-action-brand:visited,
-.dark .home-hero-action-brand:active {
-  color: #042f2e !important;
+.home-hero-action-brand {
+  border-color: #e11d48;
+  background: #e11d48;
+}
+
+.home-hero-action-brand,
+.home-hero-action-brand:hover,
+.home-hero-action-brand:visited,
+.home-hero-action-brand:active {
+  color: #ffffff !important;
+}
+
+.home-hero-action-brand:hover {
+  border-color: #be123c;
+  background: #be123c;
 }
 
 .home-hero-media {
@@ -393,5 +428,77 @@
 
   .home-hero-title {
     font-size: 2.35rem;
+  }
+}
+
+/*
+ * Docs-only chrome for the layout showcases. Kept out of the showcase component
+ * so its own markup stays close to what the snippets tell readers to write.
+ */
+.showcase-label {
+  margin: 0 0 0.5rem;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.75rem;
+  color: var(--vp-c-text-2);
+}
+
+.showcase-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--vp-c-bg) 82%, transparent);
+  padding: 0.0625rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  backdrop-filter: blur(6px);
+}
+
+.showcase-trigger {
+  /* The trigger ships unstyled, so this is what any consumer would write --
+     here pointed at VitePress's palette so it tracks the appearance toggle. */
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--vp-c-bg) 88%, transparent);
+  color: var(--vp-c-text-1);
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.25);
+  backdrop-filter: blur(8px);
+}
+
+.showcase-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.showcase-controls button {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  transition: border-color 0.2s;
+}
+
+.showcase-controls button:hover {
+  border-color: var(--vp-c-brand-1);
+}
+
+.demo-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .demo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

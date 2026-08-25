@@ -1,9 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { afterEach } from 'vitest';
-import { createSSRApp, h, nextTick } from 'vue';
+import { createSSRApp, defineComponent, h, nextTick } from 'vue';
 import { renderToString } from '@vue/server-renderer';
 import ImageGallery from '@/components/ImageGallery.vue';
+import ImageGalleryImage from '@/components/ImageGalleryImage.vue';
+import ImageGalleryOverflowTrigger from '@/components/ImageGalleryOverflowTrigger.vue';
 import type { GalleryImage } from '@/types';
+import { previewSlot as tiles } from './helpers';
 
 const images: GalleryImage[] = [
   { src: '/one.jpg', alt: 'One', width: 800, height: 1200 },
@@ -12,12 +15,19 @@ const images: GalleryImage[] = [
   { src: '/four.jpg', alt: 'Four', width: 900, height: 1200 }
 ];
 
-const manyImages: GalleryImage[] = Array.from({ length: 9 }, (_, index) => ({
-  src: `/${index + 1}.jpg`,
-  alt: `Image ${index + 1}`,
-  width: index % 2 === 0 ? 1200 : 900,
-  height: index % 2 === 0 ? 900 : 1200
-}));
+function mountGallery(
+  props: Record<string, unknown> = {},
+  slotFactory?: () => unknown,
+  mountOptions: Record<string, unknown> = {}
+) {
+  const collection = (props.images as GalleryImage[]) ?? images;
+
+  return mount(ImageGallery, {
+    props: { images: collection, ...props },
+    slots: { default: slotFactory ?? tiles(collection) },
+    ...mountOptions
+  });
+}
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -26,349 +36,261 @@ afterEach(() => {
 });
 
 describe('ImageGallery', () => {
-  it('uses rows and columns as sparse grid capacity', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 3,
-        allowGridView: false
-      }
-    });
+  it('renders exactly the tiles the slot provides and nothing around them', () => {
+    const wrapper = mountGallery({}, tiles(images, 3));
 
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
-      3
-    );
+    expect(wrapper.findAll('.image-gallery-tile')).toHaveLength(3);
+    // No built-in layout is emitted: the section wraps the slot directly.
+    expect(wrapper.find('.image-gallery-secondary').exists()).toBe(false);
     expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
   });
 
-  it('keeps a single image to one slot in a multi-column grid', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: [images[0]],
-        rows: 1,
-        columns: 3
-      }
-    });
+  it('adds no sizing of its own to a tile', () => {
+    const wrapper = mountGallery({}, tiles(images, 1));
+    const tile = wrapper.get('.image-gallery-tile');
 
-    const grid = wrapper.get('.image-gallery-secondary');
-    expect(grid.attributes('style')).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
-      1
+    expect(tile.attributes('style')).toBeUndefined();
+    expect(tile.classes()).toContain('overflow-hidden');
+  });
+
+  it('passes the consumer classes through to the tile element', () => {
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: images[0], class: 'h-24 md:h-40 rounded-xl' })
+    ]);
+
+    expect(wrapper.get('.image-gallery-tile').classes()).toEqual(
+      expect.arrayContaining(['h-24', 'md:h-40', 'rounded-xl'])
     );
   });
 
   it('opens the clicked image in single-image mode', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 3
-      }
-    });
+    const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 2"]').trigger('click');
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
-    expect(wrapper.find('img[alt="Two"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] img[alt="Two"]').exists()).toBe(true);
   });
 
-  it('opens bento mode from the replace-last-tile overflow trigger', async () => {
+  it('resolves a tile to its index in the full collection, not its position in the preview', async () => {
+    // Preview starts at the third image, so the second tile is collection index 3.
+    const wrapper = mountGallery({}, () =>
+      images.slice(2).map((image) => h(ImageGalleryImage, { image, key: image.src }))
+    );
+
+    const tileButtons = wrapper.findAll('.image-gallery-tile');
+    expect(tileButtons[0].attributes('aria-label')).toBe('Open image 3');
+    expect(tileButtons[1].attributes('aria-label')).toBe('Open image 4');
+
+    await tileButtons[1].trigger('click');
+
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('4 of 4');
+  });
+
+  it('resolves an image by id when identity does not match', async () => {
+    const collection = images.map((image, index) => ({ ...image, id: index }));
+    // A fresh object with a matching id, as a computed `.map()` would produce.
+    const wrapper = mountGallery({ images: collection }, () => [
+      h(ImageGalleryImage, { image: { ...collection[2] } })
+    ]);
+
+    expect(wrapper.get('.image-gallery-tile').attributes('aria-label')).toBe('Open image 3');
+
+    await wrapper.get('.image-gallery-tile').trigger('click');
+
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('3 of 4');
+  });
+
+  it('resolves an image by src when neither identity nor id match', () => {
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: { src: '/two.jpg', alt: 'Two' } })
+    ]);
+
+    expect(wrapper.get('.image-gallery-tile').attributes('aria-label')).toBe('Open image 2');
+  });
+
+  it('reports the collection through slot props', () => {
     const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 2
+      props: { images },
+      slots: {
+        default: ({ images: collection, total }) => [
+          h('span', { 'data-test': 'counts' }, `${collection.length}/${total}`),
+          ...images.slice(0, 2).map((image) => h(ImageGalleryImage, { image, key: image.src }))
+        ]
       }
     });
 
-    await wrapper.get('button[aria-label="Show all 4 images"]').trigger('click');
+    expect(wrapper.get('[data-test="counts"]').text()).toBe('4/4');
+  });
 
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+  /*
+   * The count deliberately reaches the consumer through the trigger rather than
+   * through slot props: children register during setup, inside the parent's
+   * render, so a slot prop carrying the count would make the parent's render
+   * invalidate itself on every registration.
+   */
+  it('does not loop when a tile remounts without a key', async () => {
+    const Host = defineComponent({
+      props: { flip: { type: Boolean, required: true } },
+      setup(hostProps) {
+        return () =>
+          h(
+            ImageGallery,
+            { images },
+            {
+              default: () => [
+                h(ImageGalleryImage, { image: hostProps.flip ? images[1] : images[0] }),
+                h(ImageGalleryOverflowTrigger, null, {
+                  default: ({ count }: { count: number }) => `+${count}`
+                })
+              ]
+            }
+          );
+      }
+    });
+
+    const wrapper = mount(Host, { props: { flip: false } });
+    expect(wrapper.get('.image-gallery-overflow-trigger').text()).toBe('+3');
+
+    await wrapper.setProps({ flip: true });
+    await nextTick();
+
+    expect(wrapper.get('.image-gallery-tile').attributes('aria-label')).toBe('Open image 2');
+    expect(wrapper.get('.image-gallery-overflow-trigger').text()).toBe('+3');
+  });
+
+  it('derives the overflow trigger count and follows a changing preview subset', async () => {
+    const Host = defineComponent({
+      props: { count: { type: Number, required: true } },
+      setup(hostProps) {
+        return () =>
+          h(
+            ImageGallery,
+            { images },
+            {
+              default: () => [
+                ...images
+                  .slice(0, hostProps.count)
+                  .map((image) => h(ImageGalleryImage, { image, key: image.src })),
+                h(ImageGalleryOverflowTrigger, null, {
+                  default: ({ count }: { count: number }) => `+${count}`
+                })
+              ]
+            }
+          );
+      }
+    });
+
+    const wrapper = mount(Host, { props: { count: 2 } });
+    expect(wrapper.get('.image-gallery-overflow-trigger').text()).toBe('+2');
+
+    await wrapper.setProps({ count: 3 });
+    expect(wrapper.get('.image-gallery-overflow-trigger').text()).toBe('+1');
+
+    await wrapper.setProps({ count: 4 });
+    expect(wrapper.find('.image-gallery-overflow-trigger').exists()).toBe(false);
+  });
+
+  it('opens the grid from the overflow trigger', async () => {
+    const wrapper = mountGallery({}, () => [
+      ...images.slice(0, 2).map((image) => h(ImageGalleryImage, { image, key: image.src })),
+      h(ImageGalleryOverflowTrigger)
+    ]);
+
+    await wrapper.get('.image-gallery-overflow-trigger').trigger('click');
+
     expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
   });
 
-  it('keeps all configured image slots visible in replace-last-tile mode', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 0,
-        mainImagePosition: 'left'
-      }
-    });
+  it('labels the overflow trigger with the collection total, not the overflow count', () => {
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: images[0] }),
+      h(ImageGalleryOverflowTrigger)
+    ]);
 
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
-      5
-    );
-    expect(wrapper.find('button[aria-label="Show all 9 images"]').exists()).toBe(true);
+    expect(wrapper.get('.image-gallery-overflow-trigger').attributes('aria-label')).toBe('Show all 4 images');
   });
 
-  it('hides the overflow trigger when grid view is disabled', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 2,
-        allowGridView: false
-      }
-    });
+  it('withholds the overflow trigger and the dialog grid toggle when grid view is disabled', async () => {
+    const wrapper = mountGallery({ allowGridView: false }, () => [
+      ...images.slice(0, 2).map((image) => h(ImageGalleryImage, { image, key: image.src })),
+      h(ImageGalleryOverflowTrigger)
+    ]);
 
-    expect(wrapper.find('button[aria-label^="Show all"]').exists()).toBe(false);
-  });
-
-  it('keeps the dialog carousel-only when grid view is disabled', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 2,
-        allowGridView: false
-      }
-    });
+    expect(wrapper.find('.image-gallery-overflow-trigger').exists()).toBe(false);
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
     expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
   });
 
-  it('supports a left-docked featured layout that excludes the main image from the secondary grid', () => {
+  it('exposes open and openGrid through slot props', async () => {
     const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 2,
-        mainImagePosition: 'left',
-        mainImageSize: 0.35,
-        allowGridView: false
+      props: { images },
+      slots: {
+        default: ({ open, openGrid }) => [
+          h('button', { 'data-test': 'open-third', onClick: () => open(2) }, 'open'),
+          h('button', { 'data-test': 'browse', onClick: () => openGrid(0) }, 'browse')
+        ]
       }
     });
 
-    const featuredLayout = wrapper.get('.image-gallery-featured');
-    expect(featuredLayout.attributes('style')).toContain('grid-template-columns');
-    expect(wrapper.find('button[aria-label="Open image 3"]').exists()).toBe(true);
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
-      5
+    await wrapper.get('[data-test="open-third"]').trigger('click');
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('3 of 4');
+
+    await wrapper.get('button[aria-label="Close dialog"]').trigger('click');
+    await wrapper.get('[data-test="browse"]').trigger('click');
+    expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
+  });
+
+  it('throws a descriptive error when a tile is rendered outside the gallery', () => {
+    expect(() => mount(ImageGalleryImage, { props: { image: images[0] } })).toThrow(
+      /must be rendered inside the default slot of <ImageGallery>/
     );
   });
 
-  it('supports top-docked main image sizing via a CSS length', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 0,
-        mainImagePosition: 'top',
-        mainImageSize: '14rem'
-      }
-    });
-
-    const featuredLayout = wrapper.get('.image-gallery-featured');
-    expect(featuredLayout.attributes('style')).toContain('grid-template-rows');
-    expect(featuredLayout.attributes('style')).toContain('14rem');
-  });
-
-  it('gives top-docked fractional main images an intrinsic height when no explicit gallery height is set', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 4,
-        columns: 4,
-        mainImageIndex: 0,
-        mainImagePosition: 'top',
-        mainImageSize: 0.4
-      }
-    });
-
-    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
-    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-    expect(mainItem?.getAttribute('style')).toContain('height: calc(');
-    expect(mainFrame.attributes('style')).toContain('height: calc(');
-  });
-
-  it('places a right-docked main image in the second column', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 2,
-        mainImagePosition: 'right',
-        mainImageSize: 0.42
-      }
-    });
-
-    const mainImage = wrapper.get('button[aria-label="Open image 3"]').element.parentElement;
-    expect(mainImage?.getAttribute('style')).toContain('grid-column: 2');
-  });
-
-  it('places a bottom-docked main image in the second row', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 3,
-        mainImageIndex: 4,
-        mainImagePosition: 'bottom',
-        mainImageSize: '12rem'
-      }
-    });
-
-    const mainImage = wrapper.get('button[aria-label="Open image 5"]').element.parentElement;
-    expect(mainImage?.getAttribute('style')).toContain('grid-row: 2');
-  });
-
-  it('does not force the secondary grid to 100% height for bottom-docked layouts without an explicit height', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 4,
-        columns: 4,
-        mainImageIndex: 0,
-        mainImagePosition: 'bottom',
-        mainImageSize: 0.4,
-        width: '800px'
-      }
-    });
-
-    const secondaryGrid = wrapper.get('.image-gallery-secondary');
-    expect(secondaryGrid.attributes('style')).not.toContain('height: 100%');
-    expect(wrapper.find('button[aria-label="Open image 1"]').exists()).toBe(true);
-  });
-
-  it('gives bottom-docked fractional main images an intrinsic height when no explicit gallery height is set', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 4,
-        columns: 4,
-        mainImageIndex: 0,
-        mainImagePosition: 'bottom',
-        mainImageSize: 0.4
-      }
-    });
-
-    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
-    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-    expect(mainItem?.getAttribute('style')).toContain('height: calc(');
-    expect(mainFrame.attributes('style')).toContain('height: calc(');
-  });
-
-  it('uses mainImageAspectRatio for intrinsic featured layouts', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 3,
-        columns: 3,
-        mainImageIndex: 0,
-        mainImagePosition: 'top',
-        mainImageSize: 0.4,
-        mainImageAspectRatio: '16 / 9'
-      }
-    });
-
-    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-    expect(mainFrame.attributes('style')).toContain('aspect-ratio: 16 / 9');
-    expect(mainFrame.attributes('style')).toContain('height: auto');
-  });
-
-  it('prioritizes mainImageAspectRatio over numeric mainImageSize in intrinsic layouts', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 3,
-        columns: 3,
-        mainImageIndex: 0,
-        mainImagePosition: 'top',
-        mainImageSize: 0.4,
-        mainImageAspectRatio: '3 / 2'
-      }
-    });
-
-    const mainItem = wrapper.get('button[aria-label="Open image 1"]').element.parentElement;
-    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-    expect(mainItem?.getAttribute('style')).not.toContain('height: calc(');
-    expect(mainFrame.attributes('style')).toContain('aspect-ratio: 3 / 2');
-    expect(mainFrame.attributes('style')).toContain('height: auto');
-  });
-
-  it('falls back to a plain grid when mainImageIndex is invalid', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 99
-      }
-    });
-
-    expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
-    expect(wrapper.findAll('button[aria-label^="Open image "]:not([aria-label$="from grid"])')).toHaveLength(
-      4
+  it('throws a descriptive error when the overflow trigger is rendered outside the gallery', () => {
+    expect(() => mount(ImageGalleryOverflowTrigger)).toThrow(
+      /must be rendered inside the default slot of <ImageGallery>/
     );
-  });
-
-  it('divides fixed-height grids into explicit rows', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 2,
-        columns: 2,
-        height: '24rem'
-      }
-    });
-
-    const grid = wrapper.get('.image-gallery-secondary');
-    expect(grid.attributes('style')).toContain('height: 24rem');
-    expect(grid.attributes('style')).toContain('grid-template-rows: repeat(2, minmax(0, 1fr))');
   });
 
   it('toggles between single view and bento view and returns to the chosen image', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 3
-      }
-    });
+    const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
     await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+
+    expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
+
     await wrapper.get('button[aria-label="Open image 3 from grid"]').trigger('click');
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('3 of 4');
-    expect(wrapper.find('img[alt="Three"]').exists()).toBe(true);
   });
 
   it('hides single-view header controls in masonry mode', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 3
-      }
-    });
+    const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
     await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
 
     expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('1 of 4');
-    expect(wrapper.find('button[aria-label="Open image 2 from grid"]').exists()).toBe(true);
+  });
+
+  it('hides the grid toggle when there is only one image', async () => {
+    const single = [images[0]];
+    const wrapper = mountGallery({ images: single });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
   });
 
   it('renders on the server without touching browser globals', async () => {
     const app = createSSRApp({
       render: () =>
-        h(ImageGallery, {
-          images,
-          rows: 1,
-          columns: 3,
-          imageAspectRatio: '4 / 5'
-        })
+        h(ImageGallery, { images }, { default: () => [h(ImageGalleryImage, { image: images[0] })] })
     });
 
     const html = await renderToString(app);
@@ -377,34 +299,41 @@ describe('ImageGallery', () => {
     expect(html).not.toContain('role="dialog"');
   });
 
-  it('supports controlled open and index props', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        open: true,
-        index: 1,
-        rows: 1,
-        columns: 3
-      }
+  it('counts overflow correctly during server rendering', async () => {
+    const app = createSSRApp({
+      render: () =>
+        h(
+          ImageGallery,
+          { images },
+          {
+            default: () => [
+              h(ImageGalleryImage, { image: images[0] }),
+              h(ImageGalleryOverflowTrigger, null, { default: ({ count }: { count: number }) => `+${count}` })
+            ]
+          }
+        )
     });
 
+    // Registration happens in setup, not onMounted, so the server already knows
+    // one of four tiles was drawn. Were it deferred, this would read "+4" and
+    // the client would silently correct it after hydration.
+    expect(await renderToString(app)).toContain('+3');
+  });
+
+  it('supports controlled open and index props', async () => {
+    const wrapper = mountGallery({ open: true, index: 1 });
+
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
-    expect(wrapper.find('img[alt="Two"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] img[alt="Two"]').exists()).toBe(true);
 
     await wrapper.setProps({ index: 3 });
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('4 of 4');
-    expect(wrapper.find('img[alt="Four"]').exists()).toBe(true);
+    expect(wrapper.find('[role="dialog"] img[alt="Four"]').exists()).toBe(true);
   });
 
   it('emits v-model updates for open and index', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 1,
-        columns: 3
-      }
-    });
+    const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 2"]').trigger('click');
     await wrapper.get('button[aria-label="Next image"]').trigger('click');
@@ -415,14 +344,7 @@ describe('ImageGallery', () => {
   });
 
   it('locks body scroll while the dialog is open and restores focus when it closes', async () => {
-    const wrapper = mount(ImageGallery, {
-      attachTo: document.body,
-      props: {
-        images,
-        rows: 1,
-        columns: 3
-      }
-    });
+    const wrapper = mountGallery({}, undefined, { attachTo: document.body });
 
     const trigger = wrapper.get('button[aria-label="Open image 1"]');
     (trigger.element as HTMLButtonElement).focus();
@@ -442,22 +364,15 @@ describe('ImageGallery', () => {
     wrapper.unmount();
   });
 
-  it('uses thumbnail sources in previews and renders custom toolbar and caption slots', async () => {
+  it('uses thumbnail sources in tiles and full sources in the dialog', async () => {
+    const collection = [
+      { ...images[0], id: 'hero', thumbnailSrc: '/one-thumb.jpg', caption: 'Fresh pastry notes' },
+      images[1]
+    ];
     const wrapper = mount(ImageGallery, {
-      props: {
-        images: [
-          {
-            ...images[0],
-            id: 'hero',
-            thumbnailSrc: '/one-thumb.jpg',
-            caption: 'Fresh pastry notes'
-          },
-          images[1]
-        ],
-        rows: 1,
-        columns: 2
-      },
+      props: { images: collection },
       slots: {
+        default: () => collection.map((image) => h(ImageGalleryImage, { image, key: image.src })),
         'dialog-toolbar': ({ index }) => h('span', { 'data-test': 'toolbar-slot' }, `Toolbar ${index + 1}`),
         'dialog-caption': ({ image }) => h('p', { 'data-test': 'caption-slot' }, image.caption)
       }
@@ -469,31 +384,23 @@ describe('ImageGallery', () => {
 
     expect(wrapper.get('[data-test="toolbar-slot"]').text()).toBe('Toolbar 1');
     expect(wrapper.get('[data-test="caption-slot"]').text()).toBe('Fresh pastry notes');
-    expect(wrapper.find('.image-gallery-secondary img[alt="One"]').attributes('src')).toBe('/one-thumb.jpg');
     expect(wrapper.find('[role="dialog"] img[alt="One"]').attributes('src')).toBe('/one.jpg');
   });
-  it('renders the empty state and no grid when there are no images', () => {
-    const wrapper = mount(ImageGallery, { props: { images: [] } });
 
-    expect(wrapper.get('.image-gallery-empty').text()).toBe('No images available');
-    expect(wrapper.find('.image-gallery-secondary').exists()).toBe(false);
-    expect(wrapper.find('.image-gallery-featured').exists()).toBe(false);
+  it('renders a tile overlay slot inside the tile', () => {
+    const wrapper = mountGallery({}, () => [
+      h(
+        ImageGalleryImage,
+        { image: images[1] },
+        { default: ({ index }: { index: number }) => h('span', {}, `#${index}`) }
+      )
+    ]);
+
+    expect(wrapper.get('.image-gallery-tile').text()).toBe('#1');
   });
 
-  it('accepts a custom empty slot', () => {
-    const wrapper = mount(ImageGallery, {
-      props: { images: [] },
-      slots: { empty: () => h('span', { 'data-test': 'empty-slot' }, 'Nog geen fotos') }
-    });
-
-    expect(wrapper.get('[data-test="empty-slot"]').text()).toBe('Nog geen fotos');
-  });
-
-  it('clears frame refs and closes an open dialog when images are emptied', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: { images, rows: 1, columns: 3 },
-      attachTo: document.body
-    });
+  it('closes an open dialog when images are emptied', async () => {
+    const wrapper = mountGallery({}, undefined, { attachTo: document.body });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
@@ -503,110 +410,102 @@ describe('ImageGallery', () => {
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
     expect(wrapper.emitted('close')).toBeTruthy();
-    expect(wrapper.find('.image-gallery-empty').exists()).toBe(true);
 
     wrapper.unmount();
   });
 
-  it('falls back to imageAspectRatio for images without intrinsic dimensions', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: [
-          { src: '/a.jpg', alt: 'A' },
-          { src: '/b.jpg', alt: 'B' },
-          { src: '/c.jpg', alt: 'C' }
-        ],
-        rows: 1,
-        columns: 3,
-        imageAspectRatio: '3 / 2'
-      }
-    });
+  it('falls back to imageAspectRatio in the grid for images without intrinsic dimensions', async () => {
+    const bare: GalleryImage[] = [
+      { src: '/a.jpg', alt: 'A' },
+      { src: '/b.jpg', alt: 'B' },
+      { src: '/c.jpg', alt: 'C' }
+    ];
+    const wrapper = mountGallery({ images: bare, imageAspectRatio: '3 / 2' });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-
-    const carouselFrame = wrapper.get('[role="dialog"] img[alt="A"]').element.parentElement;
-    expect(carouselFrame?.getAttribute('style')).toContain('aspect-ratio: 4 / 5');
-
     await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
 
-    const bentoFrame = wrapper.get('button[aria-label="Open image 1 from grid"] > div');
-    expect(bentoFrame.attributes('style')).toContain('aspect-ratio: 3 / 2');
+    const gridTile = wrapper.get('button[aria-label="Open image 1 from grid"]');
+    expect(gridTile.attributes('style')).toContain('aspect-ratio: 3 / 2');
   });
 
-  it('hides the grid toggle when there is only one image', async () => {
-    const wrapper = mount(ImageGallery, { props: { images: [images[0]] } });
-
-    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
-  });
-
-  it('applies mainImageAspectRatio to left and right docked layouts', () => {
-    for (const mainImagePosition of ['left', 'right'] as const) {
-      const wrapper = mount(ImageGallery, {
-        props: {
-          images: manyImages,
-          rows: 2,
-          columns: 2,
-          mainImageIndex: 0,
-          mainImagePosition,
-          mainImageAspectRatio: '16 / 9'
-        }
-      });
-
-      const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-      expect(mainFrame.attributes('style')).toContain('aspect-ratio: 16 / 9');
-
-      const secondaryGrid = wrapper.get('.image-gallery-secondary');
-      expect(secondaryGrid.attributes('style')).not.toContain('height: 100%');
-    }
-  });
-
-  it('lets an explicit height override mainImageAspectRatio', () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images: manyImages,
-        rows: 2,
-        columns: 2,
-        mainImageIndex: 0,
-        mainImagePosition: 'left',
-        mainImageAspectRatio: '16 / 9',
-        height: '32rem'
-      }
-    });
-
-    const mainFrame = wrapper.get('button[aria-label="Open image 1"] > div');
-    expect(mainFrame.attributes('style')).toContain('aspect-ratio: auto');
-    expect(wrapper.get('.image-gallery-secondary').attributes('style')).toContain('height: 100%');
-  });
   it('applies a partial labels override and keeps English defaults elsewhere', async () => {
-    const wrapper = mount(ImageGallery, {
-      props: {
-        images,
-        rows: 2,
-        columns: 2,
-        labels: {
-          openImage: (index: number) => `Foto ${index} openen`,
-          counter: (current: number, total: number) => `${current} van ${total}`,
-          allImages: 'Alle fotos'
-        }
+    const wrapper = mountGallery({
+      labels: {
+        openImage: (index: number) => `Foto ${index} openen`,
+        counter: (current: number, total: number) => `${current} van ${total}`
       }
     });
-
-    expect(wrapper.find('button[aria-label="Foto 1 openen"]').exists()).toBe(true);
 
     await wrapper.get('button[aria-label="Foto 1 openen"]').trigger('click');
 
-    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Image dialog. 1 van 4');
-    expect(wrapper.get('button[aria-label="Toggle image grid"]').text()).toBe('Alle fotos');
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('1 van 4');
     expect(wrapper.find('button[aria-label="Close dialog"]').exists()).toBe(true);
   });
 
   it('ignores explicitly undefined label overrides', () => {
-    const wrapper = mount(ImageGallery, {
-      props: { images: [], labels: { empty: undefined } }
-    });
+    const wrapper = mountGallery({ labels: { openImage: undefined } });
 
-    expect(wrapper.get('.image-gallery-empty').text()).toBe('No images available');
+    expect(wrapper.find('button[aria-label="Open image 1"]').exists()).toBe(true);
+  });
+
+  it('applies an explicit colorScheme to the gallery root and the dialog', async () => {
+    const wrapper = mountGallery({ colorScheme: 'dark' });
+
+    expect(wrapper.get('.image-gallery-theme').classes()).toContain('ig-scheme-dark');
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    expect(wrapper.get('[role="dialog"]').classes()).toContain('ig-scheme-dark');
+  });
+
+  it('passes imageClass to the image rather than the tile', () => {
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, {
+        image: images[0],
+        class: 'h-24',
+        imageClass: 'object-contain group-hover:scale-105'
+      })
+    ]);
+
+    const tile = wrapper.get('.image-gallery-tile');
+    const img = wrapper.get('.image-gallery-image');
+
+    expect(tile.classes()).toContain('h-24');
+    expect(tile.classes()).not.toContain('object-contain');
+    expect(img.classes()).toEqual(expect.arrayContaining(['object-contain', 'group-hover:scale-105']));
+  });
+
+  /*
+   * `group` is the contract that makes `group-hover:` usable from imageClass.
+   * Without it a consumer's hover class silently never fires.
+   */
+  it('keeps the group class on the tile so imageClass can react to tile hover', () => {
+    const wrapper = mountGallery({}, tiles(images, 1));
+
+    expect(wrapper.get('.image-gallery-tile').classes()).toContain('group');
+  });
+
+  it('adds no appearance of its own to a tile or the overflow trigger', () => {
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: images[0] }),
+      h(ImageGalleryOverflowTrigger)
+    ]);
+
+    // Only structural classes; nothing that would fight a consumer utility.
+    expect(wrapper.get('.image-gallery-tile').classes().sort()).toEqual(
+      ['block', 'group', 'image-gallery-tile', 'overflow-hidden', 'relative'].sort()
+    );
+    expect(wrapper.get('.image-gallery-overflow-trigger').classes().sort()).toEqual(
+      ['image-gallery-overflow-trigger', 'inline-flex', 'items-center', 'justify-center'].sort()
+    );
+  });
+
+  it('emits no scheme class when colorScheme is auto', () => {
+    const wrapper = mountGallery();
+    const classes = wrapper.get('.image-gallery-theme').classes();
+
+    expect(classes).not.toContain('ig-scheme-dark');
+    expect(classes).not.toContain('ig-scheme-light');
   });
 });

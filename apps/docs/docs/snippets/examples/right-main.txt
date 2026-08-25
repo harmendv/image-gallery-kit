@@ -1,0 +1,15 @@
+<!-- Same markup as the left-docked example. Only `flex-row-reverse` differs. -->
+<ImageGallery :images="images">
+  <div class="flex flex-row-reverse gap-3">
+    <ImageGalleryImage :image="images[0]" class="w-2/5 shrink-0 rounded-2xl" />
+
+    <div class="grid min-w-0 flex-1 grid-cols-2 gap-3">
+      <ImageGalleryImage
+        v-for="image in images.slice(1, 5)"
+        :key="image.id"
+        :image="image"
+        class="h-32 rounded-xl"
+      />
+    </div>
+  </div>
+</ImageGallery>

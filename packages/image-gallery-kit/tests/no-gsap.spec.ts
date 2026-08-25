@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { vi } from 'vitest';
 import ImageGallery from '@/components/ImageGallery.vue';
+import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
 // gsap is an optional peer: simulate a consumer who has not installed it.
@@ -15,7 +16,11 @@ const images: GalleryImage[] = [
 
 describe('without gsap installed', () => {
   it('still opens, navigates and closes the dialog', async () => {
-    const wrapper = mount(ImageGallery, { props: { images, rows: 1, columns: 2 }, attachTo: document.body });
+    const wrapper = mount(ImageGallery, {
+      props: { images },
+      slots: { default: previewSlot(images) },
+      attachTo: document.body
+    });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
     expect(wrapper.find('[role="dialog"]').exists()).toBe(true);

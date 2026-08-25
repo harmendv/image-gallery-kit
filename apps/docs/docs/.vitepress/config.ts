@@ -76,6 +76,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Getting Started', link: '/guide/getting-started' },
+      { text: 'Layout', link: '/layout' },
       { text: 'Examples', link: '/examples' },
       { text: 'Theming', link: '/theming' },
       { text: 'API', link: '/api' }
@@ -91,6 +92,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: 'Layout', link: '/layout' },
           { text: 'Examples', link: '/examples' },
           { text: 'Theming', link: '/theming' },
           { text: 'API', link: '/api' }

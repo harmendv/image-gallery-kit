@@ -1,0 +1,13 @@
+<ImageGallery :images="images">
+  <!-- Explicit row heights: a tile has no intrinsic height, so `grid-rows-2` would collapse. -->
+  <div class="grid grid-cols-4 grid-rows-[9rem_9rem] gap-3">
+    <ImageGalleryImage :image="images[0]" class="col-span-2 row-span-2 rounded-2xl" />
+
+    <ImageGalleryImage
+      v-for="(image, position) in images.slice(1, 4)"
+      :key="image.id"
+      :image="image"
+      :class="['rounded-xl', position === 0 ? 'col-span-2' : '']"
+    />
+  </div>
+</ImageGallery>

@@ -1,17 +1,18 @@
 # API
 
-`image-gallery-kit` exposes a single main component, a plugin default export, an image type, a labels type, and a stylesheet entry.
+`image-gallery-kit` exposes three components, a plugin default export, the supporting types, and a stylesheet entry.
 
 ## Imports
 
 ```ts
 import ImageGalleryPlugin, {
   ImageGallery,
+  ImageGalleryImage,
+  ImageGalleryOverflowTrigger,
+  type GalleryColorScheme,
   type GalleryImage,
   type GalleryLabels,
-  type ImageFit,
-  type MainImagePosition,
-  type MainImageSize
+  type ImageFit
 } from 'image-gallery-kit'
 import 'image-gallery-kit/style.css'
 ```
@@ -37,8 +38,7 @@ interface GalleryImage {
 ## Supporting Types
 
 ```ts
-type MainImagePosition = 'top' | 'right' | 'bottom' | 'left'
-type MainImageSize = number | string
+type GalleryColorScheme = 'auto' | 'light' | 'dark'
 type ImageFit = 'cover' | 'contain'
 
 interface GalleryLabels {
@@ -52,7 +52,6 @@ interface GalleryLabels {
   close: string
   previous: string
   next: string
-  empty: string
 }
 ```
 
@@ -62,55 +61,9 @@ interface GalleryLabels {
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `images` | `GalleryImage[]` | required | Source data for preview, dialog, and bento modes. |
+| `images` | `GalleryImage[]` | required | The collection. Drives the dialog, carousel and all-images grid, and is what tiles resolve their index against. |
 | `open` | `boolean \| null` | `null` | Controlled dialog state for `v-model:open`. Leave unset for internal state. |
 | `index` | `number \| null` | `null` | Controlled active image index for `v-model:index`. Leave unset for internal state. |
-
-### Grid Layout
-
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `rows` | `number` | `2` | Maximum number of rows in the secondary preview grid. |
-| `columns` | `number` | `2` | Maximum number of columns in the secondary preview grid. |
-| `imageAspectRatio` | `number \| string` | `'4 / 5'` | Visible tile aspect ratio when the preview height is intrinsic. |
-
-### Main Image
-
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `mainImageIndex` | `number \| null` | `null` | Selects the featured image. Invalid values fall back to a plain grid. |
-| `mainImagePosition` | `MainImagePosition` | `'left'` | Docks the featured image to one side of the secondary grid. |
-| `mainImageSize` | `MainImageSize` | `0.4` | Controls the main image width on `left/right` and height on `top/bottom`. |
-| `mainImageAspectRatio` | `number \| string \| null` | `null` | Optional featured-image ratio, applied in all four `mainImagePosition` values when `height` is intrinsic. |
-
-### Styling and Behavior
-
-Spacing, object-fit and corner radius are not props. They are pure presentation with nothing in the component reading them back, so they live entirely in CSS as `--ig-gap`, `--ig-image-fit` and `--ig-radius`. See [Theming](./theming).
-
-| Prop | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `allowGridView` | `boolean` | `true` | Enables the all-images grid entrypoint and the dialog grid toggle. |
-| `colorScheme` | `'auto' \| 'light' \| 'dark'` | `'auto'` | Forces a palette for this instance, overriding a `dark` ancestor and the OS preference. `'auto'` defers to both. See [Dark Mode](/theming#dark-mode). |
-| `height` | `string \| null` | `null` | Fixes the preview height and divides the secondary grid rows evenly. |
-| `width` | `string \| null` | `'100%'` | Controls the outer gallery width. |
-| `labels` | `Partial<GalleryLabels>` | `undefined` | Overrides the built-in English UI strings. Partial objects are merged over the defaults. |
-
-## Preview Layout Rules
-
-- `rows * columns` defines the maximum capacity of the secondary preview grid.
-- The count is the secondary grid only: `rows="1"` with `columns="3"` plus a `mainImageIndex` renders four tiles in total.
-- The grid is sparse: if fewer items are available than slots, only the existing items render.
-- Items do not expand across empty slots just to fill the configured capacity.
-- `mainImageIndex` removes that image from the secondary grid and renders it in the docked main-image area.
-
-### Main Image Sizing
-
-- `left` and `right`: the main image matches the full height of the secondary grid, and `mainImageSize` controls its width. Setting `mainImageAspectRatio` instead lets the ratio drive its height, and the secondary grid then sizes intrinsically.
-- `top` and `bottom`: the main image always matches the full width of the secondary grid, and `mainImageSize` controls its height.
-- `mainImageAspectRatio`: when set and `height` is intrinsic, the featured image uses this ratio in every `mainImagePosition`.
-- Precedence rule: with an intrinsic `height`, `mainImageAspectRatio` takes precedence over numeric `mainImageSize`. An explicit `height` overrides the ratio.
-- If `mainImageSize` is a `number`, it is treated as a layout fraction.
-- If `mainImageSize` is a `string`, it is used as a raw CSS size such as `18rem`, `35%`, or `min(28rem, 40vw)`.
 
 ### Labels
 
@@ -140,13 +93,12 @@ Every visible string and `aria-label` comes from `labels`, merged over English d
 | `close` | `string` | `'Close dialog'` |
 | `previous` | `string` | `'Previous image'` |
 | `next` | `string` | `'Next image'` |
-| `empty` | `string` | `'No images available'` |
 
 ### Grid View
 
-- When `allowGridView` is `true`, overflow adds the “show all images” trigger on the last visible preview tile.
-- The dialog also shows the “All images” toggle so users can switch from the carousel to the masonry grid.
-- When `allowGridView` is `false`, the preview never shows the trigger and the dialog stays carousel-only.
+- Place `ImageGalleryOverflowTrigger` wherever the entrypoint belongs; it renders only when the collection is larger than the preview.
+- The dialog shows an “All images” toggle so users can switch from the carousel to the masonry grid.
+- `allowGridView="false"` removes both, and the trigger renders nothing even if it is present in your markup.
 
 ### Large Collections
 
@@ -158,6 +110,31 @@ The grid renders every image and stays responsive into the thousands:
 - Opening the grid on an image below the fold scrolls it into view before the shared-image transition measures it.
 
 Supplying `width` and `height` on each image gives true mixed-height masonry. Without them every tile falls back to `imageAspectRatio`, which is uniform and still packs correctly.
+
+## Preview Components
+
+You build the preview out of these. Both must be rendered inside `ImageGallery`'s default slot — they read the gallery through provide/inject and throw a descriptive error otherwise. See [Layout](/layout) for the full guide.
+
+### `ImageGalleryImage`
+
+One preview tile. Deliberately unsized *and* unstyled: it renders a positioning context, an overflow clip and `group`, and the image fills it absolutely — so height, width, aspect ratio, spans, radius, background, shadow and hover all come from the classes you put on it. There are no tokens for any of that, because you own the element.
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `image` | `GalleryImage` | required | Which image this tile draws. Resolved to a collection index by identity, then `id`, then `src`. |
+| `imageClass` | `string \| null` | `null` | Classes for the `<img>` inside the tile. Your own `class` lands on the tile, and the image is a descendant, so this is the only way to reach it — which is where `object-fit` and the hover transform belong. The tile carries `group`, so `group-hover:` works from here. |
+
+| Slot | Slot Props | Meaning |
+| --- | --- | --- |
+| default | `index`, `image` | Overlay content — a badge, a caption, an overflow trigger. The tile is already a positioning context, so `absolute` works directly. |
+
+### `ImageGalleryOverflowTrigger`
+
+Opens the all-images grid, and knows how many images it stands for. Takes no props: the count is `images.length` minus the number of tiles that registered, so it stays correct when the previewed subset changes. Renders nothing when that count is zero, or when `allowGridView` is `false`. Ships unstyled apart from centring its content — put classes on it as you would any button.
+
+| Slot | Slot Props | Meaning |
+| --- | --- | --- |
+| default | `count` | Replaces the default grid icon. |
 
 ## Theming
 
@@ -177,9 +154,9 @@ Every visual surface is driven by CSS custom properties, with a dark palette and
 
 | Slot | Slot Props | Meaning |
 | --- | --- | --- |
+| default | `images`, `total`, `open`, `openGrid` | Your preview markup. Required — the component renders no preview of its own. See [Layout](/layout). |
 | `dialog-toolbar` | `image`, `index`, `total`, `mode`, `close`, `toggleMode` | Extends the dialog header with custom controls. |
 | `dialog-caption` | `image`, `index`, `total` | Replaces the default caption area under the active dialog image. |
-| `empty` | none | Replaces the placeholder shown when `images` is empty. |
 
 ## Behavior Notes
 

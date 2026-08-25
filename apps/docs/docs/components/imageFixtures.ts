@@ -26,10 +26,10 @@ export const demoImages: GalleryImage[] = [
     height: 1700
   },
   {
-    src: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1600&q=80',
-    alt: 'Espresso pour in progress',
-    width: 1600,
-    height: 1100
+    src: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1500&q=80',
+    alt: 'Breakfast spread with fruit and coffee',
+    width: 1500,
+    height: 1000
   },
   {
     src: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?auto=format&fit=crop&w=1400&q=80',
@@ -68,10 +68,10 @@ export const demoImages: GalleryImage[] = [
     height: 1000
   },
   {
-    src: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&w=1500&q=80',
-    alt: 'Breakfast spread with fruit and coffee',
-    width: 1500,
-    height: 1000
+    src: 'https://images.unsplash.com/photo-1517433670267-08bbd4be890f?auto=format&fit=crop&w=1600&q=80',
+    alt: 'Espresso pour in progress',
+    width: 1600,
+    height: 1100
   },
   {
     src: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?auto=format&fit=crop&w=1400&q=80',

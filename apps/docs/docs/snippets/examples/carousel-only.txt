@@ -1,6 +1,11 @@
-<ImageGallery
-  :images="images"
-  :rows="2"
-  :columns="3"
-  :allow-grid-view="false"
-/>
+<!-- No overflow trigger placed, and `allow-grid-view` also drops the dialog's grid toggle. -->
+<ImageGallery :images="images" :allow-grid-view="false">
+  <div class="grid grid-cols-3 gap-3">
+    <ImageGalleryImage
+      v-for="image in images.slice(0, 6)"
+      :key="image.id"
+      :image="image"
+      class="aspect-[4/5] rounded-xl"
+    />
+  </div>
+</ImageGallery>

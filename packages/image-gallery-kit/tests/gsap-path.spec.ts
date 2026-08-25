@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import ImageGallery from '@/components/ImageGallery.vue';
+import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
 const images: GalleryImage[] = [
@@ -25,7 +26,11 @@ describe('gsap transition path', () => {
       } as DOMRect;
     };
 
-    const wrapper = mount(ImageGallery, { props: { images, rows: 1, columns: 2 }, attachTo: document.body });
+    const wrapper = mount(ImageGallery, {
+      props: { images },
+      slots: { default: previewSlot(images) },
+      attachTo: document.body
+    });
     const gsap = await import('gsap');
     expect(gsap.gsap).toBeTruthy();
 

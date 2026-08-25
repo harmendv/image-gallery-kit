@@ -1,5 +1,0 @@
-<ImageGallery
-  :images="images"
-  :rows="2"
-  :columns="3"
-/>
