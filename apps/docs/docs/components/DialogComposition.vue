@@ -238,9 +238,7 @@ const props = defineProps<{ variant: DialogVariant }>();
         <p class="mx-auto max-w-prose text-balance text-base leading-relaxed">
           {{ image.alt }}
         </p>
-        <p class="mt-1 text-xs uppercase tracking-widest opacity-50">
-          Plate {{ index + 1 }} — {{ total }}
-        </p>
+        <p class="mt-1 text-xs uppercase tracking-widest opacity-50">Plate {{ index + 1 }} — {{ total }}</p>
       </template>
     </ImageGalleryStage>
 

@@ -280,7 +280,7 @@ describe('a uniform grid', () => {
     return wrapper;
   }
 
-  it('packs round-robin regardless of each image\'s own ratio', async () => {
+  it("packs round-robin regardless of each image's own ratio", async () => {
     stubResolvedColumns(3);
 
     const wrapper = await openUniformBento();
