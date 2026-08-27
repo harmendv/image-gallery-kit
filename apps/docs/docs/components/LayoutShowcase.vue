@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ImageGallery, ImageGalleryImage, ImageGalleryOverflowTrigger } from 'image-gallery-kit';
+import DialogComposition from './DialogComposition.vue';
+import type { DialogVariant } from './DialogComposition.vue';
 import { demoImages } from './imageFixtures';
 
 /*
@@ -33,8 +35,12 @@ const props = withDefaults(
     overlay?: boolean;
     /* Adds buttons driving the gallery through its slot props. */
     controls?: boolean;
-    /* Wrapper class for theming demos, where tokens are redeclared in scope. */
-    themeClass?: string | null;
+    /*
+     * Which dialog composition to pair the layout with. Omitted, the `dialog`
+     * slot goes unprovided and the standard composition renders -- which is the
+     * point worth showing on the one example that leaves it alone.
+     */
+    dialog?: DialogVariant | null;
   }>(),
   {
     mainClass: null,
@@ -47,7 +53,7 @@ const props = withDefaults(
     label: null,
     overlay: false,
     controls: false,
-    themeClass: null
+    dialog: null
   }
 );
 
@@ -61,7 +67,7 @@ const tiles = computed(() => (props.mainClass ? previewed.value.slice(1) : previ
   <div class="gallery-shell vp-raw">
     <p v-if="props.label" class="showcase-label">{{ props.label }}</p>
 
-    <div :class="props.themeClass">
+    <div>
       <ImageGallery :images="images" :allow-grid-view="props.allowGridView">
         <template #default="{ total, open, openGrid }">
           <div v-if="props.controls" class="showcase-controls">
@@ -107,6 +113,10 @@ const tiles = computed(() => (props.mainClass ? previewed.value.slice(1) : previ
               </ImageGalleryImage>
             </div>
           </div>
+        </template>
+
+        <template v-if="props.dialog" #dialog>
+          <DialogComposition :variant="props.dialog" />
         </template>
       </ImageGallery>
     </div>

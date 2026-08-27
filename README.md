@@ -23,7 +23,7 @@
   <a href="https://harmendv.github.io/image-gallery-kit/">Documentation</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/guide/getting-started">Getting started</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/examples">Examples</a> ·
-  <a href="https://harmendv.github.io/image-gallery-kit/theming">Theming</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/theming">Styling</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/api">API</a>
 </p>
 
@@ -37,9 +37,10 @@
 | --- | --- |
 | **Layout is CSS, not props** | You write the preview markup. Arrangement, sizing and breakpoints are your own classes. |
 | **A dialog that's actually finished** | Keyboard navigation, focus trap, focus restore, and body-scroll locking. |
-| **Tiles fly into the dialog** | The real tile animates into place instead of cross-fading a copy. |
+| **Tiles fly into the dialog** | A clone carrying the tile's own classes tweens its frame, radius and crop onto the dialog image. |
 | **Renders on the server** | No browser globals touched before mount, no hydration mismatch, no empty-grid flash. |
-| **Themed with tokens** | Every surface reads a CSS custom property. Reskin it without touching a class. |
+| **The dialog comes apart** | Overlay, topbar, stage, grid, tiles — sixteen components you rearrange in the `dialog` slot. |
+| **Styled with classes** | No design tokens. Every part is a component, and your class beats its default. |
 | **Every string is yours** | All visible text and `aria-label`s come from one object. No i18n dependency. |
 | **Stays in its lane** | No global CSS reset — the stylesheet only styles the gallery. |
 | **Degrades cleanly** | `gsap` is an optional peer; without it every view works, just without transitions. |
@@ -148,14 +149,13 @@ A tile has no intrinsic height, so give it one — a class on the tile, or a def
 | `index` | `number \| null` | `null` (uncontrolled) |
 | `allowGridView` | `boolean` | `true` |
 | `imageAspectRatio` | `number \| string` | `'4 / 5'` |
-| `colorScheme` | `'auto' \| 'light' \| 'dark'` | `'auto'` |
 | `labels` | `Partial<GalleryLabels>` | `undefined` |
 
 `imageAspectRatio` is a fallback for the all-images grid only — it needs a height per tile to pack columns, so images without intrinsic `width`/`height` borrow it. Preview tiles are sized by your classes.
 
-`ImageGalleryImage` takes one prop, `image`. `ImageGalleryOverflowTrigger` takes none — it derives its count.
+`ImageGalleryImage` takes `image` and `imageClass`. `ImageGalleryOverflowTrigger` takes none — it derives its count. `ImageGalleryStage` takes `swipe`. The dialog's other parts take no props at all.
 
-Layout is your markup; pure presentation — gaps, radii, `object-fit`, hover scale, transition duration — lives in [CSS tokens](#theming). Neither is a prop.
+Layout is your markup, and so is presentation: gaps, radii, `object-fit` and hover are classes on the part they belong to. Neither is a prop.
 
 </details>
 
@@ -177,45 +177,63 @@ Layout is your markup; pure presentation — gaps, radii, `object-fit`, hover sc
 
 | Slot | Slot props |
 | --- | --- |
+| default | `images`, `total`, `open`, `openGrid` |
+| `dialog` | `image`, `index`, `total`, `mode`, `close`, `toggleMode` |
 | `dialog-toolbar` | `image`, `index`, `total`, `mode`, `close`, `toggleMode` |
 | `dialog-caption` | `image`, `index`, `total` |
-| `empty` | — |
 
 </details>
 
-Full prop, event, slot, and token reference: [the API docs](https://harmendv.github.io/image-gallery-kit/api).
+## Recomposing the dialog
 
-## Theming
-
-Every surface is driven by a CSS custom property. A neutral dark palette ships with the stylesheet and follows `prefers-color-scheme`, a `.dark` class, or `[data-theme="dark"]`; the `colorScheme` prop overrides both for a single instance. Transitions respect `prefers-reduced-motion`.
-
-If your app has its own light/dark toggle, add `data-ig-color-scheme` to the root element so the gallery follows your class instead of the OS preference:
-
-```html
-<html data-ig-color-scheme="class">
-```
-
-```css
-/* Tokens style the dialog -- the part you cannot reach with a class. */
-:root {
-  --ig-dialog-surface: #ffffff;
-  --ig-dialog-text: rgba(60, 60, 67, 0.96);
-  --ig-dialog-radius: 1.5rem;
-  --ig-dialog-grid-columns-md: 3;
-}
-```
-
-The preview is your markup, so its appearance is classes. `imageClass` reaches the `<img>` inside a tile:
+The `dialog` slot's default content **is** the standard dialog, assembled from the
+same exported parts you would use to rebuild it — so omitting the slot and
+writing the tree out by hand render identically:
 
 ```vue
-<ImageGalleryImage
-  :image="image"
-  class="aspect-[4/5] rounded-xl shadow-md"
-  image-class="transition duration-500 motion-safe:group-hover:scale-105"
-/>
+<template #dialog>
+  <ImageGalleryOverlay>
+    <template #topbar>
+      <ImageGalleryTopbar>
+        <template #start><ImageGalleryGridToggle /></template>
+        <template #center><ImageGalleryCounter /></template>
+        <template #end><ImageGalleryCloseButton /></template>
+      </ImageGalleryTopbar>
+    </template>
+
+    <ImageGalleryStage />
+    <ImageGalleryGrid />
+  </ImageGalleryOverlay>
+</template>
 ```
 
-See [Theming](https://harmendv.github.io/image-gallery-kit/theming) for the complete token table.
+Behaviour travels with the parts: `ImageGalleryOverlay` provides the dialog root
+the focus trap and scroll lock key on, and `ImageGalleryCloseButton` claims
+initial focus. Everything else is free to drop, reorder or wrap.
+
+See [Anatomy](https://harmendv.github.io/image-gallery-kit/anatomy) for the parts
+and [Examples](https://harmendv.github.io/image-gallery-kit/examples) for worked
+compositions.
+
+Full prop, event and slot reference: [the API docs](https://harmendv.github.io/image-gallery-kit/api).
+
+## Styling
+
+There are no design tokens. Every part is a component, every default is a class
+in `@layer components`, and no part leaves a utility of its own on the element --
+so a class of yours wins, with or without Tailwind:
+
+```vue
+<ImageGalleryCloseButton class="rounded-lg bg-black text-white" />
+<ImageGalleryGrid class="grid-cols-3 gap-6 lg:grid-cols-6" />
+```
+
+Colour comes from CSS system colours (`Canvas`, `CanvasText`, `ButtonFace`,
+`AccentColor`), which follow the reader's platform light/dark setting on their
+own and collapse correctly under forced-colors. Your own dark mode is whatever
+your project already does -- `class="bg-white dark:bg-zinc-900"` on the parts.
+
+See [Styling](https://harmendv.github.io/image-gallery-kit/theming) and [Anatomy](https://harmendv.github.io/image-gallery-kit/anatomy).
 
 ## Repository layout
 

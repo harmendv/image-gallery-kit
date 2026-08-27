@@ -25,18 +25,23 @@ if (!injected) {
 // Narrowed alias: a bare `throw` does not narrow the injected value for the template.
 const gallery = injected;
 
-const frame = ref<HTMLElement | null>(null);
+const tile = ref<HTMLElement | null>(null);
 const index = computed(() => gallery.resolveIndex(props.image));
 
 /*
+ * The tile itself is what registers, not the frame inside it. The flight clones
+ * whatever is registered, and every bit of a tile's appearance -- radius,
+ * border, shadow, background, ring -- is a class the consumer put here, on the
+ * button. Registering the frame flew a stripped copy that had none of it.
+ *
  * Registered during setup, not on mount. The parent derives the overflow count
  * from how many tiles registered, and that count is rendered -- so registering
  * on mount means the server emits "+20" for a 5-tile preview of 20 images and
  * the client silently corrects it to "+15" after hydration. Setup runs on the
- * server too, and the frame ref this passes is filled in later either way,
+ * server too, and the tile ref this passes is filled in later either way,
  * since nothing reads it until a click.
  */
-gallery.registerPreview(props.image, frame);
+gallery.registerPreview(props.image, tile);
 onBeforeUnmount(() => gallery.unregisterPreview(props.image));
 
 /*
@@ -52,7 +57,7 @@ watch(
       gallery.unregisterPreview(previous);
     }
 
-    gallery.registerPreview(next, frame);
+    gallery.registerPreview(next, tile);
   }
 );
 
@@ -74,12 +79,18 @@ function onClick() {
     give it one.
   -->
   <button
+    ref="tile"
     type="button"
-    class="image-gallery-tile group relative block overflow-hidden"
+    class="image-gallery-tile group"
     :aria-label="gallery.labels.value.openImage(index + 1)"
     @click="onClick"
   >
-    <div ref="frame" class="absolute inset-0">
+    <!--
+      Marked, not merely present: the flight clones this tile to carry the
+      consumer's own appearance with it, and this attribute is how the clone
+      tells the image apart from whatever the slot below put beside it.
+    -->
+    <div data-ig-tile-frame="true" class="image-gallery-tile-frame">
       <img
         :src="props.image.thumbnailSrc ?? props.image.src"
         :alt="props.image.alt"

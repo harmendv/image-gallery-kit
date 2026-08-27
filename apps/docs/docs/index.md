@@ -22,9 +22,9 @@ import { withBase } from 'vitepress'
     <div class="home-feature-title">Dialog that's actually finished</div>
     <p>Focus trap, scroll lock, keyboard nav, swipe on touch, and an all-images view.</p>
   </a>
-  <a class="home-feature" :href="withBase('/theming')">
-    <div class="home-feature-title">Tokens where classes can't reach</div>
-    <p>The dialog is teleported out of your markup, so variables theme it. Your preview stays classes.</p>
+  <a class="home-feature" :href="withBase('/anatomy')">
+    <div class="home-feature-title">The dialog comes apart</div>
+    <p>Overlay, topbar, stage, grid, tiles — every part is a component you style with classes.</p>
   </a>
   <a class="home-feature" :href="withBase('/guide/getting-started#animation')">
     <div class="home-feature-title">Tiles fly into the dialog</div>

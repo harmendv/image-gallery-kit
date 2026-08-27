@@ -3,5 +3,5 @@ import App from './App.vue'
 import ImageGalleryPlugin from 'image-gallery-kit'
 import 'image-gallery-kit/style.css'
 
-// Registers ImageGallery, ImageGalleryImage and ImageGalleryOverflowTrigger.
+// Registers all sixteen components under the names they are exported by.
 createApp(App).use(ImageGalleryPlugin).mount('#app')

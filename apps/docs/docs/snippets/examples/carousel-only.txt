@@ -8,4 +8,18 @@
       class="aspect-[4/5] rounded-xl"
     />
   </div>
+
+  <!-- With no second view to reach, no ImageGalleryGrid is composed at all. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #center><ImageGalleryCounter /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

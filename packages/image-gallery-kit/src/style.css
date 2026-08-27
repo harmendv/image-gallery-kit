@@ -42,206 +42,51 @@
   }
 }
 
-:root {
-  /* ImageGallery -- the dialog it renders and teleports to <body> */
-  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
-  --ig-dialog-surface: #ffffff;
-  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
-  --ig-dialog-border: rgba(60, 60, 67, 0.12);
-  --ig-dialog-text: rgba(60, 60, 67, 0.96);
-  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
-  --ig-dialog-button: rgba(244, 244, 245, 0.9);
-  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
-  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
-  --ig-dialog-radius: 1.5rem;
-  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
-  --ig-dialog-topbar-blur: 12px;
-  --ig-dialog-topbar-height: 4rem;
-  --ig-dialog-slide-gap: 5rem;
-
-  /* ImageGallery -- the all-images grid inside that dialog */
-  --ig-dialog-grid-gap: 1rem;
-  --ig-dialog-grid-columns: 2;
-  --ig-dialog-grid-columns-md: 4;
-  --ig-dialog-grid-columns-lg: 5;
-  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
-
-  /* Every rendered <img>, preview and dialog alike. Named after the property it
-     sets rather than a component, because it belongs to no single one. */
-  --ig-object-fit: cover;
-}
-
 /*
- * Theming contract
- * ----------------
- * Tokens are declared on ancestors only, never on .image-gallery-theme itself.
- * An element's own declaration beats an inherited one, so re-declaring the
- * light values on the gallery would block any dark palette from reaching it.
- * The one exception is the explicit `.ig-scheme-*` opt-in below, which the
- * component puts on its own root precisely because it should win.
+ * Colour contract
+ * ---------------
+ * The dialog paints in CSS system colours -- Canvas, CanvasText, ButtonFace,
+ * ButtonText, AccentColor -- mixed with color-mix() where a shade in between is
+ * wanted. Those follow the reader's platform for light and dark on their own and
+ * collapse correctly under forced-colors, so the default tracks the environment
+ * without a palette to declare, a media query to maintain, or a `dark` class to
+ * watch for.
  *
- * Three ways to pick a palette, in order of precedence:
- *
- *   1. `colorScheme="light|dark"` on the component. Emits `.ig-scheme-light` /
- *      `.ig-scheme-dark` on the gallery root and on the teleported dialog.
- *   2. A `dark` class (Tailwind's class strategy, shadcn/ui, next-themes,
- *      VitePress) or [data-theme="dark"] (DaisyUI, next-themes attribute mode)
- *      on the gallery or any ancestor. `.light` / [data-theme="light"] force
- *      light back on even under an OS dark preference.
- *   3. The OS `prefers-color-scheme` setting.
- *
- * Step 3 is the reason step 2 needs an escape hatch. A host that toggles
- * classes only ever *adds* `dark` -- picking light again just removes it, which
- * is indistinguishable in CSS from having no theme system at all. Under an OS
- * dark preference the gallery would then stay dark on a page that just went
- * light. Such a host opts out of the OS query entirely with
- * [data-ig-color-scheme] on <html>:
- *
- *   <html data-ig-color-scheme="class">
- *
- * ...after which only the class switches in step 2 (or the prop in step 1) move
- * the palette.
+ * It is a deliberately plain default. The gallery does not bring a palette to
+ * your page: put your own classes on the parts (see the Anatomy page) and they
+ * win outright, because everything below is layered and nothing is written
+ * inline.
  */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light):not([data-theme='light']):not([data-ig-color-scheme]) {
-    /* ImageGallery -- the dialog it renders and teleports to <body> */
-    --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
-    --ig-dialog-surface: #1b1b1f;
-    --ig-dialog-panel: rgba(22, 22, 24, 0.92);
-    --ig-dialog-border: rgba(82, 82, 89, 0.32);
-    --ig-dialog-text: rgba(255, 255, 245, 0.86);
-    --ig-dialog-muted: rgba(235, 235, 245, 0.6);
-    --ig-dialog-button: rgba(50, 50, 56, 0.9);
-    --ig-dialog-button-hover: rgba(65, 65, 71, 1);
-    --ig-dialog-ring: rgba(255, 255, 245, 0.28);
-    --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
-    --ig-dialog-topbar-blur: 12px;
-  }
-}
-
-.dark,
-[data-theme='dark'] {
-  /* ImageGallery -- the dialog it renders and teleports to <body> */
-  --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
-  --ig-dialog-surface: #1b1b1f;
-  --ig-dialog-panel: rgba(22, 22, 24, 0.92);
-  --ig-dialog-border: rgba(82, 82, 89, 0.32);
-  --ig-dialog-text: rgba(255, 255, 245, 0.86);
-  --ig-dialog-muted: rgba(235, 235, 245, 0.6);
-  --ig-dialog-button: rgba(50, 50, 56, 0.9);
-  --ig-dialog-button-hover: rgba(65, 65, 71, 1);
-  --ig-dialog-ring: rgba(255, 255, 245, 0.28);
-  --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
-  --ig-dialog-topbar-blur: 12px;
-}
-
-.light,
-[data-theme='light'] {
-  /* ImageGallery -- the dialog it renders and teleports to <body> */
-  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
-  --ig-dialog-surface: #ffffff;
-  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
-  --ig-dialog-border: rgba(60, 60, 67, 0.12);
-  --ig-dialog-text: rgba(60, 60, 67, 0.96);
-  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
-  --ig-dialog-button: rgba(244, 244, 245, 0.9);
-  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
-  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
-  --ig-dialog-radius: 1.5rem;
-  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
-  --ig-dialog-topbar-blur: 12px;
-  --ig-dialog-topbar-height: 4rem;
-  --ig-dialog-slide-gap: 5rem;
-
-  /* ImageGallery -- the all-images grid inside that dialog */
-  --ig-dialog-grid-gap: 1rem;
-  --ig-dialog-grid-columns: 2;
-  --ig-dialog-grid-columns-md: 4;
-  --ig-dialog-grid-columns-lg: 5;
-  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
-
-  /* Every rendered <img>, preview and dialog alike. Named after the property it
-     sets rather than a component, because it belongs to no single one. */
-  --ig-object-fit: cover;
-}
-
-/*
- * The explicit opt-in from the `colorScheme` prop. These land on the gallery
- * root and on the teleported dialog -- both descendants of the elements every
- * rule above targets -- and an element's own declaration always beats an
- * inherited one regardless of specificity, so a plain class is enough to win.
- */
-.ig-scheme-light {
-  /* ImageGallery -- the dialog it renders and teleports to <body> */
-  --ig-dialog-overlay: rgba(255, 255, 255, 0.98);
-  --ig-dialog-surface: #ffffff;
-  --ig-dialog-panel: rgba(246, 246, 247, 0.92);
-  --ig-dialog-border: rgba(60, 60, 67, 0.12);
-  --ig-dialog-text: rgba(60, 60, 67, 0.96);
-  --ig-dialog-muted: rgba(60, 60, 67, 0.68);
-  --ig-dialog-button: rgba(244, 244, 245, 0.9);
-  --ig-dialog-button-hover: rgba(235, 235, 237, 1);
-  --ig-dialog-ring: rgba(60, 60, 67, 0.2);
-  --ig-dialog-radius: 1.5rem;
-  --ig-dialog-topbar-bg: rgba(255, 255, 255, 0.95);
-  --ig-dialog-topbar-blur: 12px;
-  --ig-dialog-topbar-height: 4rem;
-  --ig-dialog-slide-gap: 5rem;
-
-  /* ImageGallery -- the all-images grid inside that dialog */
-  --ig-dialog-grid-gap: 1rem;
-  --ig-dialog-grid-columns: 2;
-  --ig-dialog-grid-columns-md: 4;
-  --ig-dialog-grid-columns-lg: 5;
-  --ig-dialog-grid-tile-radius: max(0px, calc(var(--ig-dialog-radius) - 0.4rem));
-
-  /* Every rendered <img>, preview and dialog alike. Named after the property it
-     sets rather than a component, because it belongs to no single one. */
-  --ig-object-fit: cover;
-}
-
-.ig-scheme-dark {
-  /* ImageGallery -- the dialog it renders and teleports to <body> */
-  --ig-dialog-overlay: rgba(27, 27, 31, 0.98);
-  --ig-dialog-surface: #1b1b1f;
-  --ig-dialog-panel: rgba(22, 22, 24, 0.92);
-  --ig-dialog-border: rgba(82, 82, 89, 0.32);
-  --ig-dialog-text: rgba(255, 255, 245, 0.86);
-  --ig-dialog-muted: rgba(235, 235, 245, 0.6);
-  --ig-dialog-button: rgba(50, 50, 56, 0.9);
-  --ig-dialog-button-hover: rgba(65, 65, 71, 1);
-  --ig-dialog-ring: rgba(255, 255, 245, 0.28);
-  --ig-dialog-topbar-bg: rgba(27, 27, 31, 0.95);
-  --ig-dialog-topbar-blur: 12px;
-}
-
-.image-gallery-theme {
-  color: var(--ig-dialog-text);
-}
 
 /*
  * The one thing ImageGalleryImage insists on. Not cosmetic: a tile is a
  * <button>, which is shrink-to-fit even at `display: block`, and the image
  * inside is absolutely positioned -- so a tile that is not a grid or flex item
- * has no content to derive a width from and collapses to zero. In @layer
- * components so `w-56`, `md:w-2/5` and friends still win.
+ * has no content to derive a width from and collapses to zero.
  *
- * Everything else about a tile's appearance -- background, shadow, radius,
- * hover -- is a class you put on it. There are no tokens for those, because you
- * own the element.
+ * Structure only, and all of it in one layered class so a consumer utility beats
+ * any of it. `overflow` is the load-bearing one -- it is the clip that makes
+ * their radius bite -- and it is here rather than on the element for the same
+ * reason as the rest: overriding it should be their call, not a cascade
+ * accident.
  */
 @layer components {
   .image-gallery-tile {
+    position: relative;
+    display: block;
     width: 100%;
+    overflow: hidden;
   }
 
   /*
-   * Layered, unlike the geometry below, so `object-contain` passed through
-   * `imageClass` beats it. The geometry has to stay unlayered to survive a host
-   * reset; this does not, and being unlayered would make it unoverridable.
+   * Layered, so an `object-contain` of yours beats it -- through `imageClass` on
+   * a preview tile, or directly on <ImageGalleryStageImage> and
+   * <ImageGalleryGridImage>. The geometry below has to stay unlayered to survive
+   * a host reset; this does not, and being unlayered would make it
+   * unoverridable.
    */
   .image-gallery-image {
-    object-fit: var(--ig-object-fit, cover);
+    object-fit: cover;
   }
 }
 
@@ -264,52 +109,28 @@
 }
 
 /*
- * The dialog's top bar sits over the image stage rather than beside it, so a
- * translucent fill reads as glass instead of as a lighter strip. The blur is
- * behind a @supports guard because without it the fill's alpha just leaks the
- * stage through at 5%, which looks like a rendering fault rather than a choice
- * -- so the unsupported path stays opaque. `-webkit-` first for Safari, which
- * shipped the prefixed property years before the standard one.
+ * The bar sits over the image stage rather than beside it, so a translucent fill
+ * reads as glass instead of as a lighter strip. The blur stays behind a
+ * @supports guard: without it the fill's alpha just leaks the stage through,
+ * which looks like a rendering fault rather than a choice, so the unsupported
+ * path stays opaque. `-webkit-` first for Safari, which shipped the prefixed
+ * property years before the standard one.
+ *
+ * Layered, so `class="bg-white/70 backdrop-blur-md"` on <ImageGalleryTopbar>
+ * replaces both the fill and the blur.
  */
-.image-gallery-topbar {
-  background-color: var(--ig-dialog-surface);
-}
-
-@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+@layer components {
   .image-gallery-topbar {
-    background-color: var(--ig-dialog-topbar-bg, var(--ig-dialog-surface));
-    -webkit-backdrop-filter: blur(var(--ig-dialog-topbar-blur, 12px)) saturate(180%);
-    backdrop-filter: blur(var(--ig-dialog-topbar-blur, 12px)) saturate(180%);
+    background-color: Canvas;
   }
-}
 
-/*
- * The all-images grid carries its own spacing and density tokens because the
- * preview has none to share: preview spacing is a `gap-*` class on the
- * consumer's own element. Each breakpoint reads its own token so a theme can
- * retune the density without giving up the responsive steps.
- */
-/*
- * --ig-dialog-grid-columns-current is the resolved count, and exists so the component
- * can read one number instead of re-deriving which breakpoint won. Themes still
- * override the three density tokens; only the plumbing changed. It is declared
- * on the grid rather than :root so the media queries below can reassign it
- * without a theme's own :root overrides taking precedence.
- */
-.image-gallery-masonry {
-  --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns, 2);
-
-  display: grid;
-  grid-template-columns: repeat(var(--ig-dialog-grid-columns-current), minmax(0, 1fr));
-  gap: var(--ig-dialog-grid-gap, 1rem);
-  align-items: start;
-}
-
-.image-gallery-masonry-column {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--ig-dialog-grid-gap, 1rem);
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .image-gallery-topbar {
+      background-color: color-mix(in srgb, Canvas 92%, transparent);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      backdrop-filter: blur(12px) saturate(180%);
+    }
+  }
 }
 
 /*
@@ -318,62 +139,84 @@
  * for it on every scroll and resize. It relies on each tile carrying its own
  * aspect-ratio: that gives a definite height from the column width alone, so a
  * skipped tile still reserves the right space and nothing jumps when it comes
- * into range. This is also why the columns above are explicit elements --
+ * into range. This is also why the columns below are explicit elements --
  * multi-column layout has to lay out all content to balance its columns, which
  * defeats the containment entirely.
+ *
+ * Unlayered on purpose: a consumer utility has no business switching off the one
+ * declaration a large collection depends on.
  */
-.image-gallery-masonry-tile {
+.image-gallery-bento-tile {
   content-visibility: auto;
 }
 
-@media (min-width: 768px) {
-  .image-gallery-masonry {
-    --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns-md, 4);
+/*
+ * The all-images grid. The tracks are stated plainly here and the component
+ * reads the count back off `grid-template-columns`, which is what makes a
+ * `md:grid-cols-6` of the consumer's own authoritative: whoever declared the
+ * tracks, the packing follows them.
+ *
+ * Layered, so that override wins. This is also the grid's scroll container: one
+ * element rather than a wrapper plus a grid, so the `gap-*` and `p-*` a consumer
+ * puts on <ImageGalleryGrid> land on the element those properties belong to.
+ */
+@layer components {
+  .image-gallery-bento {
+    display: grid;
+    height: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+    overflow-y: auto;
+    padding: calc(var(--ig-internal-topbar-height, 4rem) + 1rem) 1rem 1rem;
   }
-}
 
-@media (min-width: 1280px) {
-  .image-gallery-masonry {
-    --ig-dialog-grid-columns-current: var(--ig-dialog-grid-columns-lg, 5);
+  @media (min-width: 640px) {
+    .image-gallery-bento {
+      padding-inline: 1.5rem;
+      padding-bottom: 1.25rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .image-gallery-bento {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .image-gallery-bento {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  /*
+   * `inherit` rather than a value of its own, so the one gap a consumer sets on
+   * the grid spaces the tiles down a column as well as the columns across.
+   */
+  .image-gallery-bento-column {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: inherit;
   }
 }
 
 /*
- * The swipe is a phone gesture and the arrows are its pointer equivalent, so
- * exactly one of the two is live at any width -- and one media query decides
- * both, which is what stops a stage from ending up with neither. The component
- * asks this same element which side of the line it is on rather than carrying a
- * breakpoint of its own (see swipeEnabledFor), so a theme can move the line, or
- * arm the gesture at every width, and the arrows follow.
+ * `touch-action` is load-bearing and stays unlayered so a host reset cannot take
+ * it. Without `pan-y` the browser owns horizontal touch here and answers a swipe
+ * with a pointercancel partway through, so navigation would fire only sometimes.
+ * Vertical panning and pinch-zoom stay with the browser -- a reader zoomed into a
+ * photo needs both, and the caption can be taller than the stage.
  *
- * Mobile-first: an unset --ig-dialog-swipe reads as armed, so a consumer who
- * never loaded this stylesheet gets the gesture and visible arrows rather than a
- * dialog with no way forward at all.
- *
- * `touch-action` is the other load-bearing declaration. Without `pan-y` the
- * browser owns horizontal touch here and answers a swipe with a pointercancel
- * partway through, so navigation would fire only sometimes. Vertical panning and
- * pinch-zoom stay with the browser -- a reader zoomed into a photo needs both,
- * and the caption can be taller than the stage.
+ * No breakpoint pairs the gesture with the arrows, because none is needed: the
+ * gesture answers to the pointer that started it -- touch turns the page, a mouse
+ * does not -- so the two never contend and neither has to be switched off for the
+ * other. The arrows are always rendered; hide them with a class of your own, or
+ * leave <ImageGalleryStage>'s slots empty.
  */
 .image-gallery-stage {
-  --ig-dialog-swipe: 1;
-
   touch-action: pan-y pinch-zoom;
-}
-
-.image-gallery-stage-arrow {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .image-gallery-stage {
-    --ig-dialog-swipe: 0;
-  }
-
-  .image-gallery-stage-arrow {
-    display: inline-flex;
-  }
 }
 
 /* Only while a finger is actually down, so a caption stays selectable. */
@@ -388,12 +231,7 @@
  * one another. The gap is what clears the stage's own padding: a slide is as wide
  * as the padded frame rather than as the viewport, so a gap narrower than that
  * padding would leave a sliver of the neighbour showing past the frame the moment
- * a turn began. The default covers the widest padding the stage uses at any width
- * the gesture is armed at. Opacity is the belt to that braces.
- *
- * Each keeps its own aspect ratio instead of borrowing the outgoing image's box,
- * so a portrait never arrives pre-cropped to a landscape frame. The component
- * replaces this transform wholesale mid-turn, so it repeats the centring itself.
+ * a turn began. Opacity is the belt to that braces.
  */
 .image-gallery-stage-slide {
   position: absolute;
@@ -401,7 +239,6 @@
   left: 0;
   width: 100%;
   overflow: hidden;
-  border-radius: var(--ig-dialog-radius);
   opacity: 0;
 }
 
@@ -410,20 +247,382 @@
  * slide is genuinely parked off the stage even before a turn touches it and
  * returns there if one is interrupted. The component's inline transform takes
  * over mid-turn and reaches exactly these values at either end of it.
+ *
+ * No transition on these properties, on purpose. The snap after release is
+ * animated by the component, one frame at a time, for the reason spelled out in
+ * startSettle: a transition declared here would be armed by the very update that
+ * moves them, and a browser starts no transition from that.
  */
 .image-gallery-stage-slide[data-ig-slide='previous'] {
-  transform: translate(calc(-100% - var(--ig-dialog-slide-gap, 5rem)), -50%);
+  transform: translate(calc(-100% - var(--ig-internal-slide-gap, 5rem)), -50%);
 }
 
 .image-gallery-stage-slide[data-ig-slide='next'] {
-  transform: translate(calc(100% + var(--ig-dialog-slide-gap, 5rem)), -50%);
+  transform: translate(calc(100% + var(--ig-internal-slide-gap, 5rem)), -50%);
 }
 
 /*
- * No transition here on purpose. The snap after release is animated by the
- * component, one frame at a time, for the reason spelled out in startSettle: a
- * transition declared on these properties would be armed by the very update that
- * moves them, and a browser starts no transition from that. Both halves of the
- * gesture -- the finger and the snap -- write this transform the same way, and
- * the only thing that must not happen is a transition interfering with either.
+ * The dialog's own parts, one class each.
+ *
+ * In @layer components for the same reason .image-gallery-tile is: a utility
+ * class beats a layered one whatever the source order, so a consumer who puts
+ * `bg-white/90 rounded-none` on <ImageGalleryCloseButton> wins outright instead
+ * of racing these declarations in the cascade. That is what makes the exposed
+ * parts styleable with classes rather than with props -- and why none of what
+ * follows is worth a token of its own.
+ *
+ * Every colour below is a CSS system colour, so the default tracks the reader's
+ * platform on its own -- and your class replaces it outright rather than
+ * fighting it.
  */
+@layer components {
+  .image-gallery-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: Canvas;
+  }
+
+  .image-gallery-shell {
+    position: relative;
+    z-index: 10;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    background-color: Canvas;
+    color: CanvasText;
+  }
+
+  /*
+   * The bar's geometry. Its fill lives outside this layer, further up, because
+   * the @supports guard around the blur has to survive a host reset -- see the
+   * note there.
+   */
+  .image-gallery-topbar {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    height: 4rem;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding-inline: 1rem;
+    border-bottom: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+    color: CanvasText;
+  }
+
+  @media (min-width: 640px) {
+    .image-gallery-topbar {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .image-gallery-topbar-start {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .image-gallery-topbar-end {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Shared by every control in the dialog: the pill and the two round ones. */
+  .image-gallery-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    background-color: ButtonFace;
+    color: ButtonText;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, opacity, box-shadow;
+    transition-duration: 150ms;
+  }
+
+  .image-gallery-control:hover {
+    background-color: color-mix(in srgb, ButtonText 12%, ButtonFace);
+  }
+
+  .image-gallery-control:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px AccentColor;
+  }
+
+  /*
+   * An arrow at the end of a non-looping gallery. GrayText is the system
+   * colour for exactly this, so it tracks the platform palette and survives
+   * forced-colors the same way the rest of the control does.
+   */
+  .image-gallery-control:disabled {
+    color: GrayText;
+    cursor: default;
+  }
+
+  .image-gallery-control:disabled:hover {
+    background-color: ButtonFace;
+  }
+
+  .image-gallery-control-pill {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .image-gallery-control-round {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .image-gallery-counter {
+    text-align: center;
+    color: color-mix(in srgb, CanvasText 65%, transparent);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .image-gallery-panel {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background-color: color-mix(in srgb, CanvasText 4%, Canvas);
+  }
+
+  .image-gallery-caption {
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 48rem;
+    text-align: center;
+    color: color-mix(in srgb, CanvasText 65%, transparent);
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+  }
+}
+
+/*
+ * Geometry for the two views. Layered like the controls above, so a consumer's
+ * own padding or width utilities on <ImageGalleryStage> and <ImageGalleryGrid>
+ * take precedence. The unlayered .image-gallery-stage rule above keeps its
+ * touch-action; nothing here conflicts with it.
+ */
+@layer components {
+  .image-gallery-stage {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-gallery-stage-body {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .image-gallery-stage-body {
+      padding-inline: 5rem;
+    }
+  }
+
+  /*
+   * The stack is what the frame and its two neighbours share a centre in, and
+   * the cap is what stops a panorama from spanning a 4K display edge to edge.
+   */
+  .image-gallery-stage-stack {
+    /*
+     * Internal, not a theming knob: the resting offsets below and the mid-turn
+     * transform the component writes inline have to agree exactly, and this is
+     * how they agree once instead of twice. Declared on the stack so the frame
+     * and both neighbours inherit it.
+     */
+    --ig-internal-slide-gap: 5rem;
+
+    position: relative;
+    width: min(100%, 56rem);
+  }
+
+  /*
+   * One radius for all three roles a frame takes, stated once. The stage drives a
+   * single template for the active frame and both neighbours, so a radius put on
+   * <ImageGalleryStageFrame> reaches every one of them.
+   */
+  .image-gallery-stage-frame,
+  .image-gallery-stage-slide {
+    /*
+     * The image's own ratio, published by the frame. Layered, so a fixed shape
+     * of yours -- `aspect-video` on <ImageGalleryStageFrame> for a cinema
+     * layout -- takes over for all three roles at once.
+     */
+    aspect-ratio: var(--ig-internal-frame-ratio, 4 / 5);
+    border-radius: 1.5rem;
+  }
+
+  /* Leaves room for the bar at either end, so a tall image is never tucked under it. */
+  .image-gallery-stage-frame,
+  .image-gallery-stage-slide {
+    --ig-internal-stage-cap: calc(100vh - (2 * var(--ig-internal-topbar-height, 4rem)) - 4rem);
+
+    max-height: var(--ig-internal-stage-cap);
+  }
+
+  /*
+   * The cap above cannot keep the shape on its own. `width` is definite here, so
+   * the browser derives the height from `aspect-ratio`, clamps it against the
+   * cap, and never goes back to narrow the width to match -- a frame taller than
+   * the cap quietly stops honouring its own ratio, every image lands in one
+   * identically shaped box, and `object-contain` letterboxes each picture by
+   * however far its shape sits from that box.
+   *
+   * So the width is capped too, at the cap times the ratio -- a number CSS
+   * cannot read back off `aspect-ratio`. ImageGalleryStageFrame measures the
+   * ratio that actually won and publishes it here, so a consumer's
+   * `aspect-video` is respected rather than second-guessed; the fallback keeps
+   * the frame sized sensibly before that lands, and on the server.
+   *
+   * The cap is the active frame's alone. A neighbour keeps the stack's full
+   * width on purpose: it is transparent and parked off-stage, and the turn steps
+   * it by 100% of its own width, so narrowing it would shorten the step and land
+   * the next image short of centre. Its picture is unaffected -- `object-contain`
+   * in a wider box paints what it paints in this one, on the same centre.
+   *
+   * `margin-inline` because the frame may now be narrower than the stack, and a
+   * block box that no longer fills its parent has to be told to sit in the
+   * middle of it.
+   */
+  .image-gallery-stage-frame {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    max-width: var(--ig-internal-frame-fit-width, 100%);
+    margin-inline: auto;
+  }
+
+  /* Follows whatever radius the frame around it ended up with. */
+  .image-gallery-stage-image {
+    border-radius: inherit;
+  }
+}
+
+/*
+ * The last of the defaults. Everything above shipped its structure as a layered
+ * class already; these were still raw utilities on the element, where a
+ * consumer's own utility would have fought them on source order rather than
+ * cleanly winning. Same layer, same reason.
+ */
+@layer components {
+  /*
+   * Sized here rather than on the <svg> so that replacing the icon through the
+   * slot is the only thing a consumer has to do -- their markup brings its own
+   * size, and nothing of ours is left on it to override.
+   */
+  .image-gallery-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+  }
+
+  .image-gallery-icon-sm {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  /*
+   * Position only. Whether an arrow is shown at all is decided further up, by
+   * the unlayered rule that pairs it with the swipe token -- that one is
+   * deliberately not overridable, because exactly one of arrows-or-gesture has
+   * to be live at any width.
+   */
+  .image-gallery-stage-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 20;
+    transform: translateY(-50%);
+  }
+
+  .image-gallery-stage-arrow-previous {
+    left: 1rem;
+  }
+
+  .image-gallery-stage-arrow-next {
+    right: 1rem;
+  }
+
+  .image-gallery-bento-tile {
+    position: relative;
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    /*
+     * Load-bearing as well as cosmetic: a definite height from the column width
+     * alone is what lets the containment above skip an off-screen tile without
+     * the grid jumping when it scrolls back into range.
+     */
+    aspect-ratio: var(--ig-internal-tile-ratio, 4 / 5);
+    border-radius: 1.1rem;
+    text-align: left;
+  }
+
+  .image-gallery-bento-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px AccentColor;
+  }
+
+  /*
+   * The resting state the entrance animates out of, as an attribute rather than
+   * a swapped class list: gsap writes opacity, transform and scale inline as it
+   * reveals each tile, and inline styles win over this regardless of layer, so
+   * the two never fight.
+   */
+  .image-gallery-bento-tile[data-ig-entering='true'] {
+    opacity: 0;
+    transform: translateY(1.25rem) scale(0.98);
+  }
+
+  /* The box the preview image fills; the tile above it is what clips the corners. */
+  .image-gallery-tile-frame {
+    position: absolute;
+    inset: 0;
+  }
+
+  /*
+   * `inherit`, so the one radius you put on <ImageGalleryGridTile> rounds the
+   * clip inside it too -- the tile is the element that owns the corners, and
+   * this follows whatever it ends up with. Filling the tile rather than sizing
+   * itself is what makes the tile the single owner of the shape: an
+   * `aspect-square` on <ImageGalleryGridTile> resizes the picture with the box,
+   * instead of leaving it rattling at the image's own ratio inside.
+   */
+  .image-gallery-bento-frame {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  /*
+   * Plain CSS rather than `group-hover:`, so the lift works for a consumer who
+   * never loaded Tailwind. The `group` class stays on the tile regardless --
+   * it costs nothing and it is what lets them drive their own slot content from
+   * a hover on the tile.
+   */
+  .image-gallery-bento-image {
+    transition: transform 300ms;
+  }
+
+  .image-gallery-bento-tile:hover .image-gallery-bento-image {
+    transform: scale(1.02);
+  }
+}

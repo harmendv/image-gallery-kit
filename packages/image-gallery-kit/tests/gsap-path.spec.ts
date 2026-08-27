@@ -36,7 +36,7 @@ describe('gsap transition path', () => {
 
     const open = wrapper.get('button[aria-label="Open image 1"]').trigger('click');
     await new Promise((r) => setTimeout(r, 60));
-    const cloneDuringFlight = document.querySelectorAll('body > [aria-hidden="true"]').length;
+    const cloneDuringFlight = document.querySelectorAll('[data-ig-flight="true"]').length;
 
     await open;
     await new Promise((r) => setTimeout(r, 1200));
@@ -44,7 +44,7 @@ describe('gsap transition path', () => {
     Element.prototype.getBoundingClientRect = origRect;
 
     expect(cloneDuringFlight).toBeGreaterThan(0);
-    expect(document.querySelectorAll('body > [aria-hidden="true"]')).toHaveLength(0);
+    expect(document.querySelectorAll('[data-ig-flight="true"]')).toHaveLength(0);
     wrapper.unmount();
   });
 });

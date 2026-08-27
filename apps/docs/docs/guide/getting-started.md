@@ -1,6 +1,6 @@
 # Getting Started
 
-`image-gallery-kit` is built for Vue 3.5+ and ships as a focused package: three components, one plugin install path, one stylesheet, and no layout props — the arrangement is markup and classes you write.
+`image-gallery-kit` is built for Vue 3.5+ and ships as a focused package: sixteen components, one plugin install path, one stylesheet, and no layout or styling props — the arrangement and the appearance are markup and classes you write.
 
 ```sh
 npm install image-gallery-kit
@@ -28,9 +28,9 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - the default slot: your preview markup. There are no layout props; arrangement and size are classes on your own elements
 - `open` and `index`: optional controlled props for `v-model:open` and `v-model:index`
 - `allowGridView`: enable or disable every route into the all-images grid
-- `colorScheme`: force a light or dark palette for this instance
 - `labels`: overrides for the built-in English strings and `aria-label`s
 - `dialog-toolbar` and `dialog-caption`: slots for custom dialog controls and captions
+- `dialog`: the whole dialog, if you want to recompose it. It defaults to the standard composition, so leaving it alone changes nothing — see [Anatomy](/anatomy) for the parts and [Examples](/examples) for worked compositions
 
 ## Building The Preview
 
@@ -63,41 +63,23 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 
 The dialog, carousel, all-images grid and transitions all render from `images`, so they work the same whatever your preview looks like. See [Layout](/layout) for sizing rules and the overflow trigger, and [Examples](/examples) for ready-made arrangements.
 
-## Theming
+## Styling
 
-Styling splits in two, along one line: **you style what you render, tokens style what the component renders.**
+There are no design tokens. Every part is a component, every default is a class
+in `@layer components`, and no part leaves a utility of its own on the element --
+so a class of yours wins, with or without Tailwind:
 
-Your tiles and overflow trigger are your markup, so their appearance is classes — dark mode included, as a `dark:` variant. `imageClass` reaches the `<img>` inside a tile, where `object-fit` and the hover transform live:
-
-```vue-html
-<ImageGalleryImage
-  :image="image"
-  class="aspect-[4/5] rounded-xl bg-neutral-100 shadow-md dark:bg-neutral-800"
-  image-class="transition duration-500 motion-safe:group-hover:scale-105"
-/>
+```vue
+<ImageGalleryCloseButton class="rounded-lg bg-black text-white" />
+<ImageGalleryGrid class="grid-cols-3 gap-6 lg:grid-cols-6" />
 ```
 
-<LayoutShowcase
-  root-class="grid grid-cols-3 gap-3"
-  tile-class="aspect-[4/5] rounded-xl bg-neutral-100 shadow-md dark:bg-neutral-800"
-  image-class="transition duration-500 group-hover:scale-105"
-  :count="6"
-/>
+Colour comes from CSS system colours (`Canvas`, `CanvasText`, `ButtonFace`,
+`AccentColor`), which follow the reader's platform light/dark setting on their
+own and collapse correctly under forced-colors. Your own dark mode is whatever
+your project already does -- `class="bg-white dark:bg-zinc-900"` on the parts.
 
-The dialog is the other half. It is rendered by the component and teleported to `<body>`, so no class of yours can reach it — tokens are the channel, and every one is named for the part it styles:
-
-```css
-:root {
-  --ig-dialog-surface: #ffffff;
-  --ig-dialog-text: rgba(60, 60, 67, 0.96);
-  --ig-dialog-radius: 0.5rem;
-  --ig-dialog-grid-columns-md: 3;
-}
-```
-
-Declare them on `:root` for the whole site, or on any wrapper element to theme a single gallery. A neutral dark palette ships with the stylesheet and switches itself on under `prefers-color-scheme: dark`, a `.dark` class, or `[data-theme="dark"]`. If your app has its own light/dark toggle, add `data-ig-color-scheme` to the root element so the gallery follows your class rather than the OS preference.
-
-See [Theming](/theming) for the full token table and a complete re-skin.
+See [Styling](/theming) for the whole surface, and [Anatomy](/anatomy) for the parts.
 
 ## Animation
 

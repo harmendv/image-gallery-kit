@@ -1,3 +1,4 @@
+<!-- A photo essay. -->
 <ImageGallery :images="images">
   <!-- Explicit row heights: a tile has no intrinsic height, so `grid-rows-2` would collapse. -->
   <div class="grid grid-cols-4 grid-rows-[9rem_9rem] gap-3">
@@ -10,4 +11,35 @@
       :class="['rounded-xl', position === 0 ? 'col-span-2' : '']"
     />
   </div>
+
+  <!-- Square corners and `object-contain`, so nothing crops in the dialog. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #start><ImageGalleryGridToggle /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage>
+        <template #frame="{ image, role }">
+          <ImageGalleryStageFrame :image="image" :role="role" class="rounded-none">
+            <ImageGalleryStageImage class="object-contain" />
+          </ImageGalleryStageFrame>
+        </template>
+
+        <template #caption="{ image, index, total }">
+          <p class="mx-auto max-w-prose text-balance text-base leading-relaxed">
+            {{ image.alt }}
+          </p>
+          <p class="mt-1 text-xs uppercase tracking-widest opacity-50">
+            Plate {{ index + 1 }} — {{ total }}
+          </p>
+        </template>
+      </ImageGalleryStage>
+
+      <ImageGalleryGrid />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

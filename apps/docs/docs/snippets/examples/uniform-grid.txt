@@ -1,32 +1,30 @@
 <ImageGallery :images="images">
-  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+  <div class="grid grid-cols-3 gap-3">
     <ImageGalleryImage
       v-for="image in images.slice(0, 6)"
       :key="image.id"
       :image="image"
-      class="aspect-[4/5] rounded-xl"
-    >
-      <ImageGalleryOverflowTrigger v-slot="{ count }" class="absolute bottom-2 right-2 ...">
-        +{{ count }}
-      </ImageGalleryOverflowTrigger>
-    </ImageGalleryImage>
+      class="aspect-square rounded-xl"
+    />
   </div>
 
-  <!-- The overflow lands here, so the grid is dense enough to scan in one screen. -->
+  <!-- One `aspect-square` on the tile beats each image's own ratio; `object-cover` crops to fill. -->
   <template #dialog>
     <ImageGalleryOverlay>
       <template #topbar>
         <ImageGalleryTopbar>
           <template #start><ImageGalleryGridToggle /></template>
+          <template #center><ImageGalleryCounter /></template>
           <template #end><ImageGalleryCloseButton /></template>
         </ImageGalleryTopbar>
       </template>
 
       <ImageGalleryStage />
 
-      <ImageGalleryGrid class="grid-cols-4 gap-1 md:grid-cols-6 2xl:grid-cols-10">
+      <!-- `uniform` tells the packing the tiles share one shape, so the columns stay even. -->
+      <ImageGalleryGrid uniform class="grid-cols-3 gap-2 md:grid-cols-5">
         <template #tile="{ image, index }">
-          <ImageGalleryGridTile :image="image" :index="index" class="rounded-none">
+          <ImageGalleryGridTile :image="image" :index="index" class="aspect-square rounded-lg">
             <template #image><ImageGalleryGridImage class="object-cover" /></template>
           </ImageGalleryGridTile>
         </template>
