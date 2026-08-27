@@ -22,6 +22,7 @@
 <p>
   <a href="https://harmendv.github.io/image-gallery-kit/">Documentation</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/guide/getting-started">Getting started</a> ·
+  <a href="https://harmendv.github.io/image-gallery-kit/layout">Layout</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/examples">Examples</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/theming">Styling</a> ·
   <a href="https://harmendv.github.io/image-gallery-kit/api">API</a>
@@ -136,6 +137,7 @@ There are no layout props. The preview is your markup, so arrangement is whateve
 
 `flex-row` / `flex-row-reverse` / `flex-col` / `flex-col-reverse` place the main image on any side.
 A tile has no intrinsic height, so give it one — a class on the tile, or a definite track in its parent.
+See [Layout](https://harmendv.github.io/image-gallery-kit/layout) for the full recipe collection.
 
 ## API at a glance
 
@@ -148,12 +150,15 @@ A tile has no intrinsic height, so give it one — a class on the tile, or a def
 | `open` | `boolean \| null` | `null` (uncontrolled) |
 | `index` | `number \| null` | `null` (uncontrolled) |
 | `allowGridView` | `boolean` | `true` |
+| `loop` | `boolean` | `true` |
 | `imageAspectRatio` | `number \| string` | `'4 / 5'` |
 | `labels` | `Partial<GalleryLabels>` | `undefined` |
 
+`loop` decides whether the carousel wraps at the ends. Off, the arrows disable at the edges, the arrow keys stop, and a swipe past an end rubber-bands instead of revealing a neighbour.
+
 `imageAspectRatio` is a fallback for the all-images grid only — it needs a height per tile to pack columns, so images without intrinsic `width`/`height` borrow it. Preview tiles are sized by your classes.
 
-`ImageGalleryImage` takes `image` and `imageClass`. `ImageGalleryOverflowTrigger` takes none — it derives its count. `ImageGalleryStage` takes `swipe`. The dialog's other parts take no props at all.
+`ImageGalleryImage` takes `image` and `imageClass`. `ImageGalleryOverflowTrigger` takes none — it derives its count. `ImageGalleryStage` takes `swipe`, and the low-level parts (`ImageGalleryStageFrame`, `ImageGalleryGridTile`) take the `image` they render. The other dialog parts take no props at all.
 
 Layout is your markup, and so is presentation: gaps, radii, `object-fit` and hover are classes on the part they belong to. Neither is a prop.
 
@@ -211,7 +216,7 @@ Behaviour travels with the parts: `ImageGalleryOverlay` provides the dialog root
 the focus trap and scroll lock key on, and `ImageGalleryCloseButton` claims
 initial focus. Everything else is free to drop, reorder or wrap.
 
-See [Anatomy](https://harmendv.github.io/image-gallery-kit/anatomy) for the parts
+See [Anatomy](https://harmendv.github.io/image-gallery-kit/api#anatomy) for the parts
 and [Examples](https://harmendv.github.io/image-gallery-kit/examples) for worked
 compositions.
 
@@ -233,7 +238,7 @@ Colour comes from CSS system colours (`Canvas`, `CanvasText`, `ButtonFace`,
 own and collapse correctly under forced-colors. Your own dark mode is whatever
 your project already does -- `class="bg-white dark:bg-zinc-900"` on the parts.
 
-See [Styling](https://harmendv.github.io/image-gallery-kit/theming) and [Anatomy](https://harmendv.github.io/image-gallery-kit/anatomy).
+See [Styling](https://harmendv.github.io/image-gallery-kit/theming) and [Anatomy](https://harmendv.github.io/image-gallery-kit/api#anatomy).
 
 ## Repository layout
 
