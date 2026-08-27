@@ -1,6 +1,13 @@
+import { h } from 'vue';
 import { mount } from '@vue/test-utils';
 import { afterEach, vi } from 'vitest';
 import ImageGallery from '@/components/ImageGallery.vue';
+import ImageGalleryCloseButton from '@/components/ImageGalleryCloseButton.vue';
+import ImageGalleryGrid from '@/components/ImageGalleryGrid.vue';
+import ImageGalleryGridToggle from '@/components/ImageGalleryGridToggle.vue';
+import ImageGalleryOverlay from '@/components/ImageGalleryOverlay.vue';
+import ImageGalleryStage from '@/components/ImageGalleryStage.vue';
+import ImageGalleryTopbar from '@/components/ImageGalleryTopbar.vue';
 import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
@@ -14,20 +21,25 @@ const images: GalleryImage[] = Array.from({ length: 9 }, (_, index) => ({
 const realGetComputedStyle = window.getComputedStyle.bind(window);
 
 /*
- * The component reads the resolved column count back out of CSS, and jsdom
- * resolves no stylesheets, so the property has to be injected. Everything else
- * delegates to the real implementation -- gsap leans on computed style heavily
- * and a wholesale fake would break the transition paths these specs exercise.
+ * The component counts the grid's own `grid-template-columns` tracks, and jsdom
+ * resolves no stylesheets, so the declaration has to be injected. Everything
+ * else delegates to the real implementation -- gsap leans on computed style
+ * heavily and a wholesale fake would break the transition paths these specs
+ * exercise.
  */
 function stubResolvedColumns(count: number) {
+  const tracks = Array.from({ length: count }, () => 'minmax(0px, 1fr)').join(' ');
+
   vi.spyOn(window, 'getComputedStyle').mockImplementation(((element: Element, pseudo?: string | null) => {
     const style = realGetComputedStyle(element, pseudo ?? undefined);
 
     return new Proxy(style, {
       get(target, property) {
-        if (property === 'getPropertyValue') {
-          return (name: string) =>
-            name === '--ig-dialog-grid-columns-current' ? `${count}` : target.getPropertyValue(name);
+        if (
+          property === 'gridTemplateColumns' &&
+          (element as HTMLElement).classList?.contains('image-gallery-bento')
+        ) {
+          return tracks;
         }
 
         const value = Reflect.get(target, property);
@@ -86,7 +98,7 @@ describe('all-images grid at collection scale', () => {
 
     const wrapper = await openBento();
 
-    expect(wrapper.findAll('.image-gallery-masonry-column')).toHaveLength(3);
+    expect(wrapper.findAll('.image-gallery-bento-column')).toHaveLength(3);
 
     const rendered = wrapper
       .findAll('[data-bento-item="true"]')
@@ -106,7 +118,7 @@ describe('all-images grid at collection scale', () => {
     // CSS multi-column balancing would put 0,1,2 in the first column; greedy
     // shortest-column packing spreads the run across all three.
     const firstColumn = wrapper
-      .findAll('.image-gallery-masonry-column')[0]
+      .findAll('.image-gallery-bento-column')[0]
       .findAll('[data-bento-item="true"]')
       .map((tile) => Number(tile.attributes('data-bento-index')));
 
@@ -119,13 +131,13 @@ describe('all-images grid at collection scale', () => {
     stubResolvedColumns(2);
 
     const wrapper = await openBento();
-    expect(wrapper.findAll('.image-gallery-masonry-column')).toHaveLength(2);
+    expect(wrapper.findAll('.image-gallery-bento-column')).toHaveLength(2);
 
     stubResolvedColumns(5);
     window.dispatchEvent(new Event('resize'));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.findAll('.image-gallery-masonry-column')).toHaveLength(5);
+    expect(wrapper.findAll('.image-gallery-bento-column')).toHaveLength(5);
 
     wrapper.unmount();
   });
@@ -174,9 +186,9 @@ describe('all-images grid at collection scale', () => {
 
     // The exit clones carry z-index 9998; animateBetween's single flying clone
     // uses 9999 and is not part of this count.
-    const exitClones = Array.from(
-      document.querySelectorAll<HTMLElement>('body > [aria-hidden="true"]')
-    ).filter((clone) => clone.style.zIndex === '9998');
+    const exitClones = Array.from(document.querySelectorAll<HTMLElement>('[data-ig-flight="true"]')).filter(
+      (clone) => clone.style.zIndex === '9998'
+    );
 
     // Tiles 1 and 2 only: tile 0 is the active one and is always excluded.
     expect(exitClones).toHaveLength(2);
@@ -222,6 +234,69 @@ describe('all-images grid at collection scale', () => {
 
     // ...and the recomputed set must cover the tile that was just added.
     expect(wrapper.findAll('[data-bento-item="true"]')).toHaveLength(10);
+
+    wrapper.unmount();
+  });
+});
+
+/*
+ * `uniform` on ImageGalleryGrid: the packing plans columns from each image's
+ * own ratio, but a grid whose tiles all render at one shape (an `aspect-*`
+ * class on the tile) needs the plan to assume the same -- or the column that
+ * drew the portraits is planned tall, rendered short, and comes up ragged.
+ * Constant heights turn shortest-column into round-robin, which also puts the
+ * reading order back left-to-right.
+ */
+describe('a uniform grid', () => {
+  const mixed: GalleryImage[] = Array.from({ length: 9 }, (_, index) => ({
+    src: `/${index + 1}.jpg`,
+    alt: `Image ${index + 1}`,
+    width: 1000,
+    // Alternating extremes: ratio-aware packing would spread these unevenly.
+    height: index % 2 === 0 ? 500 : 3000
+  }));
+
+  async function openUniformBento() {
+    const wrapper = mount(ImageGallery, {
+      props: { images: mixed },
+      slots: {
+        default: previewSlot(mixed, 2),
+        dialog: () =>
+          h(ImageGalleryOverlay, null, {
+            topbar: () =>
+              h(ImageGalleryTopbar, null, {
+                start: () => h(ImageGalleryGridToggle),
+                end: () => h(ImageGalleryCloseButton)
+              }),
+            default: () => [h(ImageGalleryStage), h(ImageGalleryGrid, { uniform: true })]
+          })
+      },
+      attachTo: document.body
+    });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+
+    return wrapper;
+  }
+
+  it("packs round-robin regardless of each image's own ratio", async () => {
+    stubResolvedColumns(3);
+
+    const wrapper = await openUniformBento();
+    const columns = wrapper.findAll('.image-gallery-bento-column');
+
+    expect(columns).toHaveLength(3);
+
+    const indicesPerColumn = columns.map((column) =>
+      column.findAll('[data-bento-item="true"]').map((tile) => Number(tile.attributes('data-bento-index')))
+    );
+
+    expect(indicesPerColumn).toEqual([
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8]
+    ]);
 
     wrapper.unmount();
   });

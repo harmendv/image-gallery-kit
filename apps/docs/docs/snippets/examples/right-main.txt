@@ -12,4 +12,9 @@
       />
     </div>
   </div>
+
+  <!-- Unchanged too: the dialog is the same composition the left-docked example uses. -->
+  <template #dialog>
+    <!-- ... -->
+  </template>
 </ImageGallery>

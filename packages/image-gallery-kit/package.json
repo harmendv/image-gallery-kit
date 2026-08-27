@@ -1,6 +1,6 @@
 {
   "name": "image-gallery-kit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "SSR-safe Vue image gallery package with animated grid, dialog carousel, and bento view.",
   "license": "MIT",
@@ -27,15 +27,13 @@
   "sideEffects": [
     "*.css"
   ],
-  "main": "./dist/image-gallery-kit.umd.cjs",
   "module": "./dist/image-gallery-kit.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/image-gallery-kit.js",
-      "require": "./dist/image-gallery-kit.umd.cjs"
+      "import": "./dist/image-gallery-kit.js"
     },
     "./style.css": "./dist/style.css"
   },

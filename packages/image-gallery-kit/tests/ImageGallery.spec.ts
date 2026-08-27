@@ -49,8 +49,10 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery({}, tiles(images, 1));
     const tile = wrapper.get('.image-gallery-tile');
 
+    // No inline style at all: an inline value would beat a consumer class
+    // outright, which is the one thing nothing structural here may do.
     expect(tile.attributes('style')).toBeUndefined();
-    expect(tile.classes()).toContain('overflow-hidden');
+    expect(tile.classes()).toContain('image-gallery-tile');
   });
 
   it('passes the consumer classes through to the tile element', () => {
@@ -268,7 +270,7 @@ describe('ImageGallery', () => {
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('3 of 4');
   });
 
-  it('hides single-view header controls in masonry mode', async () => {
+  it('hides single-view header controls in bento mode', async () => {
     const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
@@ -426,7 +428,9 @@ describe('ImageGallery', () => {
     await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
 
     const gridTile = wrapper.get('button[aria-label="Open image 1 from grid"]');
-    expect(gridTile.attributes('style')).toContain('aspect-ratio: 3 / 2');
+    // Published as a custom property, so an `aspect-*` class of the consumer's
+    // wins over it -- the CSS reads this with a 4 / 5 fallback.
+    expect(gridTile.attributes('style')).toContain('--ig-internal-tile-ratio: 3 / 2');
   });
 
   it('applies a partial labels override and keeps English defaults elsewhere', async () => {
@@ -449,14 +453,23 @@ describe('ImageGallery', () => {
     expect(wrapper.find('button[aria-label="Open image 1"]').exists()).toBe(true);
   });
 
-  it('applies an explicit colorScheme to the gallery root and the dialog', async () => {
-    const wrapper = mountGallery({ colorScheme: 'dark' });
+  /*
+   * There is no colour-scheme prop, and no scheme class, because there is no
+   * palette to switch: the dialog paints in CSS system colours, which follow the
+   * reader's platform on their own. What the gallery must not do is put a colour
+   * on its root -- the preview below it is the consumer's markup and inherits
+   * their text colour.
+   */
+  it('brings no colour of its own to the gallery root', async () => {
+    const wrapper = mountGallery();
 
-    expect(wrapper.get('.image-gallery-theme').classes()).toContain('ig-scheme-dark');
+    expect(wrapper.get('.image-gallery-theme').classes().sort()).toEqual(
+      ['image-gallery-theme', 'w-full'].sort()
+    );
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-    expect(wrapper.get('[role="dialog"]').classes()).toContain('ig-scheme-dark');
+    expect(wrapper.get('[role="dialog"]').classes()).toEqual(['image-gallery-overlay']);
   });
 
   it('passes imageClass to the image rather than the tile', () => {
@@ -492,18 +505,23 @@ describe('ImageGallery', () => {
       h(ImageGalleryOverflowTrigger)
     ]);
 
-    // Only structural classes; nothing that would fight a consumer utility.
+    /*
+     * The structure lives in .image-gallery-tile, in @layer components, where a
+     * consumer utility beats it whatever the source order. That is the point of
+     * this assertion: a raw `relative block overflow-hidden` on the element
+     * would sit in the same layer as their override and win or lose by
+     * accident, so the element carries no utility of ours at all.
+     */
     expect(wrapper.get('.image-gallery-tile').classes().sort()).toEqual(
-      ['block', 'group', 'image-gallery-tile', 'overflow-hidden', 'relative'].sort()
+      ['group', 'image-gallery-tile'].sort()
     );
     expect(wrapper.get('.image-gallery-overflow-trigger').classes().sort()).toEqual(
       ['image-gallery-overflow-trigger', 'inline-flex', 'items-center', 'justify-center'].sort()
     );
   });
 
-  it('emits no scheme class when colorScheme is auto', () => {
-    const wrapper = mountGallery();
-    const classes = wrapper.get('.image-gallery-theme').classes();
+  it('emits no scheme class at all', () => {
+    const classes = mountGallery().get('.image-gallery-theme').classes();
 
     expect(classes).not.toContain('ig-scheme-dark');
     expect(classes).not.toContain('ig-scheme-light');

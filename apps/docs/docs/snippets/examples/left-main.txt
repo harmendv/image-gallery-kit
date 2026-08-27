@@ -1,4 +1,4 @@
-<!-- `w-2/5` gives the main image two fifths of the row, and `shrink-0` holds it there. -->
+<!-- A product page: `w-2/5` gives the main image two fifths of the row, `shrink-0` holds it there. -->
 <ImageGallery :images="images">
   <div class="flex gap-3">
     <ImageGalleryImage :image="images[0]" class="w-2/5 shrink-0 rounded-2xl" />
@@ -12,4 +12,32 @@
       />
     </div>
   </div>
+
+  <!-- The caption describes the shot; the grid reaches every other angle. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #start><ImageGalleryGridToggle /></template>
+          <template #center><ImageGalleryCounter /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage>
+        <template #caption="{ image, index, total }">
+          <p class="text-sm font-medium">{{ image.alt }}</p>
+          <p class="text-xs opacity-60">View {{ index + 1 }} of {{ total }}</p>
+        </template>
+      </ImageGalleryStage>
+
+      <ImageGalleryGrid class="grid-cols-4 gap-1.5 md:grid-cols-8">
+        <template #tile="{ image, index }">
+          <ImageGalleryGridTile :image="image" :index="index" class="rounded-md">
+            <template #image><ImageGalleryGridImage class="object-cover" /></template>
+          </ImageGalleryGridTile>
+        </template>
+      </ImageGalleryGrid>
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

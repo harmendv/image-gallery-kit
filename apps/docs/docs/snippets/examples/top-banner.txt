@@ -11,4 +11,24 @@
       />
     </div>
   </div>
+
+  <!-- The caption slot sits inside the stage's body, under the stack. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage>
+        <template #caption="{ image, index, total }">
+          <p class="text-sm font-medium">{{ image.alt }}</p>
+          <p class="text-xs opacity-60">{{ index + 1 }} / {{ total }}</p>
+        </template>
+      </ImageGalleryStage>
+
+      <ImageGalleryGrid />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

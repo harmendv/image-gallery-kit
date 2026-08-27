@@ -118,7 +118,7 @@ function offsetOf(wrapper: ReturnType<typeof openDialog>, selector: string) {
  */
 function gapFactorOf(wrapper: ReturnType<typeof openDialog>, selector: string) {
   const style = wrapper.get(selector).attributes('style') ?? '';
-  const match = /(-?[\d.]+) \* var\(--ig-dialog-slide-gap/.exec(style);
+  const match = /(-?[\d.]+) \* var\(--ig-internal-slide-gap/.exec(style);
 
   return match ? Number(match[1]) : null;
 }

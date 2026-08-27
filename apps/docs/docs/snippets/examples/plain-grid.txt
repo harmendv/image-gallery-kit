@@ -11,4 +11,26 @@
       </ImageGalleryOverflowTrigger>
     </ImageGalleryImage>
   </div>
+
+  <!-- The overflow lands here, so the grid is dense enough to scan in one screen. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #start><ImageGalleryGridToggle /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage />
+
+      <ImageGalleryGrid class="grid-cols-4 gap-1 md:grid-cols-6 2xl:grid-cols-10">
+        <template #tile="{ image, index }">
+          <ImageGalleryGridTile :image="image" :index="index" class="rounded-none">
+            <template #image><ImageGalleryGridImage class="object-cover" /></template>
+          </ImageGalleryGridTile>
+        </template>
+      </ImageGalleryGrid>
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

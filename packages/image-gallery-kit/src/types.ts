@@ -25,4 +25,4 @@ export interface GalleryLabels {
   next: string;
 }
 
-export type GalleryColorScheme = 'auto' | 'light' | 'dark';
+export type GalleryDialogMode = 'single' | 'bento';

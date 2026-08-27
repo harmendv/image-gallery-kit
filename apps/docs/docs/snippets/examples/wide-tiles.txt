@@ -7,4 +7,26 @@
       class="aspect-video rounded-xl"
     />
   </div>
+
+  <!-- The tile's 16/9 carries into the dialog: one pinned frame, square corners. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar>
+          <template #center><ImageGalleryCounter /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage>
+        <template #frame="{ image, role }">
+          <ImageGalleryStageFrame :image="image" :role="role" class="aspect-video rounded-none">
+            <ImageGalleryStageImage class="object-contain" />
+          </ImageGalleryStageFrame>
+        </template>
+      </ImageGalleryStage>
+
+      <ImageGalleryGrid />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

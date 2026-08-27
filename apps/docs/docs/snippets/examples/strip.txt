@@ -1,3 +1,4 @@
+<!-- A lookbook. -->
 <ImageGallery :images="images">
   <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
     <ImageGalleryImage
@@ -7,4 +8,18 @@
       class="h-40 w-56 shrink-0 snap-start rounded-xl"
     />
   </div>
+
+  <!-- No bar at all, so the stage runs the full height. The counter floats instead. -->
+  <template #dialog>
+    <ImageGalleryOverlay class="bg-white/98 dark:bg-black/98">
+      <ImageGalleryCloseButton
+        class="absolute right-4 top-4 z-30 bg-black/50 text-white hover:bg-black/70"
+      />
+      <ImageGalleryCounter
+        class="absolute inset-x-0 bottom-5 z-30 justify-center bg-transparent text-xs tracking-widest"
+      />
+      <ImageGalleryStage />
+      <ImageGalleryGrid />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

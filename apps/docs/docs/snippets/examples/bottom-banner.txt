@@ -12,4 +12,20 @@
       />
     </div>
   </div>
+
+  <!-- The bar moves to match: a class on it, and the stage still clears it. -->
+  <template #dialog>
+    <ImageGalleryOverlay>
+      <template #topbar>
+        <ImageGalleryTopbar class="inset-x-0 bottom-0 top-auto border-b-0 border-t">
+          <template #start><ImageGalleryGridToggle /></template>
+          <template #center><ImageGalleryCounter /></template>
+          <template #end><ImageGalleryCloseButton /></template>
+        </ImageGalleryTopbar>
+      </template>
+
+      <ImageGalleryStage />
+      <ImageGalleryGrid class="pt-4" />
+    </ImageGalleryOverlay>
+  </template>
 </ImageGallery>

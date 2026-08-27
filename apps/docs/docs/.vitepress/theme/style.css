@@ -345,10 +345,29 @@
 }
 
 .home-feature-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.3;
+}
+
+.home-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+}
+
+.home-feature-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .home-feature p {

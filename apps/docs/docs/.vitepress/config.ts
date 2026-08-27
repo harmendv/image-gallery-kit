@@ -23,16 +23,7 @@ export default defineConfig({
   title: 'image-gallery-kit',
   description: 'Animated Vue image gallery component with a polished docs experience.',
   cleanUrls: true,
-  head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }],
-    // VitePress owns the light/dark decision and expresses it as a `dark` class
-    // it adds and removes. This tells the gallery to follow that class alone:
-    // without it, picking light on a machine whose OS prefers dark leaves the
-    // gallery on its OS-driven dark palette while the page around it turns
-    // light. Set from a head script rather than declared on <html> because
-    // VitePress renders that tag itself.
-    ['script', {}, "document.documentElement.setAttribute('data-ig-color-scheme', 'class')"]
-  ],
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}logo.svg` }]],
   srcExclude: ['README.md'],
 
   // The example snippets are template *fragments*, not whole SFCs, so they are
@@ -52,7 +43,7 @@ export default defineConfig({
     // only under the "style" export condition, which Vite's postcss-import
     // resolver does not honour; Tailwind's plugin resolves them itself.
     plugins: [tailwindcss()],
-    // gsap is an optional peer of the package now, so nothing in the docs
+    // gsap is an optional peer of the package, so nothing in the docs
     // source imports it and the dep scanner never sees the bare specifier
     // inside the built entry. Without this the gallery silently falls back to
     // its no-animation path.
@@ -90,7 +81,7 @@ export default defineConfig({
       { text: 'Getting Started', link: '/guide/getting-started' },
       { text: 'Layout', link: '/layout' },
       { text: 'Examples', link: '/examples' },
-      { text: 'Theming', link: '/theming' },
+      { text: 'Styling', link: '/theming' },
       { text: 'API', link: '/api' }
     ],
     sidebar: [
@@ -106,7 +97,7 @@ export default defineConfig({
         items: [
           { text: 'Layout', link: '/layout' },
           { text: 'Examples', link: '/examples' },
-          { text: 'Theming', link: '/theming' },
+          { text: 'Styling', link: '/theming' },
           { text: 'API', link: '/api' }
         ]
       }
