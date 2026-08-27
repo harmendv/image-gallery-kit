@@ -1,4 +1,5 @@
 import { nextTick } from 'vue';
+import { isBrowser, prefersReducedMotion } from '@/utils/environment';
 
 type ElementGetter = () => HTMLElement | null;
 
@@ -12,8 +13,6 @@ interface TransitionOptions {
 interface BentoExitOptions {
   activeIndex?: number;
 }
-
-const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
 
 /*
  * requestAnimationFrame is paused while a tab is backgrounded, so a GSAP tween
@@ -37,10 +36,6 @@ function withDeadline(run: (done: () => void) => void, maxMs: number) {
     const timer = window.setTimeout(done, maxMs);
     run(done);
   });
-}
-
-function prefersReducedMotion() {
-  return isBrowser && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
 /*

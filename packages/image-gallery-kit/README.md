@@ -84,7 +84,7 @@ Full prop, event, slot and component reference:
 
 - [Getting started](https://harmendv.github.io/image-gallery-kit/guide/getting-started)
 - [Layout](https://harmendv.github.io/image-gallery-kit/layout)
-- [Anatomy](https://harmendv.github.io/image-gallery-kit/anatomy)
+- [Anatomy](https://harmendv.github.io/image-gallery-kit/api#anatomy)
 - [Examples](https://harmendv.github.io/image-gallery-kit/examples)
 - [Styling](https://harmendv.github.io/image-gallery-kit/theming)
 - [API](https://harmendv.github.io/image-gallery-kit/api)

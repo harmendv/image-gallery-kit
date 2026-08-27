@@ -80,7 +80,6 @@ export default defineConfig({
     nav: [
       { text: 'Getting Started', link: '/guide/getting-started' },
       { text: 'Layout', link: '/layout' },
-      { text: 'Anatomy', link: '/anatomy' },
       { text: 'Examples', link: '/examples' },
       { text: 'Styling', link: '/theming' },
       { text: 'API', link: '/api' }
@@ -97,7 +96,6 @@ export default defineConfig({
         text: 'Reference',
         items: [
           { text: 'Layout', link: '/layout' },
-          { text: 'Anatomy', link: '/anatomy' },
           { text: 'Examples', link: '/examples' },
           { text: 'Styling', link: '/theming' },
           { text: 'API', link: '/api' }

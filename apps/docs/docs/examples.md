@@ -1,6 +1,6 @@
 # Examples
 
-Every example below is the same components with different classes — a preview layout paired with a dialog composed to match it. Neither half is configuration: the arrangement is your markup, and the dialog is the parts from [Anatomy](/anatomy) rearranged in the `dialog` slot.
+Every example below is the same components with different classes — a preview layout paired with a dialog composed to match it. Neither half is configuration: the arrangement is your markup, and the dialog is the parts from [Anatomy](/api#anatomy) rearranged in the `dialog` slot.
 
 Each one is a live gallery. Click a tile to open the dialog it is paired with.
 
@@ -143,7 +143,7 @@ The picture is the argument, so the text sits under it rather than over it and n
 
 That is deliberate, and it is the opposite of [Wide Tiles](#wide-tiles) below. This collection mixes portrait and landscape, and one fixed shape can only match one of them — pin `aspect-[3/2]` and the portraits arrive in a box far wider than they are, with a couple of hundred pixels of bar down each side. Letting each frame take its own image's ratio means `object-contain` fills the box exactly, so there is no letterbox at all and none for the flight to cross.
 
-The flight still animates the change of crop, because a mosaic tile crops hard to fill its span while the stage shows the whole picture ([the flight](/anatomy#the-flight)). Matching the ratio is what keeps that change as small as it can be: the images this preview crops only along one axis fly with their box and picture growing in lockstep.
+The flight still animates the change of crop, because a mosaic tile crops hard to fill its span while the stage shows the whole picture ([the flight](/api#the-flight)). Matching the ratio is what keeps that change as small as it can be: the images this preview crops only along one axis fly with their box and picture growing in lockstep.
 
 <div class="vp-raw">
   <LayoutShowcase
@@ -239,4 +239,4 @@ The `dialog` slot's default content **is** the standard composition, so omitting
 </ImageGallery>
 ```
 
-See [Anatomy](/anatomy) for the parts these dialogs are built from.
+See [Anatomy](/api#anatomy) for the parts these dialogs are built from.

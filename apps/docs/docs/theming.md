@@ -10,7 +10,7 @@ That combination is the whole styling API:
 </ImageGalleryTopbar>
 ```
 
-See [Anatomy](./anatomy) for the parts and how they nest.
+See [Anatomy](/api#anatomy) for the parts and how they nest.
 
 ## Why your class wins
 

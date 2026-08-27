@@ -30,7 +30,7 @@ If you want `<ImageGallery />` globally available, use the default export as a V
 - `allowGridView`: enable or disable every route into the all-images grid
 - `labels`: overrides for the built-in English strings and `aria-label`s
 - `dialog-toolbar` and `dialog-caption`: slots for custom dialog controls and captions
-- `dialog`: the whole dialog, if you want to recompose it. It defaults to the standard composition, so leaving it alone changes nothing — see [Anatomy](/anatomy) for the parts and [Examples](/examples) for worked compositions
+- `dialog`: the whole dialog, if you want to recompose it. It defaults to the standard composition, so leaving it alone changes nothing — see [Anatomy](/api#anatomy) for the parts and [Examples](/examples) for worked compositions
 
 ## Building The Preview
 
@@ -79,7 +79,7 @@ Colour comes from CSS system colours (`Canvas`, `CanvasText`, `ButtonFace`,
 own and collapse correctly under forced-colors. Your own dark mode is whatever
 your project already does -- `class="bg-white dark:bg-zinc-900"` on the parts.
 
-See [Styling](/theming) for the whole surface, and [Anatomy](/anatomy) for the parts.
+See [Styling](/theming) for the whole surface, and [Anatomy](/api#anatomy) for the parts.
 
 ## Animation
 

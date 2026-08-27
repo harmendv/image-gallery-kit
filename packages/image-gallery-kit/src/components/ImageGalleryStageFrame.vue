@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, provide, ref, toRef, watch } from 'vue';
 import ImageGalleryStageImage from '@/components/ImageGalleryStageImage.vue';
 import { STAGE_FRAME, useDialogContext } from '@/composables/useGalleryContext';
+import { parseAspectRatio } from '@/utils/aspectRatio';
 import type { GalleryImage } from '@/types';
 
 /*
@@ -68,10 +69,7 @@ function readRatio(element: HTMLElement) {
   }
 
   // Either `<w> / <h>` or a bare number, depending on how it was written.
-  const [width, height = '1'] = declared.split('/').map((part) => Number.parseFloat(part));
-  const ratio = width / Number.parseFloat(String(height));
-
-  return Number.isFinite(ratio) && ratio > 0 ? ratio : null;
+  return parseAspectRatio(declared);
 }
 
 function fitToCap() {
