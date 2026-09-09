@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white&style=flat-square" alt="TypeScript">
   <img src="https://img.shields.io/badge/SSR-safe-0ea5e9?style=flat-square" alt="SSR safe">
   <img src="https://img.shields.io/badge/gsap-optional%20peer-88ce02?style=flat-square" alt="gsap optional peer">
+  <img src="https://img.shields.io/badge/build%20with-claude%20code-42b883?style=flat-square" alt="gsap optional peer">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6?style=flat-square" alt="MIT license"></a>
 </p>
 
