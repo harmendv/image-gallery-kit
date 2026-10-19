@@ -37,7 +37,8 @@ export type DialogVariant =
   | 'essay'
   | 'listing'
   | 'lookbook'
-  | 'minimal';
+  | 'minimal'
+  | 'home';
 
 const props = defineProps<{ variant: DialogVariant }>();
 </script>
@@ -255,15 +256,15 @@ const props = defineProps<{ variant: DialogVariant }>();
       <ImageGalleryTopbar class="h-20">
         <template #start>
           <span class="text-base font-semibold tracking-tight">Northgate</span>
-          <ImageGalleryGridToggle class="ml-2" />
+          <ImageGalleryGridToggle class="ml-2 max-sm:[&>span]:hidden" />
         </template>
 
-        <template #center><ImageGalleryCounter /></template>
+        <template #center><ImageGalleryCounter class="max-sm:hidden" /></template>
 
         <template #end>
           <a
             href="#responsive-arrangement"
-            class="image-gallery-control image-gallery-control-pill no-underline"
+            class="image-gallery-control image-gallery-control-pill whitespace-nowrap no-underline"
           >
             Book a viewing
           </a>
@@ -302,6 +303,28 @@ const props = defineProps<{ variant: DialogVariant }>();
     </template>
 
     <ImageGalleryStage />
+  </ImageGalleryOverlay>
+
+  <!--
+    Home: the standard bar, with each photo's description under it -- what a
+    first visitor should see of the dialog without picking an example.
+  -->
+  <ImageGalleryOverlay v-else-if="props.variant === 'home'">
+    <template #topbar>
+      <ImageGalleryTopbar>
+        <template #start><ImageGalleryGridToggle /></template>
+        <template #center><ImageGalleryCounter /></template>
+        <template #end><ImageGalleryCloseButton /></template>
+      </ImageGalleryTopbar>
+    </template>
+
+    <ImageGalleryStage>
+      <template #caption="{ image }">
+        <p class="text-sm font-medium">{{ image.alt }}</p>
+      </template>
+    </ImageGalleryStage>
+
+    <ImageGalleryGrid />
   </ImageGalleryOverlay>
 
   <!-- Captions under the image. -->

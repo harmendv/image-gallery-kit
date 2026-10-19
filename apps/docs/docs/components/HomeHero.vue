@@ -32,6 +32,7 @@
             grid-class="grid grid-cols-2 gap-3"
             tile-class="aspect-square rounded-xl"
             :count="5"
+            dialog="home"
           />
         </div>
       </div>
@@ -44,6 +45,7 @@
         grid-class="grid min-w-0 flex-1 grid-cols-2 gap-3"
         tile-class="aspect-square rounded-xl"
         :count="5"
+        dialog="home"
       />
     </div>
   </section>
