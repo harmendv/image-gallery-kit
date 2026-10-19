@@ -140,6 +140,14 @@ export interface GalleryContext {
 export const GALLERY_CONTEXT: InjectionKey<GalleryContext> = Symbol('image-gallery-context');
 
 /*
+ * The same context, provided again only around the `dialog` slot. Both slots
+ * mount under ImageGallery, so GALLERY_CONTEXT alone cannot tell a part in the
+ * preview from one in the dialog; this key can, because only the dialog's
+ * wrapper provides it.
+ */
+export const GALLERY_DIALOG: InjectionKey<GalleryContext> = Symbol('image-gallery-dialog');
+
+/*
  * One place for the "you used a part outside the gallery" error, so every part
  * fails the same way and names itself while doing it. The narrowed return is
  * the other half of the point: a bare `throw` does not narrow an injected value
@@ -161,7 +169,7 @@ export function useGallery(component: string): GalleryContext {
  * rather than leaving you to wonder which gallery it wanted.
  */
 export function useDialogContext(component: string): GalleryContext {
-  const gallery = inject(GALLERY_CONTEXT, null);
+  const gallery = inject(GALLERY_DIALOG, null);
 
   if (!gallery) {
     throw new Error(
