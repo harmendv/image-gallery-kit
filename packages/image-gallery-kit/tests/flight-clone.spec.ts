@@ -1,5 +1,6 @@
 import { h } from 'vue';
 import { mount } from '@vue/test-utils';
+import { gsap } from 'gsap';
 import ImageGallery from '@/components/ImageGallery.vue';
 import ImageGalleryImage from '@/components/ImageGalleryImage.vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
@@ -72,7 +73,7 @@ function flightLayer() {
  */
 function mountWithTiles(props: Record<string, unknown> = {}) {
   return mount(ImageGallery, {
-    props: { images, ...props },
+    props: { images, gsap, ...props },
     slots: {
       default: () =>
         images.map((image) =>
@@ -149,7 +150,7 @@ describe('flight radius', () => {
   it("starts the clone at the preview tile's own corners, not the frame's", () =>
     withFixedRects(async () => {
       const wrapper = mount(ImageGallery, {
-        props: { images },
+        props: { images, gsap },
         slots: {
           default: () =>
             images.map((image) =>
@@ -171,7 +172,7 @@ describe('flight radius', () => {
 
   it('uses the radius the caller captured, since the source may already be gone', () =>
     withFixedRects(async () => {
-      const { animateBetween } = useSharedImageTransition();
+      const { animateBetween } = useSharedImageTransition(() => gsap);
 
       const source = document.createElement('div');
       const target = document.createElement('div');
@@ -274,7 +275,7 @@ describe('the flight layer', () => {
 describe('decoration across the flight', () => {
   function mountBordered() {
     return mount(ImageGallery, {
-      props: { images },
+      props: { images, gsap },
       slots: {
         default: () =>
           images.map((image) =>

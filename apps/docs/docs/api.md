@@ -179,6 +179,7 @@ interface GalleryLabels {
 | `index` | `number \| null` | `null` | Controlled active image index for `v-model:index`. Leave unset for internal state. |
 | `imageAspectRatio` | `number \| string` | `'4 / 5'` | Fallback ratio for images with no intrinsic `width`/`height`. Read by the dialog and the all-images grid only — preview tiles are sized by your classes. |
 | `loop` | `boolean` | `true` | Whether the carousel wraps at the ends. Off, the arrows disable at the edges, the arrow keys stop, and a swipe past an end rubber-bands instead of revealing a neighbour. |
+| `gsap` | `GalleryGsap \| null` | `null` | The `gsap` export that drives the transitions. Takes precedence over the plugin's `{ gsap }` option; with neither, nothing animates. |
 
 ### Labels
 

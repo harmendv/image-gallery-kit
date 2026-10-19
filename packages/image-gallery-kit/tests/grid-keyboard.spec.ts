@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { afterEach, vi } from 'vitest';
+import { afterEach } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
@@ -7,14 +7,12 @@ import { previewSlot as tiles } from './helpers';
 
 // Tweens complete synchronously so the focus hand-off that follows the mode
 // swap -- the thing under test -- arrives within a frame instead of a deadline.
-vi.mock('gsap', () => ({
-  gsap: {
-    to: (_targets: unknown, vars: Record<string, any>) => {
-      vars.onComplete?.();
-      return {};
-    }
+const gsap = {
+  to: (_targets: unknown, vars: Record<string, any>) => {
+    vars.onComplete?.();
+    return {};
   }
-}));
+};
 
 const images: GalleryImage[] = Array.from({ length: 5 }, (_, index) => ({
   src: `/${index + 1}.jpg`,
@@ -25,7 +23,7 @@ const images: GalleryImage[] = Array.from({ length: 5 }, (_, index) => ({
 
 function mountGallery(props: Record<string, unknown> = {}) {
   return mount(ImageGallery, {
-    props: { images, ...props },
+    props: { images, gsap, ...props },
     slots: { default: tiles(images) },
     attachTo: document.body
   });

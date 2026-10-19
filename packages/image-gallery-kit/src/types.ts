@@ -26,3 +26,12 @@ export interface GalleryLabels {
 }
 
 export type GalleryDialogMode = 'single' | 'bento';
+
+/*
+ * The slice of gsap the transitions use. Typed structurally rather than as
+ * gsap's own types so the declarations never reference a peer the
+ * consumer may not have installed; the real `gsap` export satisfies it.
+ */
+export interface GalleryGsap {
+  to(targets: object | object[], vars: Record<string, unknown>): unknown;
+}

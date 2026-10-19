@@ -27,17 +27,13 @@ const images: GalleryImage[] = [
 
 const tweens: { target: HTMLElement; vars: Record<string, unknown> }[] = [];
 
-vi.mock('gsap', () => ({
-  gsap: {
-    to: (target: HTMLElement, vars: Record<string, unknown>) => {
-      tweens.push({ target, vars });
-      if (typeof vars.onComplete === 'function') (vars.onComplete as () => void)();
-      return { kill() {} };
-    },
-    set: () => {},
-    killTweensOf: () => {}
+const gsap = {
+  to: (target: object, vars: Record<string, unknown>) => {
+    tweens.push({ target: target as HTMLElement, vars });
+    if (typeof vars.onComplete === 'function') (vars.onComplete as () => void)();
+    return {};
   }
-}));
+};
 
 function rect(r: { x: number; y: number; width: number; height: number }) {
   return {
@@ -110,7 +106,7 @@ describe('flight across a change of crop', () => {
     });
 
     const wrapper = mount(ImageGallery, {
-      props: { images },
+      props: { images, gsap },
       slots: { default: previewSlot(images) },
       attachTo: document.body
     });

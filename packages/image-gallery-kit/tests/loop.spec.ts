@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { afterEach, vi } from 'vitest';
+import { afterEach } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
@@ -7,14 +7,12 @@ import { previewSlot as tiles } from './helpers';
 
 // The flight animation is not under test here; completing tweens synchronously
 // keeps each spec from waiting out the real deadline timers.
-vi.mock('gsap', () => ({
-  gsap: {
-    to: (_targets: unknown, vars: Record<string, any>) => {
-      vars.onComplete?.();
-      return {};
-    }
+const gsap = {
+  to: (_targets: unknown, vars: Record<string, any>) => {
+    vars.onComplete?.();
+    return {};
   }
-}));
+};
 
 const images: GalleryImage[] = [
   { src: '/one.jpg', alt: 'One', width: 800, height: 1200 },
@@ -24,7 +22,7 @@ const images: GalleryImage[] = [
 
 function mountGallery(props: Record<string, unknown> = {}) {
   return mount(ImageGallery, {
-    props: { images, ...props },
+    props: { images, gsap, ...props },
     slots: { default: tiles(images) },
     attachTo: document.body
   });

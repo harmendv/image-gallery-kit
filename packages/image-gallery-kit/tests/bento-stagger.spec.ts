@@ -1,21 +1,18 @@
-import { afterEach, vi } from 'vitest';
+import { afterEach } from 'vitest';
+import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 
 const tweens: { targets: unknown; vars: Record<string, any> }[] = [];
 
 // The real gsap needs rAF to tick, which jsdom never does on its own. Capturing
 // the tween vars instead keeps the assertion on the thing that actually changed:
 // the stagger handed to gsap, which is what sets the length of the cascade.
-vi.mock('gsap', () => ({
-  gsap: {
-    to: (targets: unknown, vars: Record<string, any>) => {
-      tweens.push({ targets, vars });
-      vars.onComplete?.();
-      return {};
-    }
+const gsap = {
+  to: (targets: unknown, vars: Record<string, any>) => {
+    tweens.push({ targets, vars });
+    vars.onComplete?.();
+    return {};
   }
-}));
-
-const { useSharedImageTransition } = await import('@/composables/useSharedImageTransition');
+};
 
 function buildGrid(count: number) {
   const container = document.createElement('div');
@@ -65,7 +62,7 @@ describe('bento entrance stagger', () => {
   it('keeps the per-item cascade for a small collection', async () => {
     const restore = stubAllOnScreen();
     const container = buildGrid(6);
-    const { animateBentoEntrance } = useSharedImageTransition();
+    const { animateBentoEntrance } = useSharedImageTransition(() => gsap);
 
     await animateBentoEntrance(() => container);
     restore();
@@ -77,7 +74,7 @@ describe('bento entrance stagger', () => {
   it('caps the total cascade so a large collection cannot stall the open', async () => {
     const restore = stubAllOnScreen();
     const container = buildGrid(1000);
-    const { animateBentoEntrance } = useSharedImageTransition();
+    const { animateBentoEntrance } = useSharedImageTransition(() => gsap);
 
     await animateBentoEntrance(() => container);
     restore();
@@ -110,7 +107,7 @@ describe('bento entrance stagger', () => {
     };
 
     const container = buildGrid(1000);
-    const { animateBentoEntrance } = useSharedImageTransition();
+    const { animateBentoEntrance } = useSharedImageTransition(() => gsap);
 
     await animateBentoEntrance(() => container);
     Element.prototype.getBoundingClientRect = original;

@@ -1,5 +1,16 @@
 import { nextTick } from 'vue';
+import type { InjectionKey } from 'vue';
 import { isBrowser, prefersReducedMotion } from '@/utils/environment';
+import type { GalleryGsap } from '@/types';
+
+/*
+ * Where the plugin puts the gsap it was handed. gsap is never imported here: a
+ * bare import of an optional peer is a specifier the consumer's bundler has to
+ * resolve, and it cannot when the peer is not installed. The consumer passes
+ * their own instance in -- through the plugin or the `gsap` prop -- and without
+ * one every transition is skipped.
+ */
+export const GSAP: InjectionKey<GalleryGsap | null> = Symbol('image-gallery-gsap');
 
 type ElementGetter = () => HTMLElement | null;
 
@@ -90,7 +101,7 @@ const TILE_FRAME = '[data-ig-tile-frame="true"]';
  */
 const FLIGHT_CLONE = 'data-ig-flight';
 
-export function useSharedImageTransition() {
+export function useSharedImageTransition(getGsap: () => GalleryGsap | null | undefined = () => null) {
   /*
    * A clone has to leave its tile to fly -- it is positioned against the
    * viewport, so it cannot stay inside a scrolling grid -- and leaving costs it
@@ -467,7 +478,8 @@ export function useSharedImageTransition() {
     toGetter: ElementGetter,
     options: TransitionOptions = {}
   ) {
-    if (!isBrowser || prefersReducedMotion()) {
+    const gsap = getGsap();
+    if (!isBrowser || prefersReducedMotion() || !gsap) {
       return;
     }
 
@@ -504,8 +516,6 @@ export function useSharedImageTransition() {
     flightLayer(fromEl, toEl).appendChild(clone);
 
     try {
-      const { gsap } = await import('gsap');
-
       const duration = options.duration ?? 0.48;
 
       await withDeadline(
@@ -542,8 +552,6 @@ export function useSharedImageTransition() {
         },
         duration * 1000 + 400
       );
-    } catch {
-      // If GSAP is unavailable, the state change still succeeds without animation.
     } finally {
       clone.remove();
       releaseFlightLayer();
@@ -559,7 +567,8 @@ export function useSharedImageTransition() {
 
     // The hidden state is class-driven by isBentoEntering, which the caller
     // clears straight after this resolves, so returning early reveals the tiles.
-    if (prefersReducedMotion()) {
+    const gsap = getGsap();
+    if (prefersReducedMotion() || !gsap) {
       return;
     }
 
@@ -581,43 +590,38 @@ export function useSharedImageTransition() {
       return;
     }
 
-    try {
-      const { gsap } = await import('gsap');
+    /*
+     * A per-item stagger has to be capped, not just applied to fewer items: at
+     * 0.04s each, 1000 tiles spread the reveal over 40 seconds and this
+     * promise -- which the caller awaits before clearing isBentoEntering --
+     * resolves 40 seconds after the grid opened. Spreading a fixed budget
+     * keeps the cascade legible at ten tiles and bounded at a thousand.
+     */
+    const duration = 0.34;
+    // Spread is measured across the gaps between tiles, not the tiles
+    // themselves, so a small collection keeps exactly the uncapped per-tile 0.04s.
+    const gaps = items.length - 1;
+    const staggerTotal = Math.min(gaps * STAGGER_EACH, STAGGER_MAX_TOTAL);
 
-      /*
-       * A per-item stagger has to be capped, not just applied to fewer items: at
-       * 0.04s each, 1000 tiles spread the reveal over 40 seconds and this
-       * promise -- which the caller awaits before clearing isBentoEntering --
-       * resolves 40 seconds after the grid opened. Spreading a fixed budget
-       * keeps the cascade legible at ten tiles and bounded at a thousand.
-       */
-      const duration = 0.34;
-      // Spread is measured across the gaps between tiles, not the tiles
-      // themselves, so a small collection keeps exactly the uncapped per-tile 0.04s.
-      const gaps = items.length - 1;
-      const staggerTotal = Math.min(gaps * STAGGER_EACH, STAGGER_MAX_TOTAL);
-
-      await withDeadline(
-        (done) => {
-          gsap.to(items, {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration,
-            ease: 'power2.out',
-            stagger: gaps > 0 ? staggerTotal / gaps : 0,
-            onComplete: done
-          });
-        },
-        (duration + staggerTotal) * 1000 + 400
-      );
-    } catch {
-      // No-op fallback when GSAP is unavailable.
-    }
+    await withDeadline(
+      (done) => {
+        gsap.to(items, {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration,
+          ease: 'power2.out',
+          stagger: gaps > 0 ? staggerTotal / gaps : 0,
+          onComplete: done
+        });
+      },
+      (duration + staggerTotal) * 1000 + 400
+    );
   }
 
   async function animateBentoExit(containerGetter: ElementGetter, options: BentoExitOptions = {}) {
-    if (!isBrowser || prefersReducedMotion()) {
+    const gsap = getGsap();
+    if (!isBrowser || prefersReducedMotion() || !gsap) {
       return;
     }
 
@@ -660,26 +664,19 @@ export function useSharedImageTransition() {
       return;
     }
 
-    try {
-      const { gsap } = await import('gsap');
-
-      void withDeadline((done) => {
-        gsap.to(clones, {
-          opacity: 0,
-          y: -8,
-          scale: 0.985,
-          duration: 0.2,
-          ease: 'power2.in',
-          onComplete: done
-        });
-      }, 600).then(() => {
-        clones.forEach((clone) => clone.remove());
-        releaseFlightLayer();
+    void withDeadline((done) => {
+      gsap.to(clones, {
+        opacity: 0,
+        y: -8,
+        scale: 0.985,
+        duration: 0.2,
+        ease: 'power2.in',
+        onComplete: done
       });
-    } catch {
+    }, 600).then(() => {
       clones.forEach((clone) => clone.remove());
       releaseFlightLayer();
-    }
+    });
   }
 
   return {

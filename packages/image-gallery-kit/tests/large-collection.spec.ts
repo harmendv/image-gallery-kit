@@ -1,5 +1,6 @@
 import { h } from 'vue';
 import { mount } from '@vue/test-utils';
+import { gsap } from 'gsap';
 import { afterEach, vi } from 'vitest';
 import ImageGallery from '@/components/ImageGallery.vue';
 import ImageGalleryCloseButton from '@/components/ImageGalleryCloseButton.vue';
@@ -74,7 +75,7 @@ function stubRects(resolve: (element: Element) => Partial<DOMRect>) {
 
 async function openBento(props: Record<string, unknown> = {}) {
   const wrapper = mount(ImageGallery, {
-    props: { images, ...props },
+    props: { images, gsap, ...props },
     slots: { default: previewSlot(images, 2) },
     attachTo: document.body
   });
@@ -148,7 +149,7 @@ describe('all-images grid at collection scale', () => {
     Element.prototype.scrollIntoView = scrollIntoView;
 
     const wrapper = mount(ImageGallery, {
-      props: { images, index: 7 },
+      props: { images, gsap, index: 7 },
       slots: { default: previewSlot(images, 2) },
       attachTo: document.body
     });
@@ -258,7 +259,7 @@ describe('a uniform grid', () => {
 
   async function openUniformBento() {
     const wrapper = mount(ImageGallery, {
-      props: { images: mixed },
+      props: { images: mixed, gsap },
       slots: {
         default: previewSlot(mixed, 2),
         dialog: () =>

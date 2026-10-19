@@ -15,9 +15,11 @@ import ImageGalleryStage from './components/ImageGalleryStage.vue';
 import ImageGalleryStageFrame from './components/ImageGalleryStageFrame.vue';
 import ImageGalleryStageImage from './components/ImageGalleryStageImage.vue';
 import ImageGalleryTopbar from './components/ImageGalleryTopbar.vue';
+import { GSAP } from './composables/useSharedImageTransition';
+import type { GalleryGsap } from './types';
 import './style.css';
 
-export type { GalleryDialogMode, GalleryImage, GalleryLabels } from './types';
+export type { GalleryDialogMode, GalleryGsap, GalleryImage, GalleryLabels } from './types';
 export type {
   GalleryContext,
   GalleryDialogContext,
@@ -69,11 +71,21 @@ const components = {
   ImageGalleryTopbar
 };
 
-const plugin: Plugin = {
-  install(app: App) {
+export interface ImageGalleryKitOptions {
+  /*
+   * Enables the transitions for every gallery in the app. Pass the `gsap`
+   * export itself; the package never imports it, so it stays optional.
+   */
+  gsap?: GalleryGsap | null;
+}
+
+const plugin: Plugin<[ImageGalleryKitOptions?]> = {
+  install(app: App, options: ImageGalleryKitOptions = {}) {
     Object.entries(components).forEach(([name, component]) => {
       app.component(name, component);
     });
+
+    app.provide(GSAP, options.gsap ?? null);
   }
 };
 
