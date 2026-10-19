@@ -1,5 +1,6 @@
 import { onBeforeUnmount, ref, watch } from 'vue';
 import type { Ref } from 'vue';
+import { acquireScrollLock } from '@/utils/scrollLock';
 
 /*
  * Everything the dialog does to the page around it: the focus trap and its
@@ -11,8 +12,7 @@ export function useDialogFocus() {
   const dialogRef = ref<HTMLElement | null>(null);
   const closeButtonRef = ref<HTMLElement | null>(null);
   const lastFocusedElement = ref<HTMLElement | null>(null);
-  const previousBodyOverflow = ref<string | null>(null);
-  const previousBodyPaddingRight = ref<string | null>(null);
+  let releaseScrollLock: (() => void) | null = null;
   const focusableCache = ref<{ root: HTMLElement; elements: HTMLElement[] } | null>(null);
 
   function invalidateFocusables() {
@@ -107,31 +107,23 @@ export function useDialogFocus() {
     }
   }
 
+  /*
+   * The page itself is locked by a shared, counted lock (see utils/scrollLock);
+   * this only remembers whether this dialog holds it, so an open that fires
+   * twice cannot take two holds, and a close after an unmount cannot release
+   * one twice.
+   */
   function lockBodyScroll() {
-    if (typeof document === 'undefined' || previousBodyOverflow.value !== null) {
+    if (releaseScrollLock) {
       return;
     }
 
-    previousBodyOverflow.value = document.body.style.overflow;
-    previousBodyPaddingRight.value = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    document.body.style.overflow = 'hidden';
-
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
+    releaseScrollLock = acquireScrollLock();
   }
 
   function unlockBodyScroll() {
-    if (typeof document === 'undefined' || previousBodyOverflow.value === null) {
-      return;
-    }
-
-    document.body.style.overflow = previousBodyOverflow.value;
-    document.body.style.paddingRight = previousBodyPaddingRight.value ?? '';
-    previousBodyOverflow.value = null;
-    previousBodyPaddingRight.value = null;
+    releaseScrollLock?.();
+    releaseScrollLock = null;
   }
 
   /* The dialog just became visible: remember where focus was and freeze the page. */

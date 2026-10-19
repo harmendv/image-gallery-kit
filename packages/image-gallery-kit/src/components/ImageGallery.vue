@@ -14,6 +14,7 @@ import type { Ref } from 'vue';
 import { GALLERY_CONTEXT } from '@/composables/useGalleryContext';
 import ImageGalleryCloseButton from '@/components/ImageGalleryCloseButton.vue';
 import ImageGalleryCounter from '@/components/ImageGalleryCounter.vue';
+import ImageGalleryDialogScope from '@/components/ImageGalleryDialogScope.vue';
 import ImageGalleryGrid from '@/components/ImageGalleryGrid.vue';
 import ImageGalleryGridToggle from '@/components/ImageGalleryGridToggle.vue';
 import ImageGalleryOverlay from '@/components/ImageGalleryOverlay.vue';
@@ -827,53 +828,59 @@ provide(GALLERY_CONTEXT, {
         the grid flies -- because each part registers what it provides instead of
         being handed it.
       -->
-      <slot
-        v-if="dialogIsVisible && activeImage"
-        name="dialog"
-        :image="activeImage"
-        :index="currentIndex"
-        :total="totalImages"
-        :mode="dialogMode"
-        :close="closeDialog"
-        :toggle-mode="toggleDialogMode"
-      >
-        <ImageGalleryOverlay>
-          <template #topbar>
-            <ImageGalleryTopbar>
-              <template #start>
-                <ImageGalleryGridToggle />
+      <!--
+        The scope is what lets a dialog part know it is in the dialog: the
+        preview slot mounts under ImageGallery too, so only this wrapper tells
+        the two apart.
+      -->
+      <ImageGalleryDialogScope v-if="dialogIsVisible && activeImage">
+        <slot
+          name="dialog"
+          :image="activeImage"
+          :index="currentIndex"
+          :total="totalImages"
+          :mode="dialogMode"
+          :close="closeDialog"
+          :toggle-mode="toggleDialogMode"
+        >
+          <ImageGalleryOverlay>
+            <template #topbar>
+              <ImageGalleryTopbar>
+                <template #start>
+                  <ImageGalleryGridToggle />
 
-                <slot
-                  v-if="hasDialogToolbarSlot"
-                  name="dialog-toolbar"
-                  :image="activeImage"
-                  :index="currentIndex"
-                  :total="totalImages"
-                  :mode="dialogMode"
-                  :close="closeDialog"
-                  :toggleMode="toggleDialogMode"
-                />
-              </template>
+                  <slot
+                    v-if="hasDialogToolbarSlot"
+                    name="dialog-toolbar"
+                    :image="activeImage"
+                    :index="currentIndex"
+                    :total="totalImages"
+                    :mode="dialogMode"
+                    :close="closeDialog"
+                    :toggleMode="toggleDialogMode"
+                  />
+                </template>
 
-              <template #center>
-                <ImageGalleryCounter />
-              </template>
+                <template #center>
+                  <ImageGalleryCounter />
+                </template>
 
-              <template #end>
-                <ImageGalleryCloseButton />
-              </template>
-            </ImageGalleryTopbar>
-          </template>
-
-          <ImageGalleryStage>
-            <template v-if="hasDialogCaptionSlot" #caption="captionProps">
-              <slot name="dialog-caption" v-bind="captionProps" />
+                <template #end>
+                  <ImageGalleryCloseButton />
+                </template>
+              </ImageGalleryTopbar>
             </template>
-          </ImageGalleryStage>
 
-          <ImageGalleryGrid />
-        </ImageGalleryOverlay>
-      </slot>
+            <ImageGalleryStage>
+              <template v-if="hasDialogCaptionSlot" #caption="captionProps">
+                <slot name="dialog-caption" v-bind="captionProps" />
+              </template>
+            </ImageGalleryStage>
+
+            <ImageGalleryGrid />
+          </ImageGalleryOverlay>
+        </slot>
+      </ImageGalleryDialogScope>
     </Teleport>
   </section>
 </template>
