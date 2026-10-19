@@ -262,6 +262,19 @@
 }
 
 /*
+ * Mirrored in RTL, where the next image lies to the left. Keyed on the `dir` the
+ * overlay sets from the gallery's own direction, which is also what the swipe
+ * mirrors its inline offsets by -- so the parked slides and the turn agree.
+ */
+.image-gallery-overlay[dir='rtl'] .image-gallery-stage-slide[data-ig-slide='previous'] {
+  transform: translate(calc(100% + var(--ig-internal-slide-gap, 5rem)), -50%);
+}
+
+.image-gallery-overlay[dir='rtl'] .image-gallery-stage-slide[data-ig-slide='next'] {
+  transform: translate(calc(-100% - var(--ig-internal-slide-gap, 5rem)), -50%);
+}
+
+/*
  * The dialog's own parts, one class each.
  *
  * In @layer components for the same reason .image-gallery-tile is: a utility
@@ -569,12 +582,21 @@
     transform: translateY(-50%);
   }
 
+  /* Logical, so the arrows trade sides under RTL along with everything else. */
   .image-gallery-stage-arrow-previous {
-    left: 1rem;
+    inset-inline-start: 1rem;
   }
 
   .image-gallery-stage-arrow-next {
-    right: 1rem;
+    inset-inline-end: 1rem;
+  }
+
+  /*
+   * The chevrons are drawn pointing left and right, which in RTL is backwards:
+   * "previous" points toward the inline start, and that is now the right.
+   */
+  .image-gallery-overlay[dir='rtl'] .image-gallery-stage-arrow .image-gallery-icon {
+    transform: scaleX(-1);
   }
 
   /*
@@ -610,6 +632,18 @@
     translate: -0.5rem 0;
   }
 
+  .image-gallery-overlay[dir='rtl']
+    .image-gallery-stage[data-ig-landing='true']
+    > .image-gallery-stage-arrow-previous {
+    translate: -0.5rem 0;
+  }
+
+  .image-gallery-overlay[dir='rtl']
+    .image-gallery-stage[data-ig-landing='true']
+    > .image-gallery-stage-arrow-next {
+    translate: 0.5rem 0;
+  }
+
   .image-gallery-bento-tile {
     position: relative;
     display: block;
@@ -622,7 +656,7 @@
      */
     aspect-ratio: var(--ig-internal-tile-ratio, 4 / 5);
     border-radius: 1.1rem;
-    text-align: left;
+    text-align: start;
   }
 
   .image-gallery-bento-tile:focus-visible {

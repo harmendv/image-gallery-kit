@@ -88,6 +88,7 @@ onBeforeUnmount(() => {
   <div
     ref="root"
     class="image-gallery-overlay"
+    :dir="gallery.dialog.direction.value"
     role="dialog"
     aria-modal="true"
     :aria-label="gallery.labels.value.dialog(gallery.dialog.counterLabel.value)"

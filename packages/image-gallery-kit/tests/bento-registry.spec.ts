@@ -12,7 +12,8 @@ function createGrid() {
     images: () => images,
     total: computed(() => images.length),
     ratioOf: () => 1,
-    clampIndex: (index) => Math.min(Math.max(index, 0), images.length - 1)
+    clampIndex: (index) => Math.min(Math.max(index, 0), images.length - 1),
+    direction: ref('ltr')
   });
 }
 

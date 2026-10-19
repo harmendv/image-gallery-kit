@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
-import type { ComputedRef } from 'vue';
+import type { ComputedRef, Ref } from 'vue';
 import { isBrowser, prefersReducedMotion } from '@/utils/environment';
 
 /*
@@ -91,6 +91,12 @@ interface StageSwipeOptions {
   hasNext: ComputedRef<boolean>;
   goPrevious: () => void;
   goNext: () => void;
+  /*
+   * The gallery's reading direction. In right-to-left the next image lies to the
+   * left, so the finger pulls it in from there by dragging right, and every
+   * offset below is the mirror of its left-to-right self.
+   */
+  direction: Ref<'ltr' | 'rtl'>;
 }
 
 export function useStageSwipe(options: StageSwipeOptions) {
@@ -125,11 +131,19 @@ export function useStageSwipe(options: StageSwipeOptions) {
 
   const isSwiping = computed(() => swipeProgress.value > 0);
 
+  const isRtl = computed(() => options.direction.value === 'rtl');
+
   /*
    * Which way the pair travels: a swipe toward the next image moves it in from the
-   * right, so the outgoing image leaves to the left, and the reverse for previous.
+   * inline end -- the right, or the left in RTL -- so the outgoing image leaves
+   * toward the inline start, and the reverse for previous.
    */
-  const swipeSign = computed(() => (swipeDirection.value === 'next' ? 1 : -1));
+  const swipeSign = computed(() => (swipeDirection.value === 'next' ? 1 : -1) * (isRtl.value ? -1 : 1));
+
+  /* Whether a horizontal movement of this sign reaches for the next image. */
+  function towardNext(deltaX: number) {
+    return isRtl.value ? deltaX > 0 : deltaX < 0;
+  }
 
   /*
    * A whole image plus the gap between them, so the two are always exactly one
@@ -314,11 +328,11 @@ export function useStageSwipe(options: StageSwipeOptions) {
       swipeSamples.shift();
     }
 
-    swipeDirection.value = deltaX < 0 ? 'next' : 'previous';
+    swipeDirection.value = towardNext(deltaX) ? 'next' : 'previous';
     // Clamped, so dragging on past the stage cannot turn two pages: one gesture is
     // one image, and the surplus simply holds the turn at fully in.
     const progress = Math.min(1, Math.abs(deltaX) / Math.max(1, swipeWidth));
-    const hasNeighbor = deltaX < 0 ? options.hasNext.value : options.hasPrevious.value;
+    const hasNeighbor = towardNext(deltaX) ? options.hasNext.value : options.hasPrevious.value;
     swipeProgress.value = hasNeighbor ? progress : progress * SWIPE_END_RESISTANCE;
   }
 
@@ -378,7 +392,7 @@ export function useStageSwipe(options: StageSwipeOptions) {
     const committed =
       swipeAxis === 'horizontal' &&
       (swipeProgress.value >= SWIPE_COMMIT_PROGRESS || flicked) &&
-      (deltaX < 0 ? options.hasNext.value : options.hasPrevious.value);
+      (towardNext(deltaX) ? options.hasNext.value : options.hasPrevious.value);
 
     endSwipeTracking();
 
@@ -398,7 +412,7 @@ export function useStageSwipe(options: StageSwipeOptions) {
      * pointerdown; there is nothing here to unwind.
      */
     const remaining = 1 - swipeProgress.value;
-    const goingNext = deltaX < 0;
+    const goingNext = towardNext(deltaX);
 
     if (goingNext) {
       options.goNext();

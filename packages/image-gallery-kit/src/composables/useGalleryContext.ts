@@ -11,6 +11,12 @@ import type { GalleryDialogMode, GalleryImage, GalleryLabels } from '@/types';
  */
 export interface GalleryDialogContext {
   mode: Ref<GalleryDialogMode>;
+  /*
+   * The gallery's reading direction, sampled from its root when the dialog
+   * opens. The overlay sets it as its own `dir`, because the teleported dialog
+   * would otherwise take the document's direction rather than the gallery's.
+   */
+  direction: Ref<'ltr' | 'rtl'>;
   activeImage: Ref<GalleryImage | null>;
   previousImage: Ref<GalleryImage | null>;
   nextImage: Ref<GalleryImage | null>;

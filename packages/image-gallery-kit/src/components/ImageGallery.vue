@@ -87,6 +87,25 @@ const isBentoEntering = ref(false);
  */
 const isStageLanding = ref(false);
 /*
+ * The gallery's reading direction, which the arrow keys, the swipe and the arrows
+ * all follow: in RTL the next image lies to the left. Read off the gallery's own
+ * root rather than the dialog's, because the dialog is teleported to <body> and
+ * would inherit the document's direction instead of the one around the gallery.
+ * Sampled when the dialog opens -- a direction that changes under an open dialog
+ * is not a case worth a style read on every key press.
+ */
+const rootRef = ref<HTMLElement | null>(null);
+const direction = ref<'ltr' | 'rtl'>('ltr');
+
+function syncDirection() {
+  if (!rootRef.value || typeof window === 'undefined') {
+    return;
+  }
+
+  direction.value = window.getComputedStyle(rootRef.value).direction === 'rtl' ? 'rtl' : 'ltr';
+}
+
+/*
  * True while a switch between single view and the grid is in flight. A second
  * toggle mid-flight is dropped rather than queued: it would swap the mode back
  * under an animation still measuring the old one, and leave the first toggle to
@@ -186,7 +205,8 @@ const bento = useBentoGrid({
   images: () => props.images,
   total: totalImages,
   ratioOf: getImageRatioNumber,
-  clampIndex
+  clampIndex,
+  direction
 });
 
 /*
@@ -481,7 +501,8 @@ const swipe = useStageSwipe({
   hasPrevious: computed(() => previousImage.value !== null),
   hasNext: computed(() => nextImage.value !== null),
   goPrevious,
-  goNext
+  goNext,
+  direction
 });
 
 async function toggleDialogMode() {
@@ -583,20 +604,23 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (dialogMode.value === 'single' && event.key === 'ArrowRight') {
+  // Physical keys, read in the gallery's direction: → is "next" only where the
+  // next image is on the right.
+  if (dialogMode.value === 'single' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
     event.preventDefault();
-    goNext();
-    return;
-  }
 
-  if (dialogMode.value === 'single' && event.key === 'ArrowLeft') {
-    event.preventDefault();
-    goPrevious();
+    if ((event.key === 'ArrowRight') === (direction.value === 'ltr')) {
+      goNext();
+    } else {
+      goPrevious();
+    }
   }
 }
 
 onMounted(() => {
   isMounted.value = true;
+  // A dialog open from the first render never passes through the open watcher.
+  syncDirection();
   window.addEventListener('keydown', onKeydown);
   // No mode guard needed: the sync is a no-op whenever the grid is not mounted.
   window.addEventListener('resize', onResize);
@@ -665,6 +689,7 @@ watch(dialogIsVisible, async (open) => {
   }
 
   if (open) {
+    syncDirection();
     focus.onDialogOpen();
     await nextTick();
     focus.focusInitialElement();
@@ -723,6 +748,7 @@ provide(GALLERY_CONTEXT, {
   lastPreviewedIndex: composedLastPreviewedIndex,
   dialog: {
     mode: dialogMode,
+    direction,
     activeImage,
     previousImage,
     nextImage,
@@ -777,7 +803,7 @@ provide(GALLERY_CONTEXT, {
 </script>
 
 <template>
-  <section class="image-gallery-theme w-full">
+  <section ref="rootRef" class="image-gallery-theme w-full">
     <!--
       The preview is entirely the consumer's markup. Nothing is emitted around
       it -- no wrapper grid, no sizing -- so their own element is the layout
