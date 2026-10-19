@@ -361,7 +361,7 @@ describe('ImageGallery', () => {
   it('reopens in single view after the controlled open prop closes it from the grid', async () => {
     const wrapper = mountGallery({ open: true, index: 1 });
 
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
     expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
 
     await wrapper.setProps({ open: false });
