@@ -62,7 +62,7 @@ async function openFrame() {
   });
 
   await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  await new Promise((done) => setTimeout(done, 60));
 
   return {
     wrapper,
