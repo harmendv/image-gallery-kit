@@ -288,7 +288,12 @@
     z-index: 10;
     overflow: hidden;
     width: 100vw;
+    /*
+     * `dvh` tracks the mobile toolbars, so the bottom of the dialog is never
+     * tucked behind them; `vh` stays first for browsers that drop the line.
+     */
     height: 100vh;
+    height: 100dvh;
     background-color: Canvas;
     color: CanvasText;
   }
@@ -468,12 +473,24 @@
     border-radius: 1.5rem;
   }
 
-  /* Leaves room for the bar at either end, so a tall image is never tucked under it. */
+  /*
+   * Leaves room for the bar at either end, so a tall image is never tucked under it.
+   * The `dvh` override sits behind @supports rather than on the next line: a
+   * custom property is never invalid at parse time, so a second declaration
+   * would always win and leave an unsupporting browser with no cap at all.
+   */
   .image-gallery-stage-frame,
   .image-gallery-stage-slide {
     --ig-internal-stage-cap: calc(100vh - (2 * var(--ig-internal-topbar-height, 4rem)) - 4rem);
 
     max-height: var(--ig-internal-stage-cap);
+  }
+
+  @supports (height: 100dvh) {
+    .image-gallery-stage-frame,
+    .image-gallery-stage-slide {
+      --ig-internal-stage-cap: calc(100dvh - (2 * var(--ig-internal-topbar-height, 4rem)) - 4rem);
+    }
   }
 
   /*
