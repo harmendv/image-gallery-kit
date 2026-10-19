@@ -20,13 +20,13 @@
         <ImageGalleryTopbar class="h-20">
           <template #start>
             <span class="text-base font-semibold tracking-tight">Northgate</span>
-            <ImageGalleryGridToggle class="ml-2" />
+            <ImageGalleryGridToggle class="ml-2 max-sm:[&>span]:hidden" />
           </template>
 
-          <template #center><ImageGalleryCounter /></template>
+          <template #center><ImageGalleryCounter class="max-sm:hidden" /></template>
 
           <template #end>
-            <a :href="bookingHref" class="image-gallery-control image-gallery-control-pill">
+            <a :href="bookingHref" class="image-gallery-control image-gallery-control-pill whitespace-nowrap">
               Book a viewing
             </a>
             <ImageGalleryCloseButton class="ml-2" />
