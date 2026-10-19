@@ -5,6 +5,9 @@ import type { GalleryImage } from '@/types';
 export type BentoEntry = {
   image: GalleryImage;
   actualIndex: number;
+  /* Where the packing put the tile down its column, in units of column width. */
+  top: number;
+  height: number;
 };
 
 interface BentoGridOptions {
@@ -53,7 +56,6 @@ export function useBentoGrid(options: BentoGridOptions) {
         packed[0]
       );
 
-      shortest.entries.push({ image, actualIndex: index });
       /*
        * A uniform grid renders every tile at one shape, whatever ratio the image
        * itself has -- so the plan has to assume the same, or a column that drew
@@ -61,7 +63,10 @@ export function useBentoGrid(options: BentoGridOptions) {
        * at the bottom. Constant heights turn shortest-column into round-robin,
        * which is also what puts the reading order back left-to-right.
        */
-      shortest.height += uniform.value ? 1 : 1 / options.ratioOf(image);
+      const height = uniform.value ? 1 : 1 / options.ratioOf(image);
+
+      shortest.entries.push({ image, actualIndex: index, top: shortest.height, height });
+      shortest.height += height;
     });
 
     return packed;
@@ -179,6 +184,66 @@ export function useBentoGrid(options: BentoGridOptions) {
     return null;
   }
 
+  /*
+   * The tile beside, in the next column over. Image order is no guide here: only
+   * the top row runs left to right, because after it image i + 1 goes wherever
+   * the shortest column happens to be. So the neighbour is spatial, the tile in
+   * the adjacent column that shares the most height with this one -- and when
+   * none overlaps, the overlap is the (negative) gap, so the nearest still wins.
+   *
+   * Rendered rects when the grid is laid out, since row gaps and a consumer's own
+   * `aspect-*` class both move a tile away from where the ratios alone put it;
+   * the packing's running heights otherwise. One or the other for every tile of
+   * a key press, never a mix of pixels and column widths.
+   */
+  function rowNeighbor(index: number, delta: -1 | 1) {
+    const packed = columns.value;
+    const columnIndex = packed.findIndex((column) =>
+      column.entries.some((entry) => entry.actualIndex === index)
+    );
+    const origin = packed[columnIndex]?.entries.find((entry) => entry.actualIndex === index);
+    const neighbor = packed[columnIndex + delta];
+
+    if (!origin || !neighbor) {
+      return null;
+    }
+
+    const measured = (frameRefs.value[index]?.getBoundingClientRect().height ?? 0) > 0;
+    const spanOf = (entry: BentoEntry) => {
+      if (!measured) {
+        return { top: entry.top, bottom: entry.top + entry.height };
+      }
+
+      const rect = frameRefs.value[entry.actualIndex]?.getBoundingClientRect();
+
+      return rect ? { top: rect.top, bottom: rect.bottom } : null;
+    };
+
+    const current = spanOf(origin)!;
+    let best: number | null = null;
+    let bestOverlap = -Infinity;
+    let bestDistance = Infinity;
+
+    for (const entry of neighbor.entries) {
+      const span = spanOf(entry);
+
+      if (!span) {
+        continue;
+      }
+
+      const overlap = Math.min(span.bottom, current.bottom) - Math.max(span.top, current.top);
+      const distance = Math.abs(span.top + span.bottom - current.top - current.bottom);
+
+      if (overlap > bestOverlap || (overlap === bestOverlap && distance < bestDistance)) {
+        best = entry.actualIndex;
+        bestOverlap = overlap;
+        bestDistance = distance;
+      }
+    }
+
+    return best;
+  }
+
   function moveFocus(event: KeyboardEvent) {
     /*
      * Anchored on the tile the key was pressed in when there is one, not on the
@@ -193,11 +258,12 @@ export function useBentoGrid(options: BentoGridOptions) {
     const backward = options.direction.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
 
     switch (event.key) {
+      // Columns are laid out in the reading direction, so forward is the next one.
       case forward:
-        target = from + 1 < options.total.value ? from + 1 : null;
+        target = rowNeighbor(from, 1);
         break;
       case backward:
-        target = from - 1 >= 0 ? from - 1 : null;
+        target = rowNeighbor(from, -1);
         break;
       case 'ArrowDown':
         target = columnNeighbor(from, 1);
