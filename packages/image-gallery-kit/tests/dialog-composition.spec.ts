@@ -124,7 +124,7 @@ describe('a recomposed dialog', () => {
     const wrapper = mountRecomposed();
     await open(wrapper);
 
-    await (document.querySelector('button[aria-label="Toggle image grid"]') as HTMLElement).click();
+    await (document.querySelector('button[aria-label="All images"]') as HTMLElement).click();
     await new Promise((resolve) => setTimeout(resolve, 700));
 
     expect(document.querySelectorAll('[data-bento-item="true"]').length).toBe(images.length);
@@ -213,7 +213,7 @@ describe('overridable defaults', () => {
     const wrapper = mountRecomposed();
     await open(wrapper);
 
-    await (document.querySelector('button[aria-label="Toggle image grid"]') as HTMLElement).click();
+    await (document.querySelector('button[aria-label="All images"]') as HTMLElement).click();
     await new Promise((resolve) => setTimeout(resolve, 700));
 
     const tile = document.querySelector('[data-bento-item="true"]') as HTMLElement;
@@ -412,7 +412,7 @@ describe('the driven templates', () => {
     });
     await open(wrapper);
 
-    await (document.querySelector('button[aria-label="Toggle image grid"]') as HTMLElement).click();
+    await (document.querySelector('button[aria-label="All images"]') as HTMLElement).click();
     await new Promise((resolve) => setTimeout(resolve, 700));
 
     expect(document.querySelectorAll('.my-tile').length).toBe(images.length);

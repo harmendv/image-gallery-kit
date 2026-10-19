@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { createSSRApp, defineComponent, h, nextTick } from 'vue';
 import { renderToString } from '@vue/server-renderer';
 import ImageGallery from '@/components/ImageGallery.vue';
@@ -109,6 +109,20 @@ describe('ImageGallery', () => {
     ]);
 
     expect(wrapper.get('.image-gallery-tile').attributes('aria-label')).toBe('Open image 2');
+  });
+
+  it('disables a tile whose image is not in the collection instead of labelling it "Open image 0"', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: { src: '/missing.jpg', alt: 'Missing' } })
+    ]);
+    const tile = wrapper.get('.image-gallery-tile');
+
+    expect(tile.attributes('disabled')).toBeDefined();
+    expect(tile.attributes('aria-label')).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('not in the `images` prop'), expect.anything());
+
+    warn.mockRestore();
   });
 
   it('reports the collection through slot props', () => {
@@ -223,7 +237,7 @@ describe('ImageGallery', () => {
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
   });
 
   it('exposes open and openGrid through slot props', async () => {
@@ -261,7 +275,7 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
     expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
 
@@ -274,9 +288,9 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('1 of 4');
   });
 
@@ -286,7 +300,17 @@ describe('ImageGallery', () => {
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
+  });
+
+  it('names the grid toggle after its visible text', async () => {
+    const wrapper = mountGallery({ labels: { allImages: 'Alle fotos' } });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    const toggle = wrapper.get('.image-gallery-control-pill');
+    expect(toggle.text()).toBe('Alle fotos');
+    expect(toggle.attributes('aria-label')).toBe('Alle fotos');
   });
 
   it('renders on the server without touching browser globals', async () => {
@@ -332,6 +356,19 @@ describe('ImageGallery', () => {
 
     expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('4 of 4');
     expect(wrapper.find('[role="dialog"] img[alt="Four"]').exists()).toBe(true);
+  });
+
+  it('reopens in single view after the controlled open prop closes it from the grid', async () => {
+    const wrapper = mountGallery({ open: true, index: 1 });
+
+    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
+
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+
+    expect(wrapper.find('button[aria-label$="from grid"]').exists()).toBe(false);
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
   });
 
   it('emits v-model updates for open and index', async () => {
@@ -411,9 +448,20 @@ describe('ImageGallery', () => {
     await nextTick();
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
-    expect(wrapper.emitted('close')).toBeTruthy();
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    expect(wrapper.emitted('update:open')).toEqual([[true], [false]]);
 
     wrapper.unmount();
+  });
+
+  it('emits nothing when images are emptied on a closed gallery', async () => {
+    const wrapper = mountGallery();
+
+    await wrapper.setProps({ images: [] });
+    await nextTick();
+
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(wrapper.emitted('update:open')).toBeUndefined();
   });
 
   it('falls back to imageAspectRatio in the grid for images without intrinsic dimensions', async () => {
@@ -425,7 +473,7 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery({ images: bare, imageAspectRatio: '3 / 2' });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
     const gridTile = wrapper.get('button[aria-label="Open image 1 from grid"]');
     // Published as a custom property, so an `aspect-*` class of the consumer's

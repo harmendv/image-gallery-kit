@@ -90,6 +90,49 @@ const TILE_FRAME = '[data-ig-tile-frame="true"]';
  */
 const FLIGHT_CLONE = 'data-ig-flight';
 
+/*
+ * Both ends of a flight are hidden while its clone stands in for them, and
+ * flights can overlap: close a preview and reopen the same tile before the
+ * closing flight lands, and the second takes off from an element the first
+ * still has hidden. Were each flight to remember the visibility it found, the
+ * second would remember `hidden` and put it back after the first had already
+ * restored the element -- leaving it invisible for good.
+ *
+ * So the hiding is counted per element, across every flight and every gallery
+ * on the page: the first flight to hide an element records what it had, and
+ * only the last one to let go restores it.
+ */
+const hiddenByFlights = new WeakMap<HTMLElement, { count: number; visibility: string }>();
+
+function hideForFlight(element: HTMLElement) {
+  const entry = hiddenByFlights.get(element);
+
+  if (entry) {
+    entry.count += 1;
+    return;
+  }
+
+  hiddenByFlights.set(element, { count: 1, visibility: element.style.visibility });
+  element.style.visibility = 'hidden';
+}
+
+function revealAfterFlight(element: HTMLElement) {
+  const entry = hiddenByFlights.get(element);
+
+  if (!entry) {
+    return;
+  }
+
+  entry.count -= 1;
+
+  if (entry.count > 0) {
+    return;
+  }
+
+  hiddenByFlights.delete(element);
+  element.style.visibility = entry.visibility;
+}
+
 export function useSharedImageTransition() {
   /*
    * A clone has to leave its tile to fly -- it is positioned against the
@@ -496,11 +539,8 @@ export function useSharedImageTransition() {
 
     const picture = pinPicture(fromEl, clone, toEl, fromRect);
 
-    const previousFromVisibility = fromEl.style.visibility;
-    const previousToVisibility = toEl.style.visibility;
-
-    fromEl.style.visibility = 'hidden';
-    toEl.style.visibility = 'hidden';
+    hideForFlight(fromEl);
+    hideForFlight(toEl);
     flightLayer(fromEl, toEl).appendChild(clone);
 
     try {
@@ -547,8 +587,8 @@ export function useSharedImageTransition() {
     } finally {
       clone.remove();
       releaseFlightLayer();
-      fromEl.style.visibility = previousFromVisibility;
-      toEl.style.visibility = previousToVisibility;
+      revealAfterFlight(fromEl);
+      revealAfterFlight(toEl);
     }
   }
 
@@ -641,9 +681,16 @@ export function useSharedImageTransition() {
      * entering the document, all synchronously, on a single tile click. Only
      * tiles the user can actually watch fade out are worth that cost.
      */
+    const visible = measureVisible(candidates);
+
+    // Nothing to fade out, so no layer to leave behind in the host's DOM.
+    if (!visible.length) {
+      return;
+    }
+
     const host = flightLayer(container);
 
-    const clones = measureVisible(candidates).map(({ item, rect }) => {
+    const clones = visible.map(({ item, rect }) => {
       const clone = createFlyingClone(item);
       clone.style.position = 'fixed';
       clone.style.left = `${rect.left}px`;
@@ -655,10 +702,6 @@ export function useSharedImageTransition() {
       host.appendChild(clone);
       return clone;
     });
-
-    if (!clones.length) {
-      return;
-    }
 
     try {
       const { gsap } = await import('gsap');
