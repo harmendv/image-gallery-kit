@@ -139,6 +139,38 @@ describe('grid keyboard navigation', () => {
     expect(activeBentoIndex()).toBe('0');
   });
 
+  it('keeps every tile reachable after a resize re-packs the columns', async () => {
+    const wrapper = mountGallery();
+
+    await openGrid(wrapper, 1);
+
+    /*
+     * jsdom reports no grid tracks, so the grid opens as one column. Reporting
+     * two and resizing re-packs it round-robin: images 2 and 4 move into the new
+     * column as fresh tiles, which mount before the tiles they replace unmount.
+     */
+    const originalGetComputedStyle = window.getComputedStyle;
+    window.getComputedStyle = (element: Element) =>
+      ({ ...originalGetComputedStyle(element), gridTemplateColumns: '1fr 1fr' }) as CSSStyleDeclaration;
+
+    window.dispatchEvent(new Event('resize'));
+    await nextTick();
+    await nextTick();
+
+    window.getComputedStyle = originalGetComputedStyle;
+
+    expect(wrapper.findAll('.image-gallery-bento-column')).toHaveLength(2);
+
+    // A moved tile whose registry entry was dropped would be skipped here.
+    /* eslint-disable no-await-in-loop -- each key press depends on the last */
+    for (const expected of ['1', '2', '3', '4']) {
+      await pressOnFocused(wrapper, 'ArrowRight');
+
+      expect(activeBentoIndex()).toBe(expected);
+    }
+    /* eslint-enable no-await-in-loop */
+  });
+
   it('keeps parked tiles out of the focus trap', async () => {
     // The trap counts only rendered elements, and jsdom lays nothing out -- so
     // every element must report a box for the focusable set to exist at all.

@@ -82,7 +82,7 @@ export interface GalleryDialogContext {
      * on a resize, and the element only exists after mount.
      */
     registerTile: (index: Ref<number>, element: Ref<HTMLElement | null>) => void;
-    unregisterTile: (index: number) => void;
+    unregisterTile: (index: number, element: HTMLElement | null) => void;
     select: (index: number) => void;
     /*
      * The grid announces that its tiles share one shape (an `aspect-*` class on
