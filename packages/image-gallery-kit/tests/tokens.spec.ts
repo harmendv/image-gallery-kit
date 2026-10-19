@@ -198,6 +198,37 @@ describe('internal variables', () => {
 });
 
 /*
+ * On iOS Safari and Android Chrome `100vh` is the height with the toolbars
+ * hidden, so while they show, the bottom of the dialog sits behind them. Every
+ * viewport-height use reads `dvh`, with the `vh` line kept just before it for
+ * browsers that drop the `dvh` declaration as invalid. A custom property is
+ * never invalid at parse time, so its override has to sit behind @supports.
+ */
+describe('viewport height', () => {
+  it('never uses vh without a dvh override', () => {
+    const declarations = css.match(/[a-z-]+\s*:[^;{}]*\b\d+vh\b[^;{}]*;/g) ?? [];
+    const guard = css.indexOf('@supports (height: 100dvh)');
+    const supported = guard === -1 ? '' : css.slice(guard, css.indexOf('}\n  }', guard));
+
+    expect(declarations.length).toBeGreaterThan(0);
+    declarations.forEach((declaration) => {
+      const dynamic = declaration.replace(/\b(\d+)vh\b/g, '$1dvh');
+      const after = css.slice(css.indexOf(declaration) + declaration.length).trimStart();
+      const overridden = declaration.startsWith('--')
+        ? supported.includes(dynamic)
+        : after.startsWith(dynamic);
+
+      expect({ declaration, overridden }).toEqual({ declaration, overridden: true });
+    });
+  });
+
+  it.each(['.image-gallery-shell', '.image-gallery-stage-frame'])('sizes %s from 100dvh', (selector) => {
+    const dynamic = ruleBodies(selector).some((body) => body.includes('100dvh'));
+    expect({ selector, dynamic }).toEqual({ selector, dynamic: true });
+  });
+});
+
+/*
  * The whole point of the palette deletion: the gallery brings no colours of its
  * own to a page, it borrows the platform's. System colours track light and dark
  * without a media query and collapse correctly under forced-colors.
