@@ -3,8 +3,8 @@
 /*
  * The dev-only warning in ImageGallery.vue gates on process.env.NODE_ENV,
  * which the consumer's bundler resolves; this package itself has no
- * @types/node, so the global is declared here. Optional, because the UMD
- * bundle can run in a bare browser where `process` does not exist.
+ * @types/node, so the global is declared here. Optional, because the ES
+ * build can run unbundled in a browser, where `process` does not exist.
  */
 declare var process: { env: { NODE_ENV?: string } } | undefined;
 

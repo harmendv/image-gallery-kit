@@ -632,7 +632,8 @@ provide(GALLERY_CONTEXT, {
      * package* is built, so the warning would be stripped from the published
      * bundle and no consumer would ever see it. process.env.NODE_ENV survives
      * the library build for the consumer's own bundler to resolve; the typeof
-     * guard keeps the bare-browser UMD path from throwing on it.
+     * guard keeps it from throwing where no bundler replaces it, e.g. native
+     * ESM loaded straight in the browser.
      */
     if (
       typeof process !== 'undefined' &&
