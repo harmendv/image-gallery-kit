@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
@@ -20,6 +20,10 @@ const images: GalleryImage[] = [
 function pointerEvent(type: string, init: Partial<Record<'clientX' | 'clientY' | 'pointerId', number>> = {}) {
   const event = new Event(type, { bubbles: true, cancelable: true });
 
+  // A flick is judged on timeStamp, so the gesture runs on the spec's own clock
+  // (see drag) rather than on however long a loaded machine took between events.
+  Object.defineProperty(event, 'timeStamp', { value: pointerClock });
+
   return Object.assign(event, {
     pointerId: init.pointerId ?? 1,
     pointerType: 'touch',
@@ -28,6 +32,53 @@ function pointerEvent(type: string, init: Partial<Record<'clientX' | 'clientY' |
     clientY: init.clientY ?? 0
   }) as unknown as PointerEvent;
 }
+
+let pointerClock = 0;
+
+/*
+ * The snap is stepped off the timestamps requestAnimationFrame hands it, and
+ * jsdom's are wall time: on a loaded machine two frames can land far enough
+ * apart that a snap meant to be caught part-way has already finished. So frames
+ * here run on a clock of their own, a steady 16ms apart however late they are
+ * delivered, and every callback queued for a frame shares its timestamp as it
+ * would in a browser.
+ */
+let frameClock = 0;
+let frameQueue = new Map<number, FrameRequestCallback>();
+let frameHandle = 0;
+let frameTimer: ReturnType<typeof setTimeout> | null = null;
+const realRequestAnimationFrame = window.requestAnimationFrame;
+const realCancelAnimationFrame = window.cancelAnimationFrame;
+
+function runFrame() {
+  const callbacks = frameQueue;
+  frameQueue = new Map();
+  frameTimer = null;
+  frameClock += 16;
+  callbacks.forEach((callback) => callback(frameClock));
+}
+
+beforeEach(() => {
+  window.requestAnimationFrame = (callback) => {
+    frameHandle += 1;
+    frameQueue.set(frameHandle, callback);
+    frameTimer ??= setTimeout(runFrame, 0);
+    return frameHandle;
+  };
+  window.cancelAnimationFrame = (handle) => {
+    frameQueue.delete(handle);
+  };
+});
+
+afterEach(() => {
+  if (frameTimer) {
+    clearTimeout(frameTimer);
+    frameTimer = null;
+  }
+  frameQueue.clear();
+  window.requestAnimationFrame = realRequestAnimationFrame;
+  window.cancelAnimationFrame = realCancelAnimationFrame;
+});
 
 function flushFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -72,10 +123,13 @@ async function swipe(wrapper: ReturnType<typeof openDialog>, { x = 0, y = 0, ste
   await settled(wrapper);
 }
 
-/* Two positions a real interval apart, which is what a flick needs to be one. */
-async function drag(stage: Element, from: number, to: number, overMs: number) {
+/*
+ * Two positions `overMs` apart on the pointer clock, which is what a flick needs
+ * to be one. The release that follows lands on the same instant as the second.
+ */
+function drag(stage: Element, from: number, to: number, overMs: number) {
   window.dispatchEvent(pointerEvent('pointermove', { clientX: from }));
-  await new Promise((resolve) => setTimeout(resolve, overMs));
+  pointerClock += overMs;
   window.dispatchEvent(pointerEvent('pointermove', { clientX: to }));
 }
 
@@ -236,7 +290,7 @@ describe('dialog swipe', () => {
     stage.element.dispatchEvent(pointerEvent('pointerdown'));
     // Dragged a fifth of the way and held there past the velocity window, so what
     // it was let go at is a standstill: a short drag, not a flick.
-    await drag(stage.element, -STAGE * 0.2, -STAGE * 0.2, 150);
+    drag(stage.element, -STAGE * 0.2, -STAGE * 0.2, 150);
     window.dispatchEvent(pointerEvent('pointerup', { clientX: -STAGE * 0.2 }));
     await nextTick();
 
@@ -267,7 +321,7 @@ describe('dialog swipe', () => {
     // A tenth of the stage, well short of the distance rule -- but thrown: 51px
     // in 20ms is 2.5px/ms, six times the flick threshold.
     stage.dispatchEvent(pointerEvent('pointerdown'));
-    await drag(stage, -STAGE * 0.05, -STAGE * 0.1, 20);
+    drag(stage, -STAGE * 0.05, -STAGE * 0.1, 20);
     window.dispatchEvent(pointerEvent('pointerup', { clientX: -STAGE * 0.1 }));
     await nextTick();
     await settled(wrapper);
@@ -281,7 +335,7 @@ describe('dialog swipe', () => {
 
     // Pulled a third of the way in, then thrown back: plainly a change of mind.
     stage.dispatchEvent(pointerEvent('pointerdown'));
-    await drag(stage, -STAGE * 0.3, -STAGE * 0.1, 20);
+    drag(stage, -STAGE * 0.3, -STAGE * 0.1, 20);
     window.dispatchEvent(pointerEvent('pointerup', { clientX: -STAGE * 0.1 }));
     await nextTick();
     await settled(wrapper);
@@ -479,7 +533,7 @@ describe('dialog swipe', () => {
   it('has no swipe surface in the grid, and no neighbours for a single image', async () => {
     const wrapper = openDialog();
 
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
     expect(wrapper.find('.image-gallery-stage').exists()).toBe(false);
 
     const single = openDialog({ images: [images[0]] });

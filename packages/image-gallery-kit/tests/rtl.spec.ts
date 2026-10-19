@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { enableAutoUnmount, mount } from '@vue/test-utils';
 import { afterEach, vi } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
@@ -77,6 +77,10 @@ function offsetOf(wrapper: ReturnType<typeof mountGallery>, selector: string) {
 
 /* jsdom lays nothing out, so the stage falls back to the window width. */
 const STAGE = 1024;
+
+// A gallery left mounted keeps its window keydown listener, and claims the next
+// spec's keys before that spec's own gallery sees them.
+enableAutoUnmount(afterEach);
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -186,7 +190,7 @@ describe('right-to-left', () => {
     const wrapper = mountGallery('rtl');
 
     await openAt(wrapper, 2);
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
     await nextTick();
 
     const tile = wrapper.get('[data-bento-index="1"]');

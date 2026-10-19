@@ -19,7 +19,11 @@ export interface GalleryLabels {
   openImageFromGrid: (index: number) => string;
   showAllImages: (total: number) => string;
   allImages: string;
-  toggleGrid: string;
+  /**
+   * @deprecated Unused. The grid toggle is named by `allImages`, its visible
+   * text. Still accepted so existing overrides type-check.
+   */
+  toggleGrid?: string;
   close: string;
   previous: string;
   next: string;

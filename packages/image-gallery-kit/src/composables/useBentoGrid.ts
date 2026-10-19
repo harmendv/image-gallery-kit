@@ -127,10 +127,10 @@ export function useBentoGrid(options: BentoGridOptions) {
     watch(
       [index, element],
       ([nextIndex, nextElement], previous) => {
-        const previousIndex = previous?.[0];
+        const [previousIndex, previousElement] = previous ?? [];
 
         if (previousIndex !== undefined && previousIndex !== nextIndex) {
-          delete frameRefs.value[previousIndex];
+          unregisterTile(previousIndex, previousElement ?? null);
         }
 
         frameRefs.value[nextIndex] = nextElement;
@@ -139,8 +139,16 @@ export function useBentoGrid(options: BentoGridOptions) {
     );
   }
 
-  function unregisterTile(index: number) {
-    delete frameRefs.value[index];
+  /*
+   * Only the owner may clear an entry. A re-pack that moves a tile into a column
+   * patched earlier mounts its replacement -- registering the same index --
+   * before the old tile unmounts, and clearing by index alone would then drop
+   * the new tile from the keyboard and the flight.
+   */
+  function unregisterTile(index: number, element: HTMLElement | null) {
+    if (frameRefs.value[index] === element) {
+      delete frameRefs.value[index];
+    }
   }
 
   /*
