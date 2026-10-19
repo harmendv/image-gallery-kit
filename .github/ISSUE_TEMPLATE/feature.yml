@@ -1,6 +1,6 @@
 name: Feature
 description: New functionality
-labels: ["enhancement"]
+labels: ['enhancement']
 body:
   - type: dropdown
     id: area
