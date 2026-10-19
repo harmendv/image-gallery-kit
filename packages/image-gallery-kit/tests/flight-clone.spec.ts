@@ -423,3 +423,76 @@ describe('the picture inside the clone', () => {
     wrapper.unmount();
   });
 });
+
+describe('overlapping flights', () => {
+  /*
+   * Close a preview and reopen the same tile before the closing flight lands:
+   * the second flight takes off while the first still has both ends hidden. A
+   * flight that remembered the visibility it found would remember `hidden`, and
+   * put it back after the first had already restored the element.
+   */
+  it('leaves neither end hidden once both have landed', () =>
+    withFixedRects(async () => {
+      const { animateBetween } = useSharedImageTransition();
+
+      const tile = document.createElement('div');
+      const stage = document.createElement('div');
+      tile.style.visibility = 'visible';
+      document.body.append(tile, stage);
+
+      const closing = animateBetween(
+        () => stage,
+        () => tile,
+        { duration: 0.1 }
+      );
+      await cloneInFlight();
+      expect(tile.style.visibility).toBe('hidden');
+
+      const reopening = animateBetween(
+        () => tile,
+        () => stage,
+        { duration: 0.3 }
+      );
+
+      await Promise.all([closing, reopening]);
+
+      expect(tile.style.visibility).toBe('visible');
+      expect(stage.style.visibility).toBe('');
+
+      tile.remove();
+      stage.remove();
+    }));
+
+  it('keeps an end hidden while another flight still covers it', () =>
+    withFixedRects(async () => {
+      const { animateBetween } = useSharedImageTransition();
+
+      const tile = document.createElement('div');
+      const stage = document.createElement('div');
+      document.body.append(tile, stage);
+
+      const closing = animateBetween(
+        () => stage,
+        () => tile,
+        { duration: 0.1 }
+      );
+      await cloneInFlight();
+
+      const reopening = animateBetween(
+        () => tile,
+        () => stage,
+        { duration: 0.6 }
+      );
+
+      await closing;
+      expect(tile.style.visibility).toBe('hidden');
+      expect(stage.style.visibility).toBe('hidden');
+
+      await reopening;
+      expect(tile.style.visibility).toBe('');
+      expect(stage.style.visibility).toBe('');
+
+      tile.remove();
+      stage.remove();
+    }));
+});
