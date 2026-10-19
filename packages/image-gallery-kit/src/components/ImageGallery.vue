@@ -24,6 +24,7 @@ import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import { useStageSwipe } from '@/composables/useStageSwipe';
 import { parseAspectRatio } from '@/utils/aspectRatio';
+import { hasModifier, isEditableTarget } from '@/utils/keyboard';
 import type { GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
@@ -526,9 +527,31 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
 
+  // The listener sits on window, so anything inside the dialog that handles a
+  // key first (a menu closing on Escape, a widget stepping on the arrows) has
+  // already said so by preventing the default.
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  /*
+   * Escape closes from anywhere in the dialog, a text field included, as a
+   * native <dialog> does. The one exception is the Escape that cancels an IME
+   * composition: that one belongs to the field.
+   */
   if (event.key === 'Escape') {
+    if (event.isComposing) {
+      return;
+    }
+
     event.preventDefault();
     closeDialog();
+    return;
+  }
+
+  // A field needs the arrows for its caret or value, and a modified arrow is a
+  // browser or OS shortcut (Alt+← back, Shift+← select).
+  if (hasModifier(event) || isEditableTarget(event)) {
     return;
   }
 
