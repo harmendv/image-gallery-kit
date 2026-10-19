@@ -115,6 +115,26 @@ describe('the token surface', () => {
 });
 
 /*
+ * Forced-colors mode drops box-shadow, so a ring drawn with one leaves a focused
+ * control with no indicator at all. Each focus rule draws a real outline.
+ */
+describe('focus indicators', () => {
+  it.each(['.image-gallery-control:focus-visible', '.image-gallery-bento-tile:focus-visible'])(
+    '%s draws an outline, not only a box-shadow',
+    (selector) => {
+      const bodies = ruleBodies(selector);
+
+      expect(bodies.length).toBeGreaterThan(0);
+      bodies.forEach((body) => {
+        expect(body).toMatch(/outline:\s*\d+px\s+solid/);
+        expect(body).not.toMatch(/outline:\s*none/);
+        expect(body).toMatch(/outline-offset:\s*\d+px/);
+      });
+    }
+  );
+});
+
+/*
  * Two variables survive as internal plumbing rather than as public tokens:
  * values two places have to agree on exactly, where the alternative is the same
  * number written twice. Their `--ig-internal-` prefix marks them as private --

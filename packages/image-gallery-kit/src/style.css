@@ -368,9 +368,14 @@
     background-color: color-mix(in srgb, ButtonText 12%, ButtonFace);
   }
 
+  /*
+   * An outline rather than a box-shadow ring: forced-colors mode drops
+   * box-shadow, which would leave the dialog's controls with no focus indicator
+   * at all. The offset keeps the ring clear of the control's own fill.
+   */
   .image-gallery-control:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px AccentColor;
+    outline: 2px solid AccentColor;
+    outline-offset: 2px;
   }
 
   /*
@@ -659,9 +664,16 @@
     text-align: start;
   }
 
+  /*
+   * Offset, so a strip of page background separates the ring from the picture
+   * -- drawn against the image edge it disappears into busy photos. An outline
+   * follows the tile's radius, survives forced colours (box-shadow does not),
+   * and is not clipped by the tile's own overflow or containment. The 5px it
+   * reaches out fits inside the grid's gap and padding, so edge tiles keep it.
+   */
   .image-gallery-bento-tile:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px AccentColor;
+    outline: 2px solid AccentColor;
+    outline-offset: 3px;
   }
 
   /*
