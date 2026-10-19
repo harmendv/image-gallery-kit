@@ -1,0 +1,25 @@
+name: Chore
+description: Refactor, tooling, dependencies, cleanup
+labels: []
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Package
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: What and why
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
