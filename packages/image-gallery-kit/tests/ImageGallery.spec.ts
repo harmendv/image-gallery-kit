@@ -334,6 +334,19 @@ describe('ImageGallery', () => {
     expect(wrapper.find('[role="dialog"] img[alt="Four"]').exists()).toBe(true);
   });
 
+  it('reopens in single view after the controlled open prop closes it from the grid', async () => {
+    const wrapper = mountGallery({ open: true, index: 1 });
+
+    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
+
+    await wrapper.setProps({ open: false });
+    await wrapper.setProps({ open: true });
+
+    expect(wrapper.find('button[aria-label$="from grid"]').exists()).toBe(false);
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('2 of 4');
+  });
+
   it('emits v-model updates for open and index', async () => {
     const wrapper = mountGallery();
 
