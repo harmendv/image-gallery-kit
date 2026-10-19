@@ -253,6 +253,19 @@ describe('the flight layer', () => {
 
       expect(flightLayer()).toBeNull();
     }));
+
+  // jsdom's zero-size rects read as off-screen, so no tile qualifies to fade out.
+  it('is never left behind when no tile is on screen to fade out', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<div data-bento-item="true" data-bento-index="1"></div>';
+    document.body.appendChild(container);
+
+    await useSharedImageTransition().animateBentoExit(() => container, { activeIndex: 0 });
+
+    expect(flightLayer()).toBeNull();
+
+    container.remove();
+  });
 });
 
 /*
