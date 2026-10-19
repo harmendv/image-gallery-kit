@@ -601,6 +601,12 @@ watch(
 );
 
 watch(dialogIsVisible, async (open) => {
+  // closeDialog() is not the only way out: a controlled `open` prop can hide
+  // the dialog too, and the next open must not land back in the grid.
+  if (!open) {
+    dialogMode.value = 'single';
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
