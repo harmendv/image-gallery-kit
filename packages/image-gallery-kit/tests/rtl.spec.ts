@@ -3,7 +3,7 @@ import { afterEach, vi } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
 import type { GalleryImage } from '@/types';
-import { previewSlot as tiles } from './helpers';
+import { reportGridTracks, previewSlot as tiles } from './helpers';
 
 // The flight animation is not under test here; completing tweens synchronously
 // keeps each spec from waiting out the real deadline timers.
@@ -183,19 +183,23 @@ describe('right-to-left', () => {
   });
 
   it('steps forward through the grid with ArrowLeft', async () => {
+    // Two columns, so there is a next one: 0, 2, 4 | 1, 3.
+    const restoreTracks = reportGridTracks(2);
     const wrapper = mountGallery('rtl');
 
     await openAt(wrapper, 2);
     await wrapper.get('button[aria-label="All images"]').trigger('click');
     await nextTick();
 
-    const tile = wrapper.get('[data-bento-index="1"]');
+    const tile = wrapper.get('[data-bento-index="0"]');
     (tile.element as HTMLElement).focus();
 
     await tile.trigger('keydown', { key: 'ArrowLeft' });
-    expect((document.activeElement as HTMLElement | null)?.dataset.bentoIndex).toBe('2');
-
-    await wrapper.get('[data-bento-index="2"]').trigger('keydown', { key: 'ArrowRight' });
     expect((document.activeElement as HTMLElement | null)?.dataset.bentoIndex).toBe('1');
+
+    await wrapper.get('[data-bento-index="1"]').trigger('keydown', { key: 'ArrowRight' });
+    expect((document.activeElement as HTMLElement | null)?.dataset.bentoIndex).toBe('0');
+
+    restoreTracks();
   });
 });
