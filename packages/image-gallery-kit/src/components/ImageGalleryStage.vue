@@ -57,6 +57,7 @@ function onPointerDown(event: PointerEvent) {
     v-if="dialog.mode.value === 'single' && dialog.activeImage.value"
     class="image-gallery-stage"
     :data-ig-swiping="stage.isSwiping.value ? 'true' : 'false'"
+    :data-ig-landing="stage.isLanding.value ? 'true' : 'false'"
     @pointerdown="onPointerDown"
     @click.capture="stage.swallowClick"
   >

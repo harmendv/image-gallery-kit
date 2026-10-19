@@ -560,6 +560,39 @@
     right: 1rem;
   }
 
+  /*
+   * Held back while an image flies into the stage. The flight rides a layer
+   * above the whole dialog, so an arrow overlapping the frame's edge -- every
+   * phone -- would sit under the flying picture and then pop over it on
+   * landing. Instead the arrows wait and come in once the image is down.
+   *
+   * On every direct child but the body, so arrows passed through the stage's
+   * slots wait as well. `translate` rather than `transform`, which the default
+   * arrow already spends on centring itself.
+   */
+  .image-gallery-stage > :not(.image-gallery-stage-body) {
+    transition:
+      opacity 220ms ease-out,
+      translate 220ms ease-out,
+      background-color 150ms,
+      color 150ms,
+      box-shadow 150ms;
+  }
+
+  .image-gallery-stage[data-ig-landing='true'] > :not(.image-gallery-stage-body) {
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: 0ms;
+  }
+
+  .image-gallery-stage[data-ig-landing='true'] > .image-gallery-stage-arrow-previous {
+    translate: 0.5rem 0;
+  }
+
+  .image-gallery-stage[data-ig-landing='true'] > .image-gallery-stage-arrow-next {
+    translate: -0.5rem 0;
+  }
+
   .image-gallery-bento-tile {
     position: relative;
     display: block;
