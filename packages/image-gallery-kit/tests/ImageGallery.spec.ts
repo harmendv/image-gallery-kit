@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { createSSRApp, defineComponent, h, nextTick } from 'vue';
 import { renderToString } from '@vue/server-renderer';
 import ImageGallery from '@/components/ImageGallery.vue';
@@ -109,6 +109,20 @@ describe('ImageGallery', () => {
     ]);
 
     expect(wrapper.get('.image-gallery-tile').attributes('aria-label')).toBe('Open image 2');
+  });
+
+  it('disables a tile whose image is not in the collection instead of labelling it "Open image 0"', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const wrapper = mountGallery({}, () => [
+      h(ImageGalleryImage, { image: { src: '/missing.jpg', alt: 'Missing' } })
+    ]);
+    const tile = wrapper.get('.image-gallery-tile');
+
+    expect(tile.attributes('disabled')).toBeDefined();
+    expect(tile.attributes('aria-label')).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('not in the `images` prop'), expect.anything());
+
+    warn.mockRestore();
   });
 
   it('reports the collection through slot props', () => {
