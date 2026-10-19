@@ -533,7 +533,7 @@ describe('dialog swipe', () => {
   it('has no swipe surface in the grid, and no neighbours for a single image', async () => {
     const wrapper = openDialog();
 
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
     expect(wrapper.find('.image-gallery-stage').exists()).toBe(false);
 
     const single = openDialog({ images: [images[0]] });

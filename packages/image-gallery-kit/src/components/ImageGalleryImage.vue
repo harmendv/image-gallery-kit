@@ -29,6 +29,14 @@ const tile = ref<HTMLElement | null>(null);
 const index = computed(() => gallery.resolveIndex(props.image));
 
 /*
+ * An image that is not in `images` resolves to -1 and has nothing to open.
+ * Announcing it as "Open image 0" would advertise a button that does nothing,
+ * so the tile is disabled and unlabelled instead; the dev warning from
+ * registration says why.
+ */
+const isResolved = computed(() => index.value >= 0);
+
+/*
  * The tile itself is what registers, not the frame inside it. The flight clones
  * whatever is registered, and every bit of a tile's appearance -- radius,
  * border, shadow, background, ring -- is a class the consumer put here, on the
@@ -62,7 +70,7 @@ watch(
 );
 
 function onClick() {
-  if (index.value >= 0) {
+  if (isResolved.value) {
     gallery.openImage(index.value);
   }
 }
@@ -82,7 +90,8 @@ function onClick() {
     ref="tile"
     type="button"
     class="image-gallery-tile group"
-    :aria-label="gallery.labels.value.openImage(index + 1)"
+    :disabled="!isResolved"
+    :aria-label="isResolved ? gallery.labels.value.openImage(index + 1) : undefined"
     @click="onClick"
   >
     <!--
