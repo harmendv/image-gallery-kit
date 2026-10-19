@@ -5,6 +5,15 @@ import ImageGallery from '@/components/ImageGallery.vue';
 import ImageGalleryImage from '@/components/ImageGalleryImage.vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import type { GalleryImage } from '@/types';
+import {
+  cloneInFlight,
+  flightLayer,
+  flyingClone,
+  holdFlights,
+  landed,
+  releaseFlights,
+  seekFlight
+} from './flight';
 
 const images: GalleryImage[] = [
   { src: '/one.jpg', alt: 'One', width: 800, height: 1200 },
@@ -35,37 +44,6 @@ function withFixedRects(run: () => Promise<void> | void) {
   });
 }
 
-function flyingClone() {
-  return document.querySelector<HTMLElement>('[data-ig-flight="true"]');
-}
-
-/*
- * The clone appears only after paint waits whose timing the scheduler owns, so
- * a fixed sleep is a bet on machine load -- lost whenever the suite runs wide.
- * Polling for the clone itself waits exactly as long as the take-off takes,
- * and catches the flight at its earliest -- before the tween has moved
- * anything -- which is also what the start-of-flight assertions want.
- */
-/* eslint-disable no-await-in-loop -- polling waits for each check in turn; that is the point */
-async function cloneInFlight() {
-  for (let attempt = 0; attempt < 400; attempt += 1) {
-    const clone = flyingClone();
-
-    if (clone) {
-      return clone;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 5));
-  }
-
-  throw new Error('the flight never took off');
-}
-/* eslint-enable no-await-in-loop */
-
-function flightLayer() {
-  return document.querySelector<HTMLElement>('[data-ig-flight-layer="true"]');
-}
-
 /*
  * Mounts a preview whose tiles look like a consumer's: appearance in classes on
  * the tile, and a badge in the slot that belongs to the grid rather than to the
@@ -94,10 +72,21 @@ async function duringFlight(wrapper: ReturnType<typeof mount>, assert: () => voi
 
   assert();
 
+  releaseFlights();
   await open;
-  await new Promise((resolve) => setTimeout(resolve, 1200));
+  await landed();
   wrapper.unmount();
 }
+
+// Every flight here is held at take-off until a spec seeks or releases it; see
+// ./flight for why the clock cannot be left running.
+beforeEach(holdFlights);
+afterEach(() => {
+  releaseFlights();
+  // Specs find the clone by selector, so one a failed spec left flying would be
+  // the next spec's clone too, turning a single failure into a fileful.
+  document.body.innerHTML = '';
+});
 
 describe('measureTransitionRadius', () => {
   const { measureTransitionRadius } = useSharedImageTransition();
@@ -165,8 +154,9 @@ describe('flight radius', () => {
 
       expect(clone.style.borderRadius).toBe('14px');
 
+      releaseFlights();
       await open;
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await landed();
       wrapper.unmount();
     }));
 
@@ -190,6 +180,7 @@ describe('flight radius', () => {
       const clone = await cloneInFlight();
       expect(clone.style.borderRadius).toBe('18px');
 
+      releaseFlights();
       await flight;
       expect(flyingClone()).toBeNull();
     }));
@@ -263,6 +254,19 @@ describe('the flight layer', () => {
 
       expect(flightLayer()).toBeNull();
     }));
+
+  // jsdom's zero-size rects read as off-screen, so no tile qualifies to fade out.
+  it('is never left behind when no tile is on screen to fade out', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<div data-bento-item="true" data-bento-index="1"></div>';
+    document.body.appendChild(container);
+
+    await useSharedImageTransition(() => gsap).animateBentoExit(() => container, { activeIndex: 0 });
+
+    expect(flightLayer()).toBeNull();
+
+    container.remove();
+  });
 });
 
 /*
@@ -297,14 +301,15 @@ describe('decoration across the flight', () => {
 
       // Sampled part-way through, so a value that merely snapped at either end
       // would not land here.
-      await new Promise((resolve) => setTimeout(resolve, 240));
-      const midFlight = Number.parseFloat(flyingClone()?.style.borderTopWidth ?? '');
+      const clone = await seekFlight(0.5);
+      const midFlight = Number.parseFloat(clone.style.borderTopWidth);
 
       expect(midFlight).toBeGreaterThan(0);
       expect(midFlight).toBeLessThan(6);
 
+      releaseFlights();
       await open;
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await landed();
       wrapper.unmount();
     }));
 
@@ -313,13 +318,14 @@ describe('decoration across the flight', () => {
       const wrapper = mountBordered();
       const open = wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-      await new Promise((resolve) => setTimeout(resolve, 240));
+      const clone = await seekFlight(0.5);
       // Mid-tween the colour is neither the tile's blue nor fully transparent.
-      expect(flyingClone()?.style.backgroundColor).toMatch(/rgba?\(/);
-      expect(flyingClone()?.style.backgroundColor).not.toBe('rgb(0, 0, 255)');
+      expect(clone.style.backgroundColor).toMatch(/rgba?\(/);
+      expect(clone.style.backgroundColor).not.toBe('rgb(0, 0, 255)');
 
+      releaseFlights();
       await open;
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await landed();
       wrapper.unmount();
     }));
 });
@@ -394,8 +400,9 @@ describe('the picture inside the clone', () => {
     expect(Math.round(Number.parseFloat(image.style.height))).toBe(100);
     expect(Math.round(Number.parseFloat(image.style.left))).toBe(-50);
 
+    releaseFlights();
     await open;
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await landed();
     wrapper.unmount();
   });
 
@@ -405,14 +412,88 @@ describe('the picture inside the clone', () => {
 
     // Sampled part-way, so a value that merely snapped at either end would not
     // land strictly between the two.
-    await new Promise((resolve) => setTimeout(resolve, 240));
+    await seekFlight(0.5);
     const width = Number.parseFloat((cloneImage() as HTMLElement).style.width);
 
     expect(width).toBeGreaterThan(200);
     expect(width).toBeLessThan(400);
 
+    releaseFlights();
     await open;
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await landed();
     wrapper.unmount();
   });
+});
+
+describe('overlapping flights', () => {
+  /*
+   * Close a preview and reopen the same tile before the closing flight lands:
+   * the second flight takes off while the first still has both ends hidden. A
+   * flight that remembered the visibility it found would remember `hidden`, and
+   * put it back after the first had already restored the element.
+   */
+  it('leaves neither end hidden once both have landed', () =>
+    withFixedRects(async () => {
+      const { animateBetween } = useSharedImageTransition(() => gsap);
+
+      const tile = document.createElement('div');
+      const stage = document.createElement('div');
+      tile.style.visibility = 'visible';
+      document.body.append(tile, stage);
+
+      const closing = animateBetween(
+        () => stage,
+        () => tile,
+        { duration: 0.1 }
+      );
+      await cloneInFlight();
+      expect(tile.style.visibility).toBe('hidden');
+
+      const reopening = animateBetween(
+        () => tile,
+        () => stage,
+        { duration: 0.3 }
+      );
+
+      await Promise.all([closing, reopening]);
+
+      expect(tile.style.visibility).toBe('visible');
+      expect(stage.style.visibility).toBe('');
+
+      tile.remove();
+      stage.remove();
+    }));
+
+  it('keeps an end hidden while another flight still covers it', () =>
+    withFixedRects(async () => {
+      const { animateBetween } = useSharedImageTransition(() => gsap);
+
+      const tile = document.createElement('div');
+      const stage = document.createElement('div');
+      document.body.append(tile, stage);
+
+      const closing = animateBetween(
+        () => stage,
+        () => tile,
+        { duration: 0.1 }
+      );
+      await cloneInFlight();
+
+      const reopening = animateBetween(
+        () => tile,
+        () => stage,
+        { duration: 0.6 }
+      );
+
+      await closing;
+      expect(tile.style.visibility).toBe('hidden');
+      expect(stage.style.visibility).toBe('hidden');
+
+      await reopening;
+      expect(tile.style.visibility).toBe('');
+      expect(stage.style.visibility).toBe('');
+
+      tile.remove();
+      stage.remove();
+    }));
 });

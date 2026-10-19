@@ -161,7 +161,8 @@ interface GalleryLabels {
   openImageFromGrid: (index: number) => string
   showAllImages: (total: number) => string
   allImages: string
-  toggleGrid: string
+  /** @deprecated Unused — the grid toggle is named by `allImages`. */
+  toggleGrid?: string
   close: string
   previous: string
   next: string
@@ -205,10 +206,12 @@ Every visible string and `aria-label` comes from `labels`, merged over English d
 | `openImageFromGrid` | `(index: number) => string` | `` `Open image ${index} from grid` `` |
 | `showAllImages` | `(total: number) => string` | `` `Show all ${total} images` `` |
 | `allImages` | `string` | `'All images'` |
-| `toggleGrid` | `string` | `'Toggle image grid'` |
+| `toggleGrid` | `string` | none — deprecated, see below |
 | `close` | `string` | `'Close dialog'` |
 | `previous` | `string` | `'Previous image'` |
 | `next` | `string` | `'Next image'` |
+
+`allImages` is both the visible text and the accessible name of the dialog's grid toggle, so what voice-control users read on screen is what they can say. `toggleGrid` used to supply a separate `aria-label` for it; it is no longer read and is kept only so existing overrides still type-check.
 
 ### Grid View
 
@@ -300,6 +303,7 @@ The swipe gesture is **touch-only**: a `pointerdown` whose `pointerType` is `mou
 - The dialog traps focus, restores focus to the previously focused trigger, and locks background scrolling while open.
 - In the all-images grid, one tile is the Tab stop and the arrow keys move between tiles — `ArrowLeft` / `ArrowRight` follow the sequence, `ArrowUp` / `ArrowDown` walk the packed column, and `Home` / `End` jump to the ends — so Tab crosses the grid in a single step however large the collection is. Switching views moves focus with you: onto the active tile entering the grid, back onto the dialog's first control leaving it.
 - In the carousel, `ArrowLeft` / `ArrowRight` page and `Escape` closes. A touch drag also turns the page: it slides the neighbour in, and lands the turn when the release is either past 40% of the stage or fast enough to read as a flick. One drag turns one image however far it runs. The gesture is touch-only — a mouse never swipes — so the arrows stay live at every width and neither has to be switched off for the other. `<ImageGalleryStage :swipe="false">` turns the gesture off; providing the `previous` and `next` slots empty removes the arrows.
+- Right-to-left is followed, not configured. The gallery reads the computed `direction` of its own root when the dialog opens and gives the teleported dialog the same `dir`, so a `dir="rtl"` on any ancestor is enough. In RTL the arrow buttons trade sides and their chevrons mirror, <kbd>←</kbd> and a rightward swipe go to the next image, and in the grid <kbd>←</kbd> / <kbd>→</kbd> swap the same way.
 - `vue` must be installed by the consuming app because it is a peer dependency.
 
 ### Keyboard
@@ -310,8 +314,8 @@ Active whenever the dialog is open.
 | --- | --- |
 | <kbd>Escape</kbd> | Closes the dialog. |
 | <kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycles focus within the dialog. Focus cannot leave it. |
-| <kbd>→</kbd> | Next image. Single-image mode only. |
-| <kbd>←</kbd> | Previous image. Single-image mode only. |
+| <kbd>→</kbd> | Next image (previous in RTL). Single-image mode only. |
+| <kbd>←</kbd> | Previous image (next in RTL). Single-image mode only. |
 
 Focus lands on the close button when the dialog opens, and returns to the element that opened it on close. Controls that a media query has retired are excluded from the Tab cycle rather than left in it as dead stops.
 
@@ -334,7 +338,7 @@ A preview tile. Deliberately unstyled and unsized: height, width, aspect ratio, 
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `image` | `GalleryImage` | — | Required. Must be an entry of the root's `images`, matched by object identity, `id`, or `src`. |
+| `image` | `GalleryImage` | — | Required. Must be an entry of the root's `images`, matched by object identity, `id`, or `src`. A tile whose image does not match renders disabled and unlabelled, with a development warning. |
 | `imageClass` | `string \| null` | `null` | Classes for the inner `<img>`. The only way to reach it — `object-fit` and the hover transform belong to the image, not the tile. |
 
 | Slot | Props | Description |

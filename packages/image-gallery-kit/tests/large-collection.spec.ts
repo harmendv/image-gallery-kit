@@ -81,7 +81,7 @@ async function openBento(props: Record<string, unknown> = {}) {
   });
 
   await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-  await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+  await wrapper.get('button[aria-label="All images"]').trigger('click');
 
   return wrapper;
 }
@@ -155,7 +155,7 @@ describe('all-images grid at collection scale', () => {
     });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
     await new Promise((resolve) => setTimeout(resolve, 60));
 
     expect(scrollIntoView).toHaveBeenCalled();
@@ -276,7 +276,7 @@ describe('a uniform grid', () => {
     });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
     return wrapper;
   }

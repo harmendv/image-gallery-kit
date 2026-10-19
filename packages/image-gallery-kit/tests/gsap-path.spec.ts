@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { gsap } from 'gsap';
 import ImageGalleryKit from '@/index';
 import ImageGallery from '@/components/ImageGallery.vue';
+import { cloneInFlight, holdFlights, landed, releaseFlights } from './flight';
 import { previewSlot } from './helpers';
 import type { GalleryImage } from '@/types';
 
@@ -46,16 +47,22 @@ describe('gsap transition path', () => {
         attachTo: document.body
       } as Parameters<typeof mount>[1]);
 
+      // Held at take-off, so the clone is still there however late this looks.
+      holdFlights();
       const open = wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-      await new Promise((r) => setTimeout(r, 60));
-      const cloneDuringFlight = document.querySelectorAll('[data-ig-flight="true"]').length;
+
+      try {
+        await cloneInFlight();
+        expect(document.querySelectorAll('[data-ig-flight="true"]')).toHaveLength(1);
+      } finally {
+        releaseFlights();
+      }
 
       await open;
-      await new Promise((r) => setTimeout(r, 1200));
+      await landed();
 
       Element.prototype.getBoundingClientRect = origRect;
 
-      expect(cloneDuringFlight).toBeGreaterThan(0);
       expect(document.querySelectorAll('[data-ig-flight="true"]')).toHaveLength(0);
       wrapper.unmount();
     }

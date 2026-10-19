@@ -95,7 +95,10 @@ export default defineConfig({
         ]
       }
     ],
-    socialLinks: [{ icon: 'npm', link: 'https://www.npmjs.com/package/image-gallery-kit' }],
+    socialLinks: [
+      { icon: 'npm', link: 'https://www.npmjs.com/package/image-gallery-kit' },
+      { icon: 'github', link: 'https://github.com/harmendv/image-gallery-kit' }
+    ],
     outline: 'deep',
     search: {
       provider: 'local'

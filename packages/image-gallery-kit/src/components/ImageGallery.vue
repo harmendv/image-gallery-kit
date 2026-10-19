@@ -15,6 +15,7 @@ import type { Ref } from 'vue';
 import { GALLERY_CONTEXT } from '@/composables/useGalleryContext';
 import ImageGalleryCloseButton from '@/components/ImageGalleryCloseButton.vue';
 import ImageGalleryCounter from '@/components/ImageGalleryCounter.vue';
+import ImageGalleryDialogScope from '@/components/ImageGalleryDialogScope.vue';
 import ImageGalleryGrid from '@/components/ImageGalleryGrid.vue';
 import ImageGalleryGridToggle from '@/components/ImageGalleryGridToggle.vue';
 import ImageGalleryOverlay from '@/components/ImageGalleryOverlay.vue';
@@ -25,6 +26,7 @@ import { useDialogFocus } from '@/composables/useDialogFocus';
 import { GSAP, useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import { useStageSwipe } from '@/composables/useStageSwipe';
 import { parseAspectRatio } from '@/utils/aspectRatio';
+import { hasModifier, isEditableTarget } from '@/utils/keyboard';
 import type { GalleryGsap, GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
@@ -91,6 +93,33 @@ const isBentoEntering = ref(false);
  * holds its arrows back for the flight and fades them in once the image is down.
  */
 const isStageLanding = ref(false);
+/*
+ * The gallery's reading direction, which the arrow keys, the swipe and the arrows
+ * all follow: in RTL the next image lies to the left. Read off the gallery's own
+ * root rather than the dialog's, because the dialog is teleported to <body> and
+ * would inherit the document's direction instead of the one around the gallery.
+ * Sampled when the dialog opens -- a direction that changes under an open dialog
+ * is not a case worth a style read on every key press.
+ */
+const rootRef = ref<HTMLElement | null>(null);
+const direction = ref<'ltr' | 'rtl'>('ltr');
+
+function syncDirection() {
+  if (!rootRef.value || typeof window === 'undefined') {
+    return;
+  }
+
+  direction.value = window.getComputedStyle(rootRef.value).direction === 'rtl' ? 'rtl' : 'ltr';
+}
+
+/*
+ * True while a switch between single view and the grid is in flight. A second
+ * toggle mid-flight is dropped rather than queued: it would swap the mode back
+ * under an animation still measuring the old one, and leave the first toggle to
+ * finish against a grid that is no longer there. Plain, not a ref -- nothing
+ * renders off it.
+ */
+let isModeTransitioning = false;
 
 /* Flies an image into the stage frame, with the arrows held back until it lands. */
 async function landOnStage(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
@@ -119,7 +148,6 @@ const DEFAULT_LABELS: GalleryLabels = {
   openImageFromGrid: (index) => `Open image ${index} from grid`,
   showAllImages: (total) => `Show all ${total} images`,
   allImages: 'All images',
-  toggleGrid: 'Toggle image grid',
   close: 'Close dialog',
   previous: 'Previous image',
   next: 'Next image'
@@ -186,7 +214,8 @@ const bento = useBentoGrid({
   images: () => props.images,
   total: totalImages,
   ratioOf: getImageRatioNumber,
-  clampIndex
+  clampIndex,
+  direction
 });
 
 /*
@@ -371,6 +400,10 @@ async function openSingle(index: number) {
 }
 
 async function openBentoFromPreview(index: number) {
+  if (isModeTransitioning) {
+    return;
+  }
+
   const targetIndex = Math.min(index, totalImages.value - 1);
   const fromFrame = getPreviewFrame(targetIndex);
   const from = measureFrame(fromFrame);
@@ -382,17 +415,33 @@ async function openBentoFromPreview(index: number) {
   emit('open', nextIndex);
 
   if (isMounted.value) {
+    await enterBento(fromFrame, from);
+  } else {
+    isBentoEntering.value = false;
+  }
+}
+
+/*
+ * Flies the image into its tile and cascades the rest in. The tiles stay hidden
+ * by isBentoEntering until this settles, so the reset sits in a finally -- an
+ * animation that throws would otherwise leave the grid blank for good.
+ */
+async function enterBento(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
+  isModeTransitioning = true;
+
+  try {
     await animateBetween(
       () => fromFrame,
       () => bento.revealFrame(currentIndex.value),
       { fromRect: from.rect, fromRadius: from.radius }
     );
     await animateBentoEntrance(() => bento.gridRef.value);
+  } finally {
     isBentoEntering.value = false;
-    bento.focusTile(currentIndex.value);
-  } else {
-    isBentoEntering.value = false;
+    isModeTransitioning = false;
   }
+
+  bento.focusTile(currentIndex.value);
 }
 
 function closeDialog() {
@@ -461,11 +510,12 @@ const swipe = useStageSwipe({
   hasPrevious: computed(() => previousImage.value !== null),
   hasNext: computed(() => nextImage.value !== null),
   goPrevious,
-  goNext
+  goNext,
+  direction
 });
 
 async function toggleDialogMode() {
-  if (!dialogIsVisible.value || totalImages.value <= 1) {
+  if (!dialogIsVisible.value || totalImages.value <= 1 || isModeTransitioning) {
     return;
   }
 
@@ -477,14 +527,7 @@ async function toggleDialogMode() {
     dialogMode.value = 'bento';
 
     if (isMounted.value) {
-      await animateBetween(
-        () => fromFrame,
-        () => bento.revealFrame(currentIndex.value),
-        { fromRect: from.rect, fromRadius: from.radius }
-      );
-      await animateBentoEntrance(() => bento.gridRef.value);
-      isBentoEntering.value = false;
-      bento.focusTile(currentIndex.value);
+      await enterBento(fromFrame, from);
     } else {
       isBentoEntering.value = false;
     }
@@ -499,7 +542,14 @@ async function toggleDialogMode() {
     dialogMode.value = 'single';
 
     if (isMounted.value) {
-      await landOnStage(fromFrame, from);
+      isModeTransitioning = true;
+
+      try {
+        await landOnStage(fromFrame, from);
+      } finally {
+        isModeTransitioning = false;
+      }
+
       // The tile focus rode on is gone with the grid; same reasoning as
       // bento.focusTile, landing back where the dialog starts.
       focus.focusInitialElement();
@@ -535,26 +585,51 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
 
+  // The listener sits on window, so anything inside the dialog that handles a
+  // key first (a menu closing on Escape, a widget stepping on the arrows) has
+  // already said so by preventing the default.
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  /*
+   * Escape closes from anywhere in the dialog, a text field included, as a
+   * native <dialog> does. The one exception is the Escape that cancels an IME
+   * composition: that one belongs to the field.
+   */
   if (event.key === 'Escape') {
+    if (event.isComposing) {
+      return;
+    }
+
     event.preventDefault();
     closeDialog();
     return;
   }
 
-  if (dialogMode.value === 'single' && event.key === 'ArrowRight') {
-    event.preventDefault();
-    goNext();
+  // A field needs the arrows for its caret or value, and a modified arrow is a
+  // browser or OS shortcut (Alt+← back, Shift+← select).
+  if (hasModifier(event) || isEditableTarget(event)) {
     return;
   }
 
-  if (dialogMode.value === 'single' && event.key === 'ArrowLeft') {
+  // Physical keys, read in the gallery's direction: → is "next" only where the
+  // next image is on the right.
+  if (dialogMode.value === 'single' && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
     event.preventDefault();
-    goPrevious();
+
+    if ((event.key === 'ArrowRight') === (direction.value === 'ltr')) {
+      goNext();
+    } else {
+      goPrevious();
+    }
   }
 }
 
 onMounted(() => {
   isMounted.value = true;
+  // A dialog open from the first render never passes through the open watcher.
+  syncDirection();
   window.addEventListener('keydown', onKeydown);
   // No mode guard needed: the sync is a no-op whenever the grid is not mounted.
   window.addEventListener('resize', onResize);
@@ -594,7 +669,9 @@ watch(
       internalIndex.value = Math.max(0, props.images.length - 1);
     }
 
-    if (!props.images.length) {
+    // isDialogOpen, not dialogIsVisible: with the images gone there is no
+    // active image, so visibility already reads false for an open dialog.
+    if (!props.images.length && isDialogOpen.value) {
       closeDialog();
     }
   },
@@ -610,11 +687,18 @@ watch(
 );
 
 watch(dialogIsVisible, async (open) => {
+  // closeDialog() is not the only way out: a controlled `open` prop can hide
+  // the dialog too, and the next open must not land back in the grid.
+  if (!open) {
+    dialogMode.value = 'single';
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
 
   if (open) {
+    syncDirection();
     focus.onDialogOpen();
     await nextTick();
     focus.focusInitialElement();
@@ -641,7 +725,8 @@ provide(GALLERY_CONTEXT, {
      * package* is built, so the warning would be stripped from the published
      * bundle and no consumer would ever see it. process.env.NODE_ENV survives
      * the library build for the consumer's own bundler to resolve; the typeof
-     * guard keeps the bare-browser UMD path from throwing on it.
+     * guard keeps it from throwing where no bundler replaces it, e.g. native
+     * ESM loaded straight in the browser.
      */
     if (
       typeof process !== 'undefined' &&
@@ -672,6 +757,7 @@ provide(GALLERY_CONTEXT, {
   lastPreviewedIndex: composedLastPreviewedIndex,
   dialog: {
     mode: dialogMode,
+    direction,
     activeImage,
     previousImage,
     nextImage,
@@ -726,7 +812,7 @@ provide(GALLERY_CONTEXT, {
 </script>
 
 <template>
-  <section class="image-gallery-theme w-full">
+  <section ref="rootRef" class="image-gallery-theme w-full">
     <!--
       The preview is entirely the consumer's markup. Nothing is emitted around
       it -- no wrapper grid, no sizing -- so their own element is the layout
@@ -751,53 +837,59 @@ provide(GALLERY_CONTEXT, {
         the grid flies -- because each part registers what it provides instead of
         being handed it.
       -->
-      <slot
-        v-if="dialogIsVisible && activeImage"
-        name="dialog"
-        :image="activeImage"
-        :index="currentIndex"
-        :total="totalImages"
-        :mode="dialogMode"
-        :close="closeDialog"
-        :toggle-mode="toggleDialogMode"
-      >
-        <ImageGalleryOverlay>
-          <template #topbar>
-            <ImageGalleryTopbar>
-              <template #start>
-                <ImageGalleryGridToggle />
+      <!--
+        The scope is what lets a dialog part know it is in the dialog: the
+        preview slot mounts under ImageGallery too, so only this wrapper tells
+        the two apart.
+      -->
+      <ImageGalleryDialogScope v-if="dialogIsVisible && activeImage">
+        <slot
+          name="dialog"
+          :image="activeImage"
+          :index="currentIndex"
+          :total="totalImages"
+          :mode="dialogMode"
+          :close="closeDialog"
+          :toggle-mode="toggleDialogMode"
+        >
+          <ImageGalleryOverlay>
+            <template #topbar>
+              <ImageGalleryTopbar>
+                <template #start>
+                  <ImageGalleryGridToggle />
 
-                <slot
-                  v-if="hasDialogToolbarSlot"
-                  name="dialog-toolbar"
-                  :image="activeImage"
-                  :index="currentIndex"
-                  :total="totalImages"
-                  :mode="dialogMode"
-                  :close="closeDialog"
-                  :toggleMode="toggleDialogMode"
-                />
-              </template>
+                  <slot
+                    v-if="hasDialogToolbarSlot"
+                    name="dialog-toolbar"
+                    :image="activeImage"
+                    :index="currentIndex"
+                    :total="totalImages"
+                    :mode="dialogMode"
+                    :close="closeDialog"
+                    :toggleMode="toggleDialogMode"
+                  />
+                </template>
 
-              <template #center>
-                <ImageGalleryCounter />
-              </template>
+                <template #center>
+                  <ImageGalleryCounter />
+                </template>
 
-              <template #end>
-                <ImageGalleryCloseButton />
-              </template>
-            </ImageGalleryTopbar>
-          </template>
-
-          <ImageGalleryStage>
-            <template v-if="hasDialogCaptionSlot" #caption="captionProps">
-              <slot name="dialog-caption" v-bind="captionProps" />
+                <template #end>
+                  <ImageGalleryCloseButton />
+                </template>
+              </ImageGalleryTopbar>
             </template>
-          </ImageGalleryStage>
 
-          <ImageGalleryGrid />
-        </ImageGalleryOverlay>
-      </slot>
+            <ImageGalleryStage>
+              <template v-if="hasDialogCaptionSlot" #caption="captionProps">
+                <slot name="dialog-caption" v-bind="captionProps" />
+              </template>
+            </ImageGalleryStage>
+
+            <ImageGalleryGrid />
+          </ImageGalleryOverlay>
+        </slot>
+      </ImageGalleryDialogScope>
     </Teleport>
   </section>
 </template>

@@ -13,6 +13,8 @@ interface BentoGridOptions {
   /* The height of an image in units of column width; the packing's only input. */
   ratioOf: (image: GalleryImage) => number;
   clampIndex: (index: number) => number;
+  /* In RTL the columns run right to left, so ArrowLeft is the step forward. */
+  direction: Ref<'ltr' | 'rtl'>;
 }
 
 /*
@@ -125,10 +127,10 @@ export function useBentoGrid(options: BentoGridOptions) {
     watch(
       [index, element],
       ([nextIndex, nextElement], previous) => {
-        const previousIndex = previous?.[0];
+        const [previousIndex, previousElement] = previous ?? [];
 
         if (previousIndex !== undefined && previousIndex !== nextIndex) {
-          delete frameRefs.value[previousIndex];
+          unregisterTile(previousIndex, previousElement ?? null);
         }
 
         frameRefs.value[nextIndex] = nextElement;
@@ -137,8 +139,16 @@ export function useBentoGrid(options: BentoGridOptions) {
     );
   }
 
-  function unregisterTile(index: number) {
-    delete frameRefs.value[index];
+  /*
+   * Only the owner may clear an entry. A re-pack that moves a tile into a column
+   * patched earlier mounts its replacement -- registering the same index --
+   * before the old tile unmounts, and clearing by index alone would then drop
+   * the new tile from the keyboard and the flight.
+   */
+  function unregisterTile(index: number, element: HTMLElement | null) {
+    if (frameRefs.value[index] === element) {
+      delete frameRefs.value[index];
+    }
   }
 
   /*
@@ -179,12 +189,14 @@ export function useBentoGrid(options: BentoGridOptions) {
     const parsed = origin instanceof HTMLElement ? Number(origin.dataset.bentoIndex) : Number.NaN;
     const from = Number.isInteger(parsed) ? parsed : focusIndex.value;
     let target: number | null;
+    const forward = options.direction.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    const backward = options.direction.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
 
     switch (event.key) {
-      case 'ArrowRight':
+      case forward:
         target = from + 1 < options.total.value ? from + 1 : null;
         break;
-      case 'ArrowLeft':
+      case backward:
         target = from - 1 >= 0 ? from - 1 : null;
         break;
       case 'ArrowDown':
