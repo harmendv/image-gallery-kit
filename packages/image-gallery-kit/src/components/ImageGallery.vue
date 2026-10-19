@@ -85,6 +85,14 @@ const isBentoEntering = ref(false);
  * holds its arrows back for the flight and fades them in once the image is down.
  */
 const isStageLanding = ref(false);
+/*
+ * True while a switch between single view and the grid is in flight. A second
+ * toggle mid-flight is dropped rather than queued: it would swap the mode back
+ * under an animation still measuring the old one, and leave the first toggle to
+ * finish against a grid that is no longer there. Plain, not a ref -- nothing
+ * renders off it.
+ */
+let isModeTransitioning = false;
 
 /* Flies an image into the stage frame, with the arrows held back until it lands. */
 async function landOnStage(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
@@ -363,6 +371,10 @@ async function openSingle(index: number) {
 }
 
 async function openBentoFromPreview(index: number) {
+  if (isModeTransitioning) {
+    return;
+  }
+
   const targetIndex = Math.min(index, totalImages.value - 1);
   const fromFrame = getPreviewFrame(targetIndex);
   const from = measureFrame(fromFrame);
@@ -374,17 +386,33 @@ async function openBentoFromPreview(index: number) {
   emit('open', nextIndex);
 
   if (isMounted.value) {
+    await enterBento(fromFrame, from);
+  } else {
+    isBentoEntering.value = false;
+  }
+}
+
+/*
+ * Flies the image into its tile and cascades the rest in. The tiles stay hidden
+ * by isBentoEntering until this settles, so the reset sits in a finally -- an
+ * animation that throws would otherwise leave the grid blank for good.
+ */
+async function enterBento(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
+  isModeTransitioning = true;
+
+  try {
     await animateBetween(
       () => fromFrame,
       () => bento.revealFrame(currentIndex.value),
       { fromRect: from.rect, fromRadius: from.radius }
     );
     await animateBentoEntrance(() => bento.gridRef.value);
+  } finally {
     isBentoEntering.value = false;
-    bento.focusTile(currentIndex.value);
-  } else {
-    isBentoEntering.value = false;
+    isModeTransitioning = false;
   }
+
+  bento.focusTile(currentIndex.value);
 }
 
 function closeDialog() {
@@ -457,7 +485,7 @@ const swipe = useStageSwipe({
 });
 
 async function toggleDialogMode() {
-  if (!dialogIsVisible.value || totalImages.value <= 1) {
+  if (!dialogIsVisible.value || totalImages.value <= 1 || isModeTransitioning) {
     return;
   }
 
@@ -469,14 +497,7 @@ async function toggleDialogMode() {
     dialogMode.value = 'bento';
 
     if (isMounted.value) {
-      await animateBetween(
-        () => fromFrame,
-        () => bento.revealFrame(currentIndex.value),
-        { fromRect: from.rect, fromRadius: from.radius }
-      );
-      await animateBentoEntrance(() => bento.gridRef.value);
-      isBentoEntering.value = false;
-      bento.focusTile(currentIndex.value);
+      await enterBento(fromFrame, from);
     } else {
       isBentoEntering.value = false;
     }
@@ -491,7 +512,14 @@ async function toggleDialogMode() {
     dialogMode.value = 'single';
 
     if (isMounted.value) {
-      await landOnStage(fromFrame, from);
+      isModeTransitioning = true;
+
+      try {
+        await landOnStage(fromFrame, from);
+      } finally {
+        isModeTransitioning = false;
+      }
+
       // The tile focus rode on is gone with the grid; same reasoning as
       // bento.focusTile, landing back where the dialog starts.
       focus.focusInitialElement();
