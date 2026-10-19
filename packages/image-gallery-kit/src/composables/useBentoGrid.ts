@@ -13,6 +13,8 @@ interface BentoGridOptions {
   /* The height of an image in units of column width; the packing's only input. */
   ratioOf: (image: GalleryImage) => number;
   clampIndex: (index: number) => number;
+  /* In RTL the columns run right to left, so ArrowLeft is the step forward. */
+  direction: Ref<'ltr' | 'rtl'>;
 }
 
 /*
@@ -179,12 +181,14 @@ export function useBentoGrid(options: BentoGridOptions) {
     const parsed = origin instanceof HTMLElement ? Number(origin.dataset.bentoIndex) : Number.NaN;
     const from = Number.isInteger(parsed) ? parsed : focusIndex.value;
     let target: number | null;
+    const forward = options.direction.value === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+    const backward = options.direction.value === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
 
     switch (event.key) {
-      case 'ArrowRight':
+      case forward:
         target = from + 1 < options.total.value ? from + 1 : null;
         break;
-      case 'ArrowLeft':
+      case backward:
         target = from - 1 >= 0 ? from - 1 : null;
         break;
       case 'ArrowDown':

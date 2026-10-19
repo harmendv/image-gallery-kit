@@ -299,6 +299,7 @@ The swipe gesture is **touch-only**: a `pointerdown` whose `pointerType` is `mou
 - The dialog traps focus, restores focus to the previously focused trigger, and locks background scrolling while open.
 - In the all-images grid, one tile is the Tab stop and the arrow keys move between tiles — `ArrowLeft` / `ArrowRight` follow the sequence, `ArrowUp` / `ArrowDown` walk the packed column, and `Home` / `End` jump to the ends — so Tab crosses the grid in a single step however large the collection is. Switching views moves focus with you: onto the active tile entering the grid, back onto the dialog's first control leaving it.
 - In the carousel, `ArrowLeft` / `ArrowRight` page and `Escape` closes. A touch drag also turns the page: it slides the neighbour in, and lands the turn when the release is either past 40% of the stage or fast enough to read as a flick. One drag turns one image however far it runs. The gesture is touch-only — a mouse never swipes — so the arrows stay live at every width and neither has to be switched off for the other. `<ImageGalleryStage :swipe="false">` turns the gesture off; providing the `previous` and `next` slots empty removes the arrows.
+- Right-to-left is followed, not configured. The gallery reads the computed `direction` of its own root when the dialog opens and gives the teleported dialog the same `dir`, so a `dir="rtl"` on any ancestor is enough. In RTL the arrow buttons trade sides and their chevrons mirror, <kbd>←</kbd> and a rightward swipe go to the next image, and in the grid <kbd>←</kbd> / <kbd>→</kbd> swap the same way.
 - `vue` must be installed by the consuming app because it is a peer dependency.
 
 ### Keyboard
@@ -309,8 +310,8 @@ Active whenever the dialog is open.
 | --- | --- |
 | <kbd>Escape</kbd> | Closes the dialog. |
 | <kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> | Cycles focus within the dialog. Focus cannot leave it. |
-| <kbd>→</kbd> | Next image. Single-image mode only. |
-| <kbd>←</kbd> | Previous image. Single-image mode only. |
+| <kbd>→</kbd> | Next image (previous in RTL). Single-image mode only. |
+| <kbd>←</kbd> | Previous image (next in RTL). Single-image mode only. |
 
 Focus lands on the close button when the dialog opens, and returns to the element that opened it on close. Controls that a media query has retired are excluded from the Tab cycle rather than left in it as dead stops.
 
