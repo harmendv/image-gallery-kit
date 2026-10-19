@@ -18,11 +18,27 @@ npm install image-gallery-kit
 ```
 
 `vue` (`^3.5`) is a required peer. `gsap` (`^3`) is an optional peer dependency:
-install it to enable the shared-element transitions; without it every view works
+pass it in to enable the shared-element transitions; without it every view works
 the same, just without animation.
 
 ```bash
 npm install gsap
+```
+
+The package never imports `gsap` itself, so an app without it builds and runs
+unchanged. Hand it over once through the plugin to animate every gallery:
+
+```ts
+import { gsap } from 'gsap'
+import ImageGalleryKit from 'image-gallery-kit'
+
+app.use(ImageGalleryKit, { gsap })
+```
+
+or per gallery with the `gsap` prop, which takes precedence over the plugin's:
+
+```vue
+<ImageGallery :images="images" :gsap="gsap" />
 ```
 
 ## Usage

@@ -48,7 +48,7 @@ import { withBase } from 'vitepress'
       </span>
       Tiles fly into the dialog
     </div>
-    <p>The tile's frame and radius tween onto the dialog image. Add gsap to switch it on — without it every view still works.</p>
+    <p>The tile's frame and radius tween onto the dialog image. Pass in gsap to switch it on — without it every view still works.</p>
   </a>
   <a class="home-feature" :href="withBase('/theming')">
     <div class="home-feature-title">

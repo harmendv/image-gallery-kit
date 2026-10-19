@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  inject,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -22,11 +23,11 @@ import ImageGalleryStage from '@/components/ImageGalleryStage.vue';
 import ImageGalleryTopbar from '@/components/ImageGalleryTopbar.vue';
 import { useBentoGrid } from '@/composables/useBentoGrid';
 import { useDialogFocus } from '@/composables/useDialogFocus';
-import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
+import { GSAP, useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import { useStageSwipe } from '@/composables/useStageSwipe';
 import { parseAspectRatio } from '@/utils/aspectRatio';
 import { hasModifier, isEditableTarget } from '@/utils/keyboard';
-import type { GalleryImage, GalleryLabels } from '@/types';
+import type { GalleryGsap, GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
 
@@ -52,6 +53,11 @@ const props = withDefaults(
      */
     loop?: boolean;
     labels?: Partial<GalleryLabels>;
+    /*
+     * The gsap instance that drives the transitions. Takes precedence over one
+     * handed to the plugin; with neither, the gallery works without animating.
+     */
+    gsap?: GalleryGsap | null;
   }>(),
   {
     open: null,
@@ -59,7 +65,8 @@ const props = withDefaults(
     imageAspectRatio: '4 / 5',
     allowGridView: true,
     loop: true,
-    labels: undefined
+    labels: undefined,
+    gsap: null
   }
 );
 
@@ -129,8 +136,10 @@ async function landOnStage(fromFrame: HTMLElement | null, from: ReturnType<typeo
   }
 }
 
+const pluginGsap = inject(GSAP, null);
+
 const { animateBetween, animateBentoEntrance, animateBentoExit, measureTransitionRadius } =
-  useSharedImageTransition();
+  useSharedImageTransition(() => props.gsap ?? pluginGsap);
 
 const DEFAULT_LABELS: GalleryLabels = {
   counter: (current, total) => `${current} of ${total}`,

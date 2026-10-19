@@ -1,5 +1,6 @@
 import { h } from 'vue';
 import { mount } from '@vue/test-utils';
+import { gsap } from 'gsap';
 import ImageGallery from '@/components/ImageGallery.vue';
 import ImageGalleryImage from '@/components/ImageGalleryImage.vue';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
@@ -50,7 +51,7 @@ function withFixedRects(run: () => Promise<void> | void) {
  */
 function mountWithTiles(props: Record<string, unknown> = {}) {
   return mount(ImageGallery, {
-    props: { images, ...props },
+    props: { images, gsap, ...props },
     slots: {
       default: () =>
         images.map((image) =>
@@ -138,7 +139,7 @@ describe('flight radius', () => {
   it("starts the clone at the preview tile's own corners, not the frame's", () =>
     withFixedRects(async () => {
       const wrapper = mount(ImageGallery, {
-        props: { images },
+        props: { images, gsap },
         slots: {
           default: () =>
             images.map((image) =>
@@ -161,7 +162,7 @@ describe('flight radius', () => {
 
   it('uses the radius the caller captured, since the source may already be gone', () =>
     withFixedRects(async () => {
-      const { animateBetween } = useSharedImageTransition();
+      const { animateBetween } = useSharedImageTransition(() => gsap);
 
       const source = document.createElement('div');
       const target = document.createElement('div');
@@ -260,7 +261,7 @@ describe('the flight layer', () => {
     container.innerHTML = '<div data-bento-item="true" data-bento-index="1"></div>';
     document.body.appendChild(container);
 
-    await useSharedImageTransition().animateBentoExit(() => container, { activeIndex: 0 });
+    await useSharedImageTransition(() => gsap).animateBentoExit(() => container, { activeIndex: 0 });
 
     expect(flightLayer()).toBeNull();
 
@@ -278,7 +279,7 @@ describe('the flight layer', () => {
 describe('decoration across the flight', () => {
   function mountBordered() {
     return mount(ImageGallery, {
-      props: { images },
+      props: { images, gsap },
       slots: {
         default: () =>
           images.map((image) =>
@@ -433,7 +434,7 @@ describe('overlapping flights', () => {
    */
   it('leaves neither end hidden once both have landed', () =>
     withFixedRects(async () => {
-      const { animateBetween } = useSharedImageTransition();
+      const { animateBetween } = useSharedImageTransition(() => gsap);
 
       const tile = document.createElement('div');
       const stage = document.createElement('div');
@@ -465,7 +466,7 @@ describe('overlapping flights', () => {
 
   it('keeps an end hidden while another flight still covers it', () =>
     withFixedRects(async () => {
-      const { animateBetween } = useSharedImageTransition();
+      const { animateBetween } = useSharedImageTransition(() => gsap);
 
       const tile = document.createElement('div');
       const stage = document.createElement('div');

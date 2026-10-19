@@ -23,6 +23,7 @@ const flights: Deferred[] = [];
 const entrances: Deferred[] = [];
 
 vi.mock('@/composables/useSharedImageTransition', () => ({
+  GSAP: Symbol('image-gallery-gsap'),
   useSharedImageTransition: () => ({
     animateBetween: () => {
       const flight = deferred();

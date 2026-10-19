@@ -85,17 +85,31 @@ See [Styling](/theming) for the whole surface, and [Anatomy](/api#anatomy) for t
 
 Opening a tile plays a shared-element flight: the tile's frame and corner radius tween onto the dialog image, and the all-images grid animates its tiles in and out the same way.
 
-Those animations are driven by [gsap](https://gsap.com), which is an *optional* peer dependency — install it to switch them on:
+Those animations are driven by [gsap](https://gsap.com), which is an *optional* peer dependency. The package never imports it — a bare import of a package you have not installed would fail your build — so you install it and hand it over:
 
 ```sh
 npm install gsap
 ```
 
-Without it the gallery still works exactly as it does with it: the dialog opens, the index changes and the grid toggles, just without the tweens. The same is true under `prefers-reduced-motion: reduce`, which skips the animations even when gsap is installed.
+```ts
+import { gsap } from 'gsap'
+import ImageGalleryKit from 'image-gallery-kit'
+
+// Every gallery in the app animates.
+app.use(ImageGalleryKit, { gsap })
+```
+
+Or per gallery, with the `gsap` prop, which takes precedence over the plugin option:
+
+```vue-html
+<ImageGallery :images="images" :gsap="gsap" />
+```
+
+Without it the gallery still works exactly as it does with it: the dialog opens, the index changes and the grid toggles, just without the tweens. The same is true under `prefers-reduced-motion: reduce`, which skips the animations even when gsap is passed in.
 
 ## Notes
 
 - Import `image-gallery-kit/style.css` once in your app.
-- `vue` is a required peer dependency; `gsap` is an optional one that enables the animations.
+- `vue` is a required peer dependency; `gsap` is an optional one that enables the animations once you pass it in.
 - The component is safe to render on the server; dialog and transition behavior activate on the client.
 - The dialog traps focus, restores focus to the trigger, and locks body scroll while open.

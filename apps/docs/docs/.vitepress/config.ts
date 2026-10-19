@@ -43,13 +43,6 @@ export default defineConfig({
     // only under the "style" export condition, which Vite's postcss-import
     // resolver does not honour; Tailwind's plugin resolves them itself.
     plugins: [tailwindcss()],
-    // gsap is an optional peer of the package, so nothing in the docs
-    // source imports it and the dep scanner never sees the bare specifier
-    // inside the built entry. Without this the gallery silently falls back to
-    // its no-animation path.
-    optimizeDeps: {
-      include: ['gsap']
-    },
     server: {
       fs: {
         allow: [packageRoot]

@@ -1,6 +1,8 @@
 import DefaultTheme from 'vitepress/theme';
 import type { Theme } from 'vitepress';
+import { gsap } from 'gsap';
 import { h } from 'vue';
+import ImageGalleryKit from 'image-gallery-kit';
 import 'image-gallery-kit/style.css';
 import './style.css';
 import DocsLogo from './DocsLogo.vue';
@@ -15,6 +17,7 @@ const theme: Theme = {
       'nav-bar-title-before': () => h(DocsLogo)
     }),
   enhanceApp({ app }) {
+    app.use(ImageGalleryKit, { gsap });
     app.component('HomeHero', HomeHero);
     app.component('DemoGrid', DemoGrid);
     app.component('LayoutShowcase', LayoutShowcase);

@@ -45,7 +45,7 @@
 | **Styled with classes** | No design tokens. Every part is a component, and your class beats its default. |
 | **Every string is yours** | All visible text and `aria-label`s come from one object. No i18n dependency. |
 | **Stays in its lane** | No global CSS reset — the stylesheet only styles the gallery. |
-| **Degrades cleanly** | `gsap` is an optional peer; without it every view works, just without transitions. |
+| **Degrades cleanly** | `gsap` is an optional peer you pass in; without it every view works, just without transitions. |
 
 ## Install
 
@@ -57,6 +57,22 @@ npm install image-gallery-kit
 
 ```bash
 npm install gsap
+```
+
+The package never imports `gsap` itself, so an app without it builds and runs
+unchanged. Hand it over once through the plugin to animate every gallery:
+
+```ts
+import { gsap } from 'gsap'
+import ImageGalleryKit from 'image-gallery-kit'
+
+app.use(ImageGalleryKit, { gsap })
+```
+
+or per gallery with the `gsap` prop, which takes precedence over the plugin's:
+
+```vue
+<ImageGallery :images="images" :gsap="gsap" />
 ```
 
 ## Quick start
