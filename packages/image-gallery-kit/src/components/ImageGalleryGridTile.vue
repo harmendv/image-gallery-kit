@@ -25,7 +25,7 @@ const tile = ref<HTMLElement | null>(null);
 
 dialog.grid.registerTile(toRef(props, 'index'), tile);
 onBeforeUnmount(() => {
-  dialog.grid.unregisterTile(props.index);
+  dialog.grid.unregisterTile(props.index, tile.value);
 });
 
 // So the image inside needs no props of its own.
