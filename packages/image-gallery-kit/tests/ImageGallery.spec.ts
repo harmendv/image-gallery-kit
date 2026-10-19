@@ -411,9 +411,20 @@ describe('ImageGallery', () => {
     await nextTick();
 
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
-    expect(wrapper.emitted('close')).toBeTruthy();
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    expect(wrapper.emitted('update:open')).toEqual([[true], [false]]);
 
     wrapper.unmount();
+  });
+
+  it('emits nothing when images are emptied on a closed gallery', async () => {
+    const wrapper = mountGallery();
+
+    await wrapper.setProps({ images: [] });
+    await nextTick();
+
+    expect(wrapper.emitted('close')).toBeUndefined();
+    expect(wrapper.emitted('update:open')).toBeUndefined();
   });
 
   it('falls back to imageAspectRatio in the grid for images without intrinsic dimensions', async () => {

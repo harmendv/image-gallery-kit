@@ -585,7 +585,9 @@ watch(
       internalIndex.value = Math.max(0, props.images.length - 1);
     }
 
-    if (!props.images.length) {
+    // isDialogOpen, not dialogIsVisible: with the images gone there is no
+    // active image, so visibility already reads false for an open dialog.
+    if (!props.images.length && isDialogOpen.value) {
       closeDialog();
     }
   },
