@@ -63,7 +63,7 @@ function activeBentoIndex() {
 
 async function openGrid(wrapper: ReturnType<typeof mountGallery>, at = 1) {
   await wrapper.get(`button[aria-label="Open image ${at}"]`).trigger('click');
-  await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+  await wrapper.get('button[aria-label="All images"]').trigger('click');
   await focusSettled(() => activeBentoIndex() !== undefined);
 }
 

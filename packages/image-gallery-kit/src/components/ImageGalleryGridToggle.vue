@@ -7,6 +7,12 @@ import { useDialogContext } from '@/composables/useGalleryContext';
  * control would still take up a Tab stop to say so.
  */
 const gallery = useDialogContext('ImageGalleryGridToggle');
+
+/*
+ * The aria-label repeats the visible text rather than describing the action, so
+ * the accessible name contains what is on screen (WCAG 2.5.3) — and the button
+ * keeps a name when a layout hides the text and leaves only the icon.
+ */
 </script>
 
 <template>
@@ -14,7 +20,7 @@ const gallery = useDialogContext('ImageGalleryGridToggle');
     v-if="gallery.dialog.mode.value === 'single' && gallery.allowGridView.value && gallery.total.value > 1"
     type="button"
     class="image-gallery-control image-gallery-control-pill"
-    :aria-label="gallery.labels.value.toggleGrid"
+    :aria-label="gallery.labels.value.allImages"
     @click="gallery.dialog.toggleMode()"
   >
     <slot :label="gallery.labels.value.allImages">

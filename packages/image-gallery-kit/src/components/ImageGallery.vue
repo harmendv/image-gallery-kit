@@ -110,7 +110,6 @@ const DEFAULT_LABELS: GalleryLabels = {
   openImageFromGrid: (index) => `Open image ${index} from grid`,
   showAllImages: (total) => `Show all ${total} images`,
   allImages: 'All images',
-  toggleGrid: 'Toggle image grid',
   close: 'Close dialog',
   previous: 'Previous image',
   next: 'Next image'

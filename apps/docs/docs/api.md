@@ -161,7 +161,8 @@ interface GalleryLabels {
   openImageFromGrid: (index: number) => string
   showAllImages: (total: number) => string
   allImages: string
-  toggleGrid: string
+  /** @deprecated Unused — the grid toggle is named by `allImages`. */
+  toggleGrid?: string
   close: string
   previous: string
   next: string
@@ -204,10 +205,12 @@ Every visible string and `aria-label` comes from `labels`, merged over English d
 | `openImageFromGrid` | `(index: number) => string` | `` `Open image ${index} from grid` `` |
 | `showAllImages` | `(total: number) => string` | `` `Show all ${total} images` `` |
 | `allImages` | `string` | `'All images'` |
-| `toggleGrid` | `string` | `'Toggle image grid'` |
+| `toggleGrid` | `string` | none — deprecated, see below |
 | `close` | `string` | `'Close dialog'` |
 | `previous` | `string` | `'Previous image'` |
 | `next` | `string` | `'Next image'` |
+
+`allImages` is both the visible text and the accessible name of the dialog's grid toggle, so what voice-control users read on screen is what they can say. `toggleGrid` used to supply a separate `aria-label` for it; it is no longer read and is kept only so existing overrides still type-check.
 
 ### Grid View
 

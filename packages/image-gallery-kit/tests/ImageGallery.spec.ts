@@ -223,7 +223,7 @@ describe('ImageGallery', () => {
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
   });
 
   it('exposes open and openGrid through slot props', async () => {
@@ -261,7 +261,7 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
     expect(wrapper.findAll('button[aria-label$="from grid"]')).toHaveLength(4);
 
@@ -274,9 +274,9 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery();
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('1 of 4');
   });
 
@@ -286,7 +286,17 @@ describe('ImageGallery', () => {
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
 
-    expect(wrapper.find('button[aria-label="Toggle image grid"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="All images"]').exists()).toBe(false);
+  });
+
+  it('names the grid toggle after its visible text', async () => {
+    const wrapper = mountGallery({ labels: { allImages: 'Alle fotos' } });
+
+    await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
+
+    const toggle = wrapper.get('.image-gallery-control-pill');
+    expect(toggle.text()).toBe('Alle fotos');
+    expect(toggle.attributes('aria-label')).toBe('Alle fotos');
   });
 
   it('renders on the server without touching browser globals', async () => {
@@ -425,7 +435,7 @@ describe('ImageGallery', () => {
     const wrapper = mountGallery({ images: bare, imageAspectRatio: '3 / 2' });
 
     await wrapper.get('button[aria-label="Open image 1"]').trigger('click');
-    await wrapper.get('button[aria-label="Toggle image grid"]').trigger('click');
+    await wrapper.get('button[aria-label="All images"]').trigger('click');
 
     const gridTile = wrapper.get('button[aria-label="Open image 1 from grid"]');
     // Published as a custom property, so an `aspect-*` class of the consumer's
