@@ -49,6 +49,8 @@ export interface GalleryDialogContext {
    */
   stage: {
     isSwiping: Ref<boolean>;
+    // An image is flying into the stage; the arrows wait for it to land.
+    isLanding: Ref<boolean>;
     onSwipeStart: (event: PointerEvent) => void;
     swallowClick: (event: MouseEvent) => void;
     frameTransform: () => string | undefined;

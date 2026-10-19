@@ -77,6 +77,28 @@ const dialogMode = ref<DialogMode>('single');
 const carouselFrameRef = ref<HTMLElement | null>(null);
 const carouselStackRef = ref<HTMLElement | null>(null);
 const isBentoEntering = ref(false);
+/*
+ * True while an image flies into the stage. The flight clone rides a layer above
+ * the whole dialog, so on a narrow screen -- where the arrows overlap the frame's
+ * edges -- it would cover them and then drop behind them on landing. The stage
+ * holds its arrows back for the flight and fades them in once the image is down.
+ */
+const isStageLanding = ref(false);
+
+/* Flies an image into the stage frame, with the arrows held back until it lands. */
+async function landOnStage(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
+  isStageLanding.value = true;
+
+  try {
+    await animateBetween(
+      () => fromFrame,
+      () => carouselFrameRef.value,
+      { fromRect: from.rect, fromRadius: from.radius }
+    );
+  } finally {
+    isStageLanding.value = false;
+  }
+}
 
 const { animateBetween, animateBentoEntrance, animateBentoExit, measureTransitionRadius } =
   useSharedImageTransition();
@@ -335,11 +357,7 @@ async function openSingle(index: number) {
   emit('open', nextIndex);
 
   if (isMounted.value) {
-    await animateBetween(
-      () => fromFrame,
-      () => carouselFrameRef.value,
-      { fromRect: from.rect, fromRadius: from.radius }
-    );
+    await landOnStage(fromFrame, from);
   }
 }
 
@@ -472,11 +490,7 @@ async function toggleDialogMode() {
     dialogMode.value = 'single';
 
     if (isMounted.value) {
-      await animateBetween(
-        () => fromFrame,
-        () => carouselFrameRef.value,
-        { fromRect: from.rect, fromRadius: from.radius }
-      );
+      await landOnStage(fromFrame, from);
       // The tile focus rode on is gone with the grid; same reasoning as
       // bento.focusTile, landing back where the dialog starts.
       focus.focusInitialElement();
@@ -496,11 +510,7 @@ async function selectBentoImage(index: number) {
   dialogMode.value = 'single';
 
   if (isMounted.value) {
-    await animateBetween(
-      () => fromFrame,
-      () => carouselFrameRef.value,
-      { fromRect: from.rect, fromRadius: from.radius }
-    );
+    await landOnStage(fromFrame, from);
     // The selected tile unmounted with the grid, taking focus with it.
     focus.focusInitialElement();
   }
@@ -668,6 +678,7 @@ provide(GALLERY_CONTEXT, {
     registerRoot: focus.registerRoot,
     stage: {
       isSwiping: swipe.isSwiping,
+      isLanding: isStageLanding,
       onSwipeStart: swipe.onSwipeStart,
       swallowClick: swipe.swallowClick,
       frameTransform: swipe.frameTransform,
