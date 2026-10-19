@@ -24,6 +24,7 @@ import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import { useStageSwipe } from '@/composables/useStageSwipe';
 import { parseAspectRatio } from '@/utils/aspectRatio';
+import { hasModifier, isEditableTarget } from '@/utils/keyboard';
 import type { GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
@@ -554,9 +555,31 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
 
+  // The listener sits on window, so anything inside the dialog that handles a
+  // key first (a menu closing on Escape, a widget stepping on the arrows) has
+  // already said so by preventing the default.
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  /*
+   * Escape closes from anywhere in the dialog, a text field included, as a
+   * native <dialog> does. The one exception is the Escape that cancels an IME
+   * composition: that one belongs to the field.
+   */
   if (event.key === 'Escape') {
+    if (event.isComposing) {
+      return;
+    }
+
     event.preventDefault();
     closeDialog();
+    return;
+  }
+
+  // A field needs the arrows for its caret or value, and a modified arrow is a
+  // browser or OS shortcut (Alt+← back, Shift+← select).
+  if (hasModifier(event) || isEditableTarget(event)) {
     return;
   }
 
@@ -613,7 +636,9 @@ watch(
       internalIndex.value = Math.max(0, props.images.length - 1);
     }
 
-    if (!props.images.length) {
+    // isDialogOpen, not dialogIsVisible: with the images gone there is no
+    // active image, so visibility already reads false for an open dialog.
+    if (!props.images.length && isDialogOpen.value) {
       closeDialog();
     }
   },
@@ -629,6 +654,12 @@ watch(
 );
 
 watch(dialogIsVisible, async (open) => {
+  // closeDialog() is not the only way out: a controlled `open` prop can hide
+  // the dialog too, and the next open must not land back in the grid.
+  if (!open) {
+    dialogMode.value = 'single';
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
@@ -660,7 +691,8 @@ provide(GALLERY_CONTEXT, {
      * package* is built, so the warning would be stripped from the published
      * bundle and no consumer would ever see it. process.env.NODE_ENV survives
      * the library build for the consumer's own bundler to resolve; the typeof
-     * guard keeps the bare-browser UMD path from throwing on it.
+     * guard keeps it from throwing where no bundler replaces it, e.g. native
+     * ESM loaded straight in the browser.
      */
     if (
       typeof process !== 'undefined' &&

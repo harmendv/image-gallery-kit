@@ -333,7 +333,7 @@ A preview tile. Deliberately unstyled and unsized: height, width, aspect ratio, 
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `image` | `GalleryImage` | — | Required. Must be an entry of the root's `images`, matched by object identity, `id`, or `src`. |
+| `image` | `GalleryImage` | — | Required. Must be an entry of the root's `images`, matched by object identity, `id`, or `src`. A tile whose image does not match renders disabled and unlabelled, with a development warning. |
 | `imageClass` | `string \| null` | `null` | Classes for the inner `<img>`. The only way to reach it — `object-fit` and the hover transform belong to the image, not the tile. |
 
 | Slot | Props | Description |
