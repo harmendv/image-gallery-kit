@@ -585,7 +585,9 @@ watch(
       internalIndex.value = Math.max(0, props.images.length - 1);
     }
 
-    if (!props.images.length) {
+    // isDialogOpen, not dialogIsVisible: with the images gone there is no
+    // active image, so visibility already reads false for an open dialog.
+    if (!props.images.length && isDialogOpen.value) {
       closeDialog();
     }
   },
@@ -601,6 +603,12 @@ watch(
 );
 
 watch(dialogIsVisible, async (open) => {
+  // closeDialog() is not the only way out: a controlled `open` prop can hide
+  // the dialog too, and the next open must not land back in the grid.
+  if (!open) {
+    dialogMode.value = 'single';
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
@@ -632,7 +640,8 @@ provide(GALLERY_CONTEXT, {
      * package* is built, so the warning would be stripped from the published
      * bundle and no consumer would ever see it. process.env.NODE_ENV survives
      * the library build for the consumer's own bundler to resolve; the typeof
-     * guard keeps the bare-browser UMD path from throwing on it.
+     * guard keeps it from throwing where no bundler replaces it, e.g. native
+     * ESM loaded straight in the browser.
      */
     if (
       typeof process !== 'undefined' &&
