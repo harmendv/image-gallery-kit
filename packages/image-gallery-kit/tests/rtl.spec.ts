@@ -1,4 +1,4 @@
-import { enableAutoUnmount, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { afterEach, vi } from 'vitest';
 import { nextTick } from 'vue';
 import ImageGallery from '@/components/ImageGallery.vue';
@@ -77,10 +77,6 @@ function offsetOf(wrapper: ReturnType<typeof mountGallery>, selector: string) {
 
 /* jsdom lays nothing out, so the stage falls back to the window width. */
 const STAGE = 1024;
-
-// A gallery left mounted keeps its window keydown listener, and claims the next
-// spec's keys before that spec's own gallery sees them.
-enableAutoUnmount(afterEach);
 
 afterEach(() => {
   document.body.innerHTML = '';
