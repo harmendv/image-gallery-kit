@@ -24,6 +24,7 @@ import { useDialogFocus } from '@/composables/useDialogFocus';
 import { useSharedImageTransition } from '@/composables/useSharedImageTransition';
 import { useStageSwipe } from '@/composables/useStageSwipe';
 import { parseAspectRatio } from '@/utils/aspectRatio';
+import { hasModifier, isEditableTarget } from '@/utils/keyboard';
 import type { GalleryImage, GalleryLabels } from '@/types';
 
 type DialogMode = 'single' | 'bento';
@@ -84,6 +85,14 @@ const isBentoEntering = ref(false);
  * holds its arrows back for the flight and fades them in once the image is down.
  */
 const isStageLanding = ref(false);
+/*
+ * True while a switch between single view and the grid is in flight. A second
+ * toggle mid-flight is dropped rather than queued: it would swap the mode back
+ * under an animation still measuring the old one, and leave the first toggle to
+ * finish against a grid that is no longer there. Plain, not a ref -- nothing
+ * renders off it.
+ */
+let isModeTransitioning = false;
 
 /* Flies an image into the stage frame, with the arrows held back until it lands. */
 async function landOnStage(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
@@ -362,6 +371,10 @@ async function openSingle(index: number) {
 }
 
 async function openBentoFromPreview(index: number) {
+  if (isModeTransitioning) {
+    return;
+  }
+
   const targetIndex = Math.min(index, totalImages.value - 1);
   const fromFrame = getPreviewFrame(targetIndex);
   const from = measureFrame(fromFrame);
@@ -373,17 +386,33 @@ async function openBentoFromPreview(index: number) {
   emit('open', nextIndex);
 
   if (isMounted.value) {
+    await enterBento(fromFrame, from);
+  } else {
+    isBentoEntering.value = false;
+  }
+}
+
+/*
+ * Flies the image into its tile and cascades the rest in. The tiles stay hidden
+ * by isBentoEntering until this settles, so the reset sits in a finally -- an
+ * animation that throws would otherwise leave the grid blank for good.
+ */
+async function enterBento(fromFrame: HTMLElement | null, from: ReturnType<typeof measureFrame>) {
+  isModeTransitioning = true;
+
+  try {
     await animateBetween(
       () => fromFrame,
       () => bento.revealFrame(currentIndex.value),
       { fromRect: from.rect, fromRadius: from.radius }
     );
     await animateBentoEntrance(() => bento.gridRef.value);
+  } finally {
     isBentoEntering.value = false;
-    bento.focusTile(currentIndex.value);
-  } else {
-    isBentoEntering.value = false;
+    isModeTransitioning = false;
   }
+
+  bento.focusTile(currentIndex.value);
 }
 
 function closeDialog() {
@@ -456,7 +485,7 @@ const swipe = useStageSwipe({
 });
 
 async function toggleDialogMode() {
-  if (!dialogIsVisible.value || totalImages.value <= 1) {
+  if (!dialogIsVisible.value || totalImages.value <= 1 || isModeTransitioning) {
     return;
   }
 
@@ -468,14 +497,7 @@ async function toggleDialogMode() {
     dialogMode.value = 'bento';
 
     if (isMounted.value) {
-      await animateBetween(
-        () => fromFrame,
-        () => bento.revealFrame(currentIndex.value),
-        { fromRect: from.rect, fromRadius: from.radius }
-      );
-      await animateBentoEntrance(() => bento.gridRef.value);
-      isBentoEntering.value = false;
-      bento.focusTile(currentIndex.value);
+      await enterBento(fromFrame, from);
     } else {
       isBentoEntering.value = false;
     }
@@ -490,7 +512,14 @@ async function toggleDialogMode() {
     dialogMode.value = 'single';
 
     if (isMounted.value) {
-      await landOnStage(fromFrame, from);
+      isModeTransitioning = true;
+
+      try {
+        await landOnStage(fromFrame, from);
+      } finally {
+        isModeTransitioning = false;
+      }
+
       // The tile focus rode on is gone with the grid; same reasoning as
       // bento.focusTile, landing back where the dialog starts.
       focus.focusInitialElement();
@@ -526,9 +555,31 @@ function onKeydown(event: KeyboardEvent) {
     return;
   }
 
+  // The listener sits on window, so anything inside the dialog that handles a
+  // key first (a menu closing on Escape, a widget stepping on the arrows) has
+  // already said so by preventing the default.
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  /*
+   * Escape closes from anywhere in the dialog, a text field included, as a
+   * native <dialog> does. The one exception is the Escape that cancels an IME
+   * composition: that one belongs to the field.
+   */
   if (event.key === 'Escape') {
+    if (event.isComposing) {
+      return;
+    }
+
     event.preventDefault();
     closeDialog();
+    return;
+  }
+
+  // A field needs the arrows for its caret or value, and a modified arrow is a
+  // browser or OS shortcut (Alt+← back, Shift+← select).
+  if (hasModifier(event) || isEditableTarget(event)) {
     return;
   }
 
@@ -585,7 +636,9 @@ watch(
       internalIndex.value = Math.max(0, props.images.length - 1);
     }
 
-    if (!props.images.length) {
+    // isDialogOpen, not dialogIsVisible: with the images gone there is no
+    // active image, so visibility already reads false for an open dialog.
+    if (!props.images.length && isDialogOpen.value) {
       closeDialog();
     }
   },
@@ -601,6 +654,12 @@ watch(
 );
 
 watch(dialogIsVisible, async (open) => {
+  // closeDialog() is not the only way out: a controlled `open` prop can hide
+  // the dialog too, and the next open must not land back in the grid.
+  if (!open) {
+    dialogMode.value = 'single';
+  }
+
   if (typeof document === 'undefined') {
     return;
   }
@@ -632,7 +691,8 @@ provide(GALLERY_CONTEXT, {
      * package* is built, so the warning would be stripped from the published
      * bundle and no consumer would ever see it. process.env.NODE_ENV survives
      * the library build for the consumer's own bundler to resolve; the typeof
-     * guard keeps the bare-browser UMD path from throwing on it.
+     * guard keeps it from throwing where no bundler replaces it, e.g. native
+     * ESM loaded straight in the browser.
      */
     if (
       typeof process !== 'undefined' &&

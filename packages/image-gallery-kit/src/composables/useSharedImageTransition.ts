@@ -681,9 +681,16 @@ export function useSharedImageTransition() {
      * entering the document, all synchronously, on a single tile click. Only
      * tiles the user can actually watch fade out are worth that cost.
      */
+    const visible = measureVisible(candidates);
+
+    // Nothing to fade out, so no layer to leave behind in the host's DOM.
+    if (!visible.length) {
+      return;
+    }
+
     const host = flightLayer(container);
 
-    const clones = measureVisible(candidates).map(({ item, rect }) => {
+    const clones = visible.map(({ item, rect }) => {
       const clone = createFlyingClone(item);
       clone.style.position = 'fixed';
       clone.style.left = `${rect.left}px`;
@@ -695,10 +702,6 @@ export function useSharedImageTransition() {
       host.appendChild(clone);
       return clone;
     });
-
-    if (!clones.length) {
-      return;
-    }
 
     try {
       const { gsap } = await import('gsap');
