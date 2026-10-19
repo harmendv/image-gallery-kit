@@ -137,6 +137,22 @@ describe('a recomposed dialog', () => {
   it('refuses to render a part outside the gallery, by name', () => {
     expect(() => mount(ImageGalleryCloseButton)).toThrow(/<ImageGalleryCloseButton>/);
   });
+
+  /*
+   * Inside the gallery is not enough: a dialog part in the preview has a
+   * gallery to read, but no dialog around it, so it has to fail rather than
+   * render a counter for an image nobody opened.
+   */
+  it('refuses to render a dialog part in the preview slot', () => {
+    expect(() =>
+      mount(ImageGallery, {
+        props: { images },
+        slots: { default: () => [previewSlot(images)(), h(ImageGalleryCounter)] }
+      })
+    ).toThrow(
+      '[image-gallery-kit] <ImageGalleryCounter> must be rendered inside the `dialog` slot of <ImageGallery>.'
+    );
+  });
 });
 
 /*
